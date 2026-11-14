@@ -72,6 +72,19 @@ int main(int argc, char** argv) {
       cairo_scale(cr2, drawScale, drawScale);
       panel.draw(cr2, shared, state);
       cairo_destroy(cr2);
+      state.presetOpen = 1;
+      state.presetIndex = 25;
+      for (int i = 0; i < 3; ++i) panel.tick(shared, state);
+      cairo_surface_t* s3 = cairo_image_surface_create(CAIRO_FORMAT_ARGB32,
+                                                       size.width, size.height);
+      cairo_t* cr3 = cairo_create(s3);
+      cairo_scale(cr3, drawScale, drawScale);
+      panel.draw(cr3, shared, state);
+      cairo_destroy(cr3);
+      cairo_surface_write_to_png(s3, (outDir + "/" + kNames[model] + "_presets.png").c_str());
+      cairo_surface_destroy(s3);
+      state.presetOpen = 0;
+
       const std::string p2 = outDir + "/" + kNames[model] + "_sidechain.png";
       cairo_surface_write_to_png(s2, p2.c_str());
       cairo_surface_destroy(s2);

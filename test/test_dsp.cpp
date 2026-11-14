@@ -6,6 +6,8 @@
 #include <vector>
 
 #include "dsp/engine.hpp"
+#include "params.hpp"
+#include "presets.hpp"
 
 using namespace comp;
 
@@ -270,6 +272,30 @@ int main() {
     char label[96];
     std::snprintf(label, sizeof(label), "kick leaves no DC offset (%.4f)", dc);
     check(std::fabs(dc) < 0.01, label);
+  }
+
+  // Every factory preset must apply cleanly and produce finite audio.
+  {
+    check(comp::kPresetCount >= 30, "at least 30 factory presets");
+    bool everyPresetOk = true;
+    for (int i = 0; i < comp::kPresetCount; ++i) {
+      comp::Shared shared;
+      const comp::Preset& p = comp::kPresets[i];
+      shared.set(comp::P_MODEL, p.model);
+      for (const comp::PresetValue& v : p.values) {
+        if (v.param >= 0) {
+          shared.set(static_cast<uint32_t>(v.param), v.value);
+        }
+      }
+      Engine engine;
+      engine.prepare(kSr);
+      Controls c = comp::controlsFrom(shared);
+      const Render r = renderSine(engine, c, 120.0f, -12.0f, 0.3f);
+      if (!allFinite(r)) {
+        everyPresetOk = false;
+      }
+    }
+    check(everyPresetOk, "factory presets render finite audio");
   }
 
   std::printf("%d failure(s)\n", gFailures);

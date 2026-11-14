@@ -102,6 +102,9 @@ build/comp_ui_preview assets/fonts /tmp/out 1.5
   is full-on at any level and sounds synthetic. Clip is a soft ceiling.
   Measured THD at -18 dBFS: Off -58 dB, Dist 2 -20 dB, Dist 3 -22 dB,
   Clip -14 dB.
+- **Preset browser**: 31 factory presets in the header, grouped by use
+  (Vocals, Drums, Bass, Guitars, Parallel, Mix Bus) and tagged with the model
+  they load. Click the name to open the list, arrows to step, wheel to scroll.
 - **Host support:** CLAP only. An LV2 build (for Ardour) is not included yet.
 - **Editor:** X11 embedding, resizable from 0.5× to 2.5× (520×320 to
   2600×1600). The window always keeps the 1040:640 aspect ratio: sizes are

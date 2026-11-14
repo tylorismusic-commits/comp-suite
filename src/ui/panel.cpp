@@ -3,12 +3,15 @@
 
 #include "ui/panel.hpp"
 
+#include "presets.hpp"
+
 #include <cairo-ft.h>
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
 #include <algorithm>
 #include <cmath>
+#include <cstring>
 #include <cstdio>
 
 namespace comp {
@@ -145,6 +148,35 @@ const char* const kMeterLabelsVu[] = {"-20", "-10", "-7", "-5", "-3", "-1", "0",
 const double kMeterFractionsVu[] = {0.0, 0.435, 0.565, 0.652, 0.739, 0.826, 0.870, 0.913, 0.957, 1.0};
 
 constexpr double kPi = 3.14159265358979323846;
+
+// Header preset browser geometry (logical units).
+constexpr double kPresetX = 72.0;
+constexpr double kPresetY = 14.0;
+constexpr double kPresetW = 330.0;
+constexpr double kPresetH = 36.0;
+constexpr double kListY = 56.0;
+constexpr double kListRow = 22.0;
+constexpr double kListVisible = 17.0;
+
+// Display order: grouped by category, then by name, so the list does not show
+// the same category heading several times.
+const std::vector<int>& presetOrder() {
+  static const std::vector<int> order = [] {
+    std::vector<int> v;
+    for (int i = 0; i < kPresetCount; ++i) {
+      v.push_back(i);
+    }
+    std::stable_sort(v.begin(), v.end(), [](int a, int b) {
+      const int c = std::strcmp(kPresets[a].category, kPresets[b].category);
+      if (c != 0) {
+        return c < 0;
+      }
+      return std::strcmp(kPresets[a].name, kPresets[b].name) < 0;
+    });
+    return v;
+  }();
+  return order;
+}
 
 // Angle of a knob position (0..1), in cairo convention.  The sweep runs
 // from 7:30 to 4:30 o'clock.
@@ -519,6 +551,9 @@ bool Panel::isLit(const Shared& shared, const Widget& w) const {
 
 bool Panel::pointerDown(Shared& shared, PanelState& state, double x, double y,
                         bool fine) {
+  if (handlePresetClick(shared, state, x, y)) {
+    return true;
+  }
   for (size_t i = 0; i < widgets_.size(); ++i) {
     const Widget& w = widgets_[i];
     if (!hitWidget(w, x, y)) {
@@ -534,18 +569,22 @@ bool Panel::pointerDown(Shared& shared, PanelState& state, double x, double y,
       }
       case Kind::Power:
         shared.set(P_ENABLED, shared.get(P_ENABLED) > 0.5 ? 0.0 : 1.0);
+        state.presetDirty = true;
         return true;
       case Kind::ModelTab:
       case Kind::MeterSegment:
         shared.set(w.param, w.value);
+        state.presetDirty = true;
         return true;
       case Kind::Button:
         shared.set(w.param, w.value);
+        state.presetDirty = true;
         return true;
       case Kind::Toggle: {
         // Upper half selects the first label, lower half the second.
         const double f = (y - w.y) / w.h;
         shared.set(w.param, f < 0.5 ? 1.0 : 0.0);
+        state.presetDirty = true;
         return true;
       }
       case Kind::PageTab:
@@ -571,6 +610,7 @@ bool Panel::pointerMove(Shared& shared, PanelState& state, double x, double y,
                               : (spec.max - spec.min) / (fine ? 800.0 : 200.0);
   const double v = dragStartValue_ + (dragStartY_ - y) * perPixel;
   shared.set(param, v);
+  state.presetDirty = true;
   return true;
 }
 
@@ -579,6 +619,13 @@ void Panel::pointerUp() {
 }
 
 bool Panel::wheel(Shared& shared, PanelState& state, double x, double y, double dy) {
+  if (state.presetOpen && x >= kPresetX && x <= kPresetX + kPresetW &&
+      y >= kListY && y <= kListY + kListVisible * kListRow + 10) {
+    const int maxScroll = 20;
+    state.presetScroll = std::min(maxScroll,
+                                  std::max(0, state.presetScroll - (int)dy));
+    return true;
+  }
   (void)state;
   for (const Widget& w : widgets_) {
     if (w.kind == Kind::Knob && hitWidget(w, x, y)) {
@@ -589,6 +636,7 @@ bool Panel::wheel(Shared& shared, PanelState& state, double x, double y, double 
         shared.set(w.param,
                    shared.get(w.param) - dy * (spec.max - spec.min) * 0.01);
       }
+      state.presetDirty = true;
       return true;
     }
   }
@@ -634,7 +682,7 @@ void Panel::draw(cairo_t* cr, const Shared& shared, const PanelState& state) {
   cairo_set_source_rgb(cr, 0.07, 0.07, 0.07);
   cairo_paint(cr);
 
-  drawHeader(cr, shared);
+  drawHeader(cr, shared, state);
   drawBody(cr, model);
   drawMeter(cr, shared, state, model);
   drawLeds(cr, shared);
@@ -647,10 +695,15 @@ void Panel::draw(cairo_t* cr, const Shared& shared, const PanelState& state) {
     drawWidget(cr, w, shared, state, model);
   }
 
+  if (state.presetOpen) {
+    drawPresetList(cr, shared, state);
+  }
+
   cairo_restore(cr);
 }
 
-void Panel::drawHeader(cairo_t* cr, const Shared& shared) const {
+void Panel::drawHeader(cairo_t* cr, const Shared& shared,
+                       const PanelState& state) const {
   const int model = static_cast<int>(shared.get(P_MODEL) + 0.5);
   const Skin skin = skinFor(model);
   cairo_pattern_t* bar = cairo_pattern_create_linear(0, 0, 0, 62);
@@ -672,6 +725,144 @@ void Panel::drawHeader(cairo_t* cr, const Shared& shared) const {
   cairo_line_to(cr, kPanelWidth, 61.5);
   cairo_stroke(cr);
   text(cr, "COMP SUITE", 520, 38, 19, 1, 0.80, 0.82, 0.84);
+  drawPresetBar(cr, shared, state);
+}
+
+void Panel::drawPresetBar(cairo_t* cr, const Shared& shared,
+                          const PanelState& state) const {
+  const int model = static_cast<int>(shared.get(P_MODEL) + 0.5);
+  const Skin skin = skinFor(model);
+
+  roundRect(cr, kPresetX, kPresetY, kPresetW, kPresetH, 4);
+  cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.35);
+  cairo_fill(cr);
+  cairo_set_line_width(cr, 1.0);
+  cairo_set_source_rgba(cr, 1.0, 1.0, 1.0, 0.12);
+  roundRect(cr, kPresetX + 0.5, kPresetY + 0.5, kPresetW - 1, kPresetH - 1, 4);
+  cairo_stroke(cr);
+
+  // Arrows.
+  text(cr, "\u2039", kPresetX + 18, kPresetY + 25, 20, 1, 0.72, 0.75, 0.78);
+  text(cr, "\u203a", kPresetX + kPresetW - 18, kPresetY + 25, 20, 1, 0.72, 0.75, 0.78);
+
+  char label[96];
+  if (state.presetIndex >= 0 && state.presetIndex < kPresetCount) {
+    std::snprintf(label, sizeof(label), "%s%s", kPresets[state.presetIndex].name,
+                  state.presetDirty ? " *" : "");
+  } else {
+    std::snprintf(label, sizeof(label), "Init%s", state.presetDirty ? " *" : "");
+  }
+  text(cr, label, kPresetX + kPresetW * 0.5, kPresetY + 24, 14, 1, 0.90, 0.92, 0.94);
+  (void)skin;
+}
+
+void Panel::drawPresetList(cairo_t* cr, const Shared& shared,
+                           const PanelState& state) const {
+  const int model = static_cast<int>(shared.get(P_MODEL) + 0.5);
+  const Skin skin = skinFor(model);
+  const double h = kListVisible * kListRow + 10;
+  roundRect(cr, kPresetX, kListY, kPresetW, h, 5);
+  cairo_set_source_rgba(cr, 0.07, 0.08, 0.09, 0.97);
+  cairo_fill(cr);
+  cairo_set_line_width(cr, 1.0);
+  setRgb(cr, skin.tabOn, 0.7);
+  roundRect(cr, kPresetX + 0.5, kListY + 0.5, kPresetW - 1, h - 1, 5);
+  cairo_stroke(cr);
+
+  cairo_save(cr);
+  roundRect(cr, kPresetX + 1, kListY + 1, kPresetW - 2, h - 2, 4);
+  cairo_clip(cr);
+
+  const char* lastCategory = nullptr;
+  double y = kListY + 6 - state.presetScroll * kListRow;
+  for (int i : presetOrder()) {
+    const Preset& p = kPresets[i];
+    if (!lastCategory || std::strcmp(lastCategory, p.category) != 0) {
+      lastCategory = p.category;
+      text(cr, p.category, kPresetX + 14, y + 15, 11, 0, 0.52, 0.66, 0.80);
+      y += kListRow;
+      if (y > kListY + h) break;
+    }
+    if (y + kListRow > kListY && y < kListY + h) {
+      if (i == state.presetIndex) {
+        roundRect(cr, kPresetX + 6, y + 1, kPresetW - 12, kListRow - 2, 3);
+        setRgb(cr, skin.tabOn, 0.85);
+        cairo_fill(cr);
+      }
+      text(cr, p.name, kPresetX + 26, y + 15, 12.5, 0,
+           i == state.presetIndex ? 1.0 : 0.86,
+           i == state.presetIndex ? 1.0 : 0.88,
+           i == state.presetIndex ? 1.0 : 0.90);
+      // Which unit this preset uses, so the list reads at a glance.
+      static const char* kModelShort[6] = {"76B", "76K", "2A", "3A", "XP", "VCA"};
+      text(cr, kModelShort[std::clamp(p.model, 0, 5)], kPresetX + kPresetW - 16,
+           y + 15, 10.5, 2, 0.56, 0.60, 0.66);
+    }
+    y += kListRow;
+  }
+  cairo_restore(cr);
+}
+
+void Panel::applyPreset(Shared& shared, PanelState& state, int index) const {
+  if (index < 0 || index >= kPresetCount) {
+    return;
+  }
+  const Preset& p = kPresets[index];
+  shared.set(P_MODEL, p.model);
+  for (const PresetValue& v : p.values) {
+    if (v.param >= 0) {
+      shared.set(static_cast<uint32_t>(v.param), v.value);
+    }
+  }
+  state.presetIndex = index;
+  state.presetDirty = false;
+  state.presetOpen = 0;
+}
+
+bool Panel::handlePresetClick(Shared& shared, PanelState& state, double x,
+                              double y) {
+  // Arrows.
+  if (y >= kPresetY && y <= kPresetY + kPresetH) {
+    if (x >= kPresetX && x <= kPresetX + 36) {
+      const int next = state.presetIndex <= 0 ? 0 : state.presetIndex - 1;
+      applyPreset(shared, state, next);
+      return true;
+    }
+    if (x >= kPresetX + kPresetW - 36 && x <= kPresetX + kPresetW) {
+      const int next = std::min(kPresetCount - 1, state.presetIndex + 1);
+      applyPreset(shared, state, next);
+      return true;
+    }
+    if (x > kPresetX + 36 && x < kPresetX + kPresetW - 36) {
+      state.presetOpen = state.presetOpen ? 0 : 1;
+      return true;
+    }
+  }
+
+  if (!state.presetOpen) {
+    return false;
+  }
+  const double h = kListVisible * kListRow + 10;
+  if (x < kPresetX || x > kPresetX + kPresetW || y < kListY || y > kListY + h) {
+    state.presetOpen = 0;
+    return true;  // click outside closes
+  }
+
+  // Walk the same layout used for drawing.
+  double rowY = kListY + 6 - state.presetScroll * kListRow;
+  const char* lastCategory = nullptr;
+  for (int i : presetOrder()) {
+    if (!lastCategory || std::strcmp(lastCategory, kPresets[i].category) != 0) {
+      lastCategory = kPresets[i].category;
+      rowY += kListRow;
+    }
+    if (y >= rowY && y < rowY + kListRow) {
+      applyPreset(shared, state, i);
+      return true;
+    }
+    rowY += kListRow;
+  }
+  return true;
 }
 
 void Panel::drawBody(cairo_t* cr, int model) const {

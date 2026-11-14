@@ -18,6 +18,10 @@ constexpr int kPanelHeight = 640;
 // is saved with the preset; the right-hand page does not.
 struct PanelState {
   int rightPage = 1; // 0 = Side Chain, 1 = Output
+  int presetIndex = -1;
+  bool presetDirty = false;
+  int presetOpen = 0;
+  int presetScroll = 0;
   float needle = 0.0f;
   static constexpr int kHistory = 300;
   float grHistory[kHistory] = {};
@@ -51,6 +55,13 @@ public:
   bool pointerMove(Shared& shared, PanelState& state, double x, double y,
                    bool fine);
   void pointerUp();
+  bool handlePresetClick(Shared& shared, PanelState& state, double x, double y);
+  void applyPreset(Shared& shared, PanelState& state, int index) const;
+  void drawPresetBar(cairo_t* cr, const Shared& shared,
+                     const PanelState& state) const;
+  void drawPresetList(cairo_t* cr, const Shared& shared,
+                      const PanelState& state) const;
+  void markEdited(PanelState& state) const { state.presetDirty = true; }
   bool wheel(Shared& shared, PanelState& state, double x, double y, double dy);
 
   bool dragging() const { return dragParam_ >= 0; }
@@ -82,7 +93,8 @@ private:
   };
 
   void layout(const Shared& shared, const PanelState& state);
-  void drawHeader(cairo_t* cr, const Shared& shared) const;
+  void drawHeader(cairo_t* cr, const Shared& shared,
+                  const PanelState& state) const;
   void drawBody(cairo_t* cr, int model) const;
   void drawMeter(cairo_t* cr, const Shared& shared, const PanelState& state,
                  int model) const;

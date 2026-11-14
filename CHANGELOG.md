@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Preset browser in the header: 31 factory presets grouped by use, each tagged
+  with its model, with prev/next arrows and a scrollable list.
+- LV2 metadata now carries `doap:name`, so hosts show "Comp Suite" rather than
+  the plugin URI.
+
 ## 0.1.0
 
 First release: six compressor models in one plugin, as CLAP and LV2.
