@@ -34,6 +34,8 @@ enum Port : uint32_t {
 
 struct Plugin {
   float sampleRate = 48000.0f;
+  float lastPort[comp::P_COUNT] = {};
+  bool portsSeen = false;
   comp::Shared shared;
   comp::Engine engine;
   comp::Meters meters;
@@ -97,14 +99,21 @@ void run(LV2_Handle handle, uint32_t frames) {
     return;
   }
 
-  // Pull host parameter values in, then configure the engine.
+  // Pull host parameter values in, then configure the engine.  Only values
+  // that actually changed are applied, so a port the host has not refreshed
+  // yet cannot undo a change made in the UI.
   if (p->ports) {
     for (uint32_t i = 0; i < comp::P_COUNT; ++i) {
       float* v = p->ports[PORT_FIRST_PARAM + i];
-      if (v) {
+      if (!v) {
+        continue;
+      }
+      if (!p->portsSeen || *v != p->lastPort[i]) {
         p->shared.setFromHost(i, static_cast<double>(*v));
+        p->lastPort[i] = *v;
       }
     }
+    p->portsSeen = true;
   }
   p->engine.setControls(comp::controlsFrom(p->shared));
 

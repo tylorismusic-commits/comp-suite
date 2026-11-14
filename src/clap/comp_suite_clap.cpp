@@ -613,7 +613,10 @@ void applyEvents(Plugin* s, const clap_input_events_t* in) {
     }
     if (hdr->type == CLAP_EVENT_PARAM_VALUE) {
       const auto* pv = reinterpret_cast<const clap_event_param_value_t*>(hdr);
-      if (pv->param_id < P_COUNT) {
+      // A pending UI change wins over the host's cached value: hosts that
+      // resend their whole parameter set each block would otherwise undo a
+      // preset (or a knob move) before we could send it back.
+      if (pv->param_id < P_COUNT && !s->shared.isDirty(pv->param_id)) {
         s->shared.setFromHost(pv->param_id, pv->value);
       }
     }

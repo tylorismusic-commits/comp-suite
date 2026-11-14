@@ -100,6 +100,10 @@ public:
     return dirty_[p].exchange(false, std::memory_order_acquire);
   }
 
+  bool isDirty(uint32_t p) const noexcept {
+    return dirty_[p].load(std::memory_order_acquire);
+  }
+
   bool anyDirty() const noexcept {
     for (uint32_t p = 0; p < P_COUNT; ++p) {
       if (dirty_[p].load(std::memory_order_acquire)) {

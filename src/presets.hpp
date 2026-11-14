@@ -10,8 +10,11 @@ namespace comp {
 
 // A preset sets the parameters it cares about; -1 means "leave as is".
 struct PresetValue {
-  int16_t param;
-  float value;
+  // Defaults make unused slots inert.  Without this, zero-filled entries read
+  // as {param 0, value 0} - and parameter 0 is Model, so applying a preset
+  // reset the compressor back to 76Blue.
+  int16_t param = -1;
+  float value = 0.0f;
 };
 
 struct Preset {

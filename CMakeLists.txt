@@ -67,6 +67,12 @@ target_include_directories(comp_dsp_test PRIVATE "${CMAKE_SOURCE_DIR}/src")
 target_compile_features(comp_dsp_test PRIVATE cxx_std_17)
 add_test(NAME comp_dsp COMMAND comp_dsp_test)
 
+add_executable(comp_panel_test test/test_panel.cpp ${COMP_UI_SOURCES})
+target_include_directories(comp_panel_test PRIVATE "${CMAKE_SOURCE_DIR}/src")
+target_link_libraries(comp_panel_test PRIVATE PkgConfig::CAIRO PkgConfig::FREETYPE)
+target_compile_features(comp_panel_test PRIVATE cxx_std_17)
+add_test(NAME comp_panel COMMAND comp_panel_test)
+
 add_executable(comp_geometry_test test/test_geometry.cpp)
 target_include_directories(comp_geometry_test PRIVATE "${CMAKE_SOURCE_DIR}/src")
 target_link_libraries(comp_geometry_test PRIVATE PkgConfig::CAIRO)
