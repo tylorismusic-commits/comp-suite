@@ -1,0 +1,116 @@
+// Comp Suite — panel.hpp
+// SPDX-License-Identifier: GPL-3.0-or-later
+#pragma once
+
+#include <cairo.h>
+
+#include <string>
+#include <vector>
+
+#include "params.hpp"
+
+namespace comp {
+
+constexpr int kPanelWidth = 1040;
+constexpr int kPanelHeight = 640;
+
+// UI-only state.  The meter mode lives in the host parameter P_METER so it
+// is saved with the preset; the right-hand page does not.
+struct PanelState {
+  int rightPage = 1; // 0 = Side Chain, 1 = Output
+  float needle = 0.0f;
+  static constexpr int kHistory = 300;
+  float grHistory[kHistory] = {};
+  int grHead = 0;
+  float inLevel = 0.0f;
+  float outLevel = 0.0f;
+  float outPeakHold = 0.0f;
+};
+
+// Drawing and hit-testing for the whole plugin face.  The layout depends on
+// the selected model, and only the controls that model has are created.
+class Panel {
+public:
+  Panel();
+  ~Panel();
+  Panel(const Panel&) = delete;
+  Panel& operator=(const Panel&) = delete;
+
+  // Loads Jost from the given directory, falling back to a system font.
+  void loadFont(const std::string& dir);
+
+  // Advances needles, histories, and peak holds.  Call about 30 times a second.
+  void tick(const Shared& shared, PanelState& state) const;
+
+  void draw(cairo_t* cr, const Shared& shared, const PanelState& state);
+
+  // Hit-testing against the layout from the last draw.  Each returns true
+  // when a control changed.
+  bool pointerDown(Shared& shared, PanelState& state, double x, double y,
+                   bool fine);
+  bool pointerMove(Shared& shared, PanelState& state, double x, double y,
+                   bool fine);
+  void pointerUp();
+  bool wheel(Shared& shared, PanelState& state, double x, double y, double dy);
+
+  bool dragging() const { return dragParam_ >= 0; }
+
+private:
+  enum class Kind {
+    Knob,
+    Button,
+    Toggle,
+    ModelTab,
+    MeterSegment,
+    Power,
+    PageTab,
+  };
+
+  struct Widget {
+    Kind kind;
+    uint32_t param = 0;
+    double value = 0.0;   // value written by Button / Tab / Segment / Toggle
+    double x = 0.0;
+    double y = 0.0;
+    double w = 0.0;
+    double h = 0.0;
+    double r = 0.0;       // knob radius
+    const char* label = "";
+    std::vector<const char*> scale;
+    bool labelBelow = false;
+    std::vector<const char*> buttonText;
+  };
+
+  void layout(const Shared& shared, const PanelState& state);
+  void drawHeader(cairo_t* cr, const Shared& shared) const;
+  void drawBody(cairo_t* cr, int model) const;
+  void drawMeter(cairo_t* cr, const Shared& shared, const PanelState& state,
+                 int model) const;
+  void drawLeds(cairo_t* cr, const Shared& shared) const;
+  void drawLevelMeter(cairo_t* cr, double x, double y, double w, double h,
+                      double db, double minDb, double maxDb, int model) const;
+  void drawWidget(cairo_t* cr, const Widget& w, const Shared& shared,
+                  const PanelState& state, int model) const;
+  void drawKnob(cairo_t* cr, const Widget& w, double value, int model) const;
+  void drawButton(cairo_t* cr, const Widget& w, bool lit, int model) const;
+  void drawToggle(cairo_t* cr, const Widget& w, bool on, int model) const;
+  void text(cairo_t* cr, const char* s, double x, double y, double size,
+            int align, double r, double g, double b) const;
+
+  double knobValue(const Shared& shared, const Widget& w) const;
+  bool isLit(const Shared& shared, const Widget& w) const;
+  bool hitWidget(const Widget& w, double x, double y) const;
+
+  std::vector<Widget> widgets_;
+  int dragParam_ = -1;
+  double dragStartY_ = 0.0;
+  double dragStartValue_ = 0.0;
+
+  cairo_surface_t* grain_ = nullptr;  // tiled noise for panel texture
+  void* ft_ = nullptr;
+  void* ftFace_ = nullptr;
+  cairo_font_face_t* font_ = nullptr;
+  cairo_font_face_t* fallbackFont_ = nullptr;
+};
+
+} // namespace comp

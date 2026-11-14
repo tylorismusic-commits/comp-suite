@@ -1,0 +1,45 @@
+// Comp Suite — controls.hpp
+// SPDX-License-Identifier: GPL-3.0-or-later
+#pragma once
+
+namespace comp {
+
+// Model selector, in the order shown on the style tabs.
+enum class Model : int {
+  Blue76 = 0,   // 1176-style FET, blue-stripe voicing
+  Black76 = 1,  // 1176-style FET, black-face voicing
+  Opto2A = 2,   // T4-style optical leveler, 2A-style
+  Opto3A = 3,   // T4-style optical leveler, 3A-style
+  Xpress = 4,   // diode-bridge style compressor with distortion modes
+  Vca = 5,      // SSL-style stereo bus VCA
+  Count = 6
+};
+
+// Every control is normalised to 0..1.  Each model maps the shared slots to
+// its own physical controls, so the UI only shows the ones a model has.
+struct Controls {
+  int model = 0;
+  bool enabled = true;      // power / compress on
+  float input = 0.0f;       // Input (76, Xpress) — drive
+  float threshold = 0.5f;   // 2A/3A Peak Reduction, VCA threshold, Xpress input drive
+  float ratio = 0.5f;       // 76: 4/8/12/20/all, Xpress: ratio steps, VCA: 2..10, 2A: Limit switch
+  float attack = 0.5f;      // 76 steps 1..7, Xpress/VCA continuous
+  float release = 0.5f;
+  float makeup = 0.5f;      // 2A/3A Gain, VCA makeup
+  float output = 0.5f;      // 76 and Xpress output, 2A output level switch
+  float mix = 1.0f;         // parallel blend (Xpress, VCA)
+  float sidechainHpf = 0.0f;
+  float distortion = 0.0f;  // Xpress: Off / Dist 2 / Dist 3 / Clip
+  bool limiterOn = false;   // output limiter, as in the reference suite
+  float limitThreshold = 0.5f;
+};
+
+// Metering published by the engine, in dB or normalised units.
+struct Meters {
+  float grDb = 0.0f;        // gain reduction, positive dB
+  float outPeakDb = -120.0f;
+  float outVuDb = -120.0f;  // averaged output for the VU needle
+  float inPeakDb = -120.0f;
+};
+
+} // namespace comp
