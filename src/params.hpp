@@ -12,6 +12,8 @@
 namespace comp {
 
 // Parameter ids are the CLAP parameter ids and the index into Shared::values.
+// They are also the ordering of the LV2 control ports (port = 4 + id), so this
+// enum must only ever be appended to.
 enum ParamId : uint32_t {
   P_MODEL = 0,
   P_ENABLED,
@@ -31,7 +33,24 @@ enum ParamId : uint32_t {
   P_COUNT
 };
 
+// Scale-point labels for a stepped parameter.  Values are always 0..count-1.
+struct Labels {
+  const char* const* names = nullptr;
+  int count = 0;
+};
+
+template <size_t N>
+constexpr Labels labels(const char* const (&arr)[N]) noexcept {
+  return Labels{arr, static_cast<int>(N)};
+}
+
+// One table drives the DSP, the CLAP parameters, the editor and the LV2
+// metadata (via tools/gen_ttl.cpp).  Adding a parameter means adding one row.
+//
+// `symbol` is the LV2 port symbol and is part of the saved-session format:
+// changing one silently breaks every session that used it.  Never rename.
 struct ParamSpec {
+  const char* symbol;
   const char* name;
   const char* module;
   double min;
@@ -39,25 +58,52 @@ struct ParamSpec {
   double def;
   bool stepped;
   bool hidden;
+  bool toggled;
+  const char* unit;
+  Labels labels;
 };
 
+inline constexpr const char* kModelLabels[] = {"76Blue", "76Black", "2A",
+                                               "3A",     "Xpress",  "VCA"};
+inline constexpr const char* kDistortionLabels[] = {"Off", "Dist 2", "Dist 3",
+                                                    "Clip"};
+inline constexpr const char* kMeterLabels[] = {"GR", "+8", "+4", "Graph",
+                                               "Off"};
+
 inline constexpr ParamSpec kParamSpecs[P_COUNT] = {
-    {"Model", "", 0.0, 5.0, 0.0, true, false},
-    {"Power", "", 0.0, 1.0, 1.0, true, false},
-    {"Input", "Compressor", 0.0, 1.0, 0.6, false, false},
-    {"Threshold", "Compressor", 0.0, 1.0, 0.5, false, false},
-    {"Ratio", "Compressor", 0.0, 8.0, 3.0, true, false},
-    {"Attack", "Compressor", 0.0, 1.0, 0.5, false, false},
-    {"Release", "Compressor", 0.0, 1.0, 0.5, false, false},
-    {"Makeup", "Compressor", 0.0, 1.0, 0.5, false, false},
-    {"Output", "Output", 0.0, 1.0, 0.5, false, false},
-    {"Mix", "Output", 0.0, 1.0, 1.0, false, false},
-    {"Sidechain HPF", "Side Chain", 0.0, 1.0, 0.0, false, false},
-    {"Distortion", "Output", 0.0, 3.0, 0.0, true, false},
-    {"Meter", "", 0.0, 4.0, 0.0, true, true},
-    {"Limiter", "Limiter", 0.0, 1.0, 0.0, true, false},
-    {"Limiter Threshold", "Limiter", 0.0, 1.0, 0.5, false, false},
+    {"model", "Model", "Compressor", 0.0, 5.0, 0.0, true, false, false, nullptr,
+     labels(kModelLabels)},
+    {"power", "Power", "Compressor", 0.0, 1.0, 1.0, true, false, true, nullptr,
+     {}},
+    {"input", "Input", "Compressor", 0.0, 1.0, 0.6, false, false, false,
+     nullptr, {}},
+    {"threshold", "Threshold", "Compressor", 0.0, 1.0, 0.5, false, false, false,
+     nullptr, {}},
+    {"ratio", "Ratio", "Compressor", 0.0, 8.0, 3.0, true, false, false, nullptr,
+     {}},
+    {"attack", "Attack", "Compressor", 0.0, 1.0, 0.5, false, false, false,
+     nullptr, {}},
+    {"release", "Release", "Compressor", 0.0, 1.0, 0.5, false, false, false,
+     nullptr, {}},
+    {"makeup", "Makeup", "Compressor", 0.0, 1.0, 0.5, false, false, false,
+     nullptr, {}},
+    {"output", "Output", "Output", 0.0, 1.0, 0.5, false, false, false, nullptr,
+     {}},
+    {"mix", "Mix", "Output", 0.0, 1.0, 1.0, false, false, false, nullptr, {}},
+    {"sc_hpf", "Sidechain HPF", "Sidechain", 0.0, 1.0, 0.0, false, false, false,
+     nullptr, {}},
+    {"distortion", "Distortion", "Output", 0.0, 3.0, 0.0, true, false, false,
+     nullptr, labels(kDistortionLabels)},
+    {"meter", "Meter", "Meter", 0.0, 4.0, 0.0, true, true, false, nullptr,
+     labels(kMeterLabels)},
+    {"limiter_on", "Limiter", "Limiter", 0.0, 1.0, 0.0, true, false, true,
+     nullptr, {}},
+    {"limiter_threshold", "Limiter Threshold", "Limiter", 0.0, 1.0, 0.5, false,
+     false, false, nullptr, {}},
 };
+
+static_assert(sizeof(kParamSpecs) / sizeof(kParamSpecs[0]) == P_COUNT,
+              "kParamSpecs must cover every parameter id");
 
 // The control values, meters, and dirty flags shared between the audio
 // thread, the host thread, and the editor.  Everything is atomic so the

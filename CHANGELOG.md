@@ -1,6 +1,48 @@
 # Changelog
 
-## Unreleased
+## 0.2.0
+
+LV2 release. The LV2 build already existed in the source tree but was not
+shippable: no presets, no resize, an install path outside the LV2 search
+path, and metadata errors that `lv2lint` flags.
+
+### LV2
+
+- **Preset banks.** 33 factory presets are exported as `pset:Preset`
+  resources in six banks, so Ardour, REAPER and other hosts list them in their
+  own preset menus instead of only inside the plugin's browser.
+- **Resizable UI.** The LV2 editor now uses the `ui:resize` feature and the
+  idle interface instead of a private 33 ms thread. Dragging the widget snaps
+  to the same 1/80 steps and 1040:640 aspect as the CLAP editor, and the
+  corrected size is reported back to the host.
+- **Gain reduction in the mixer strip** through the Harrison inline-display
+  extension, matching Hearth Channel.
+- **Correct units metadata.** Meter ports use `units:unit units:db`;
+  `lv2:designation` had been used for units, which is the wrong property.
+  Meter outputs are also marked `lv2:notOnGUI`.
+- **Correct install path.** New `LV2_DIR` cache variable. Installing with
+  `--prefix ~/.local` previously placed the bundle in `~/.local/lib/lv2`,
+  which is not on the default LV2 search path.
+- Metadata is generated from `src/params.hpp` and `src/presets.hpp` by
+  `tools/gen_ttl.cpp`; `ctest` fails if the committed TTL is stale. The old
+  `tools/gen_lv2_ttl.py` duplicated the parameter table and is removed.
+
+### Tests
+
+- LV2 host test now checks port count, parameter symbols, preset count,
+  preset-to-plugin attachment, symbol resolution and that every preset sets
+  its model.
+- New Xvfb LV2 UI test: instantiates the editor, drives the idle interface,
+  resizes to an invalid size and checks the snapped result, and checks the
+  minimum-scale clamp.
+
+### Docs
+
+- README: formats, install paths, preset banks, URI stability warning. The
+  "CLAP only" claim and the wrong bundle path are fixed. Preset count
+  corrected from 31 to 33.
+
+## Unreleased (0.1.x)
 
 - Fixed: presets reset the model to 76Blue (unused preset slots zero-filled
   and parameter 0 is Model).
@@ -10,7 +52,7 @@
   values clamp to the declared range.
 - Mono or partially connected host buffers no longer crash; the left channel
   is mirrored.
-- Preset browser in the header: 31 factory presets grouped by use, each tagged
+- Preset browser in the header: factory presets grouped by use, each tagged
   with its model, with prev/next arrows and a scrollable list.
 - LV2 metadata now carries `doap:name`, so hosts show "Comp Suite" rather than
   the plugin URI.

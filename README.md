@@ -1,6 +1,6 @@
 # Comp Suite
 
-**Version 0.1.0** · GPL-3.0-or-later
+**Version 0.2.0** · GPL-3.0-or-later
 
 A free CLAP and LV2 compressor with six models in one plugin:
 
@@ -25,33 +25,54 @@ every model shares one finish and the plugin ships no third-party artwork.
 
 ## Formats
 
-- **CLAP** — `build/clap/CompSuite.clap` + `CompSuite.resources/`
-- **LV2** — `build/lv2/comp-suite.lv2/` (plugin + X11 UI), installed to
-  `~/.lv2/comp-suite.lv2`.  Ports mirror the CLAP parameter ids:
+- **CLAP** — `build/clap/CompSuite.clap` + `CompSuite.resources/`, reports gain
+  reduction through `clap.gain-adjustment-metering`.
+- **LV2** — `build/lv2/comp-suite.lv2/` (plugin + X11 UI + preset banks),
+  `lv2lint`-clean, draws gain reduction in Ardour's mixer strip through the
+  Harrison inline-display extension. Ports mirror the CLAP parameter ids:
   `port = 4 + ParamId`, followed by four meter outputs (GR, output peak,
   input peak, output VU).
+- **Presets** — 33 factory presets, grouped into six banks. They are visible in
+  the plugin's own browser and in LV2 host preset menus (Ardour, REAPER).
+
+The plugin URI (`https://github.com/tylorismusic-commits/comp-suite`) is part
+of the saved-session format. **Do not rename the repository or the GitHub
+account**: every existing session would lose its plugin state.
 
 ## Building
 
 Requires CMake 3.16+, a C++17 compiler, and the Cairo, FreeType, and X11
-development packages.
+development packages. `lilv` (for the LV2 host test), `xvfb-run` and
+`libxtst` are optional but recommended.
 
 ```sh
 cmake -S . -B build
 cmake --build build -j
-cd build && ctest      # DSP, geometry, CLAP host and LV2 host
+cd build && ctest      # DSP, geometry, CLAP host, LV2 host, LV2 UI, metadata
 ```
 
-Install for the current user:
+Install for the current user. `LV2_DIR` matters: `~/.local/lib/lv2` is **not**
+on the default LV2 search path, so set it at configure time (it is a cache
+variable, not an install-time flag).
 
 ```sh
-cmake --install build --prefix ~/.local   # optional, honours LV2/CLAP dirs
+cmake -S . -B build -DLV2_DIR="$HOME/.lv2" -DCLAP_DIR="$HOME/.clap"
+cmake --build build -j
+cmake --install build
+```
+
+Or copy the built bundles by hand:
+
+```sh
 cp -r build/clap/CompSuite.clap build/clap/CompSuite.resources ~/.clap/
 cp -r build/lv2/comp-suite.lv2 ~/.lv2/
 ```
 
-The plugin is `build/clap/CompSuite.clap`, with fonts in
-`build/clap/CompSuite.resources/`. Copy both into your CLAP directory.
+A release tarball with both bundles and a PKGBUILD is produced by:
+
+```sh
+cmake --build build --target dist
+```
 
 To render every faceplate to PNG without a host, optionally at a scale:
 
@@ -102,16 +123,20 @@ build/comp_ui_preview assets/fonts /tmp/out 1.5
   is full-on at any level and sounds synthetic. Clip is a soft ceiling.
   Measured THD at -18 dBFS: Off -58 dB, Dist 2 -20 dB, Dist 3 -22 dB,
   Clip -14 dB.
-- **Preset browser**: 31 factory presets in the header, grouped by use
+- **Preset browser**: 33 factory presets in the header, grouped by use
   (Vocals, Drums, Bass, Guitars, Parallel, Mix Bus) and tagged with the model
   they load. Click the name to open the list, arrows to step, wheel to scroll.
-- **Host support:** CLAP only. An LV2 build (for Ardour) is not included yet.
+  The same presets are exported as `pset:Preset` banks, so LV2 hosts list them
+  in their own preset menus.
+- **Host support:** CLAP and LV2. The LV2 build has preset banks, a resizable
+  X11 UI with the same 0.5×–2.5× range as the CLAP editor, and gain reduction
+  in Ardour's mixer strip.
 - **Editor:** X11 embedding, resizable from 0.5× to 2.5× (520×320 to
   2600×1600). The window always keeps the 1040:640 aspect ratio: sizes are
   snapped to 1/80 scale steps, which gives an exact ratio at every size.
   Hosts can request sizes freely; the plugin returns the nearest valid one.
-  Not yet included: preset menu, Compare/Copy/Paste, and the Side Chain /
-  Output tabs appear only on Xpress and VCA.
+  Not yet included: Compare/Copy/Paste, and the Side Chain / Output tabs
+  appear only on Xpress and VCA.
 - **Metering:** the GR, input, and output meters are in place. VU ballistics
   are simplified.
 - **Names:** "Comp Suite" is a placeholder. Hardware trademarks (1176, LA-2A,

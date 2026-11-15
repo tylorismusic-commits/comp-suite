@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(comp_suite VERSION 0.1.0 LANGUAGES CXX)
+project(comp_suite VERSION 0.2.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -13,6 +13,11 @@ enable_testing()
 
 set(CLAP_DIR "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/clap"
     CACHE PATH "Directory where CLAP bundles are installed")
+# The LV2 default search path does not include ~/.local/lib/lv2, so the
+# prefix-relative default is only correct for system installs.  For a
+# per-user install pass -DLV2_DIR=~/.lv2.
+set(LV2_DIR "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/lv2"
+    CACHE PATH "Directory where the LV2 bundle is installed")
 
 find_package(PkgConfig REQUIRED)
 find_package(Threads REQUIRED)
@@ -109,6 +114,16 @@ target_include_directories(comp_offline_render PRIVATE "${CMAKE_SOURCE_DIR}/src"
 target_compile_features(comp_offline_render PRIVATE cxx_std_17)
 
 # ---------------------------------------------------------------------------
+# Metadata generator: emits lv2/*.ttl from src/params.hpp and src/presets.hpp.
+# The test fails if the committed TTL files are stale.
+# ---------------------------------------------------------------------------
+add_executable(comp_ttl_gen tools/gen_ttl.cpp)
+target_include_directories(comp_ttl_gen PRIVATE "${CMAKE_SOURCE_DIR}/src")
+target_compile_features(comp_ttl_gen PRIVATE cxx_std_17)
+add_test(NAME comp_ttl
+  COMMAND comp_ttl_gen --check --root "${CMAKE_SOURCE_DIR}")
+
+# ---------------------------------------------------------------------------
 # LV2 build: same DSP and panel as the CLAP, exposed as an LV2 plugin + X11 UI.
 # ---------------------------------------------------------------------------
 pkg_check_modules(LILV QUIET IMPORTED_TARGET lilv-0)
@@ -141,19 +156,31 @@ add_custom_target(comp_suite_lv2_bundle ALL
   COMMAND ${CMAKE_COMMAND} -E copy_if_different
           "${CMAKE_SOURCE_DIR}/lv2/manifest.ttl"
           "${CMAKE_SOURCE_DIR}/lv2/comp_suite.ttl"
+          "${CMAKE_SOURCE_DIR}/lv2/presets.ttl"
           "${CMAKE_SOURCE_DIR}/assets/fonts/Jost-ExtraBold.ttf"
           "${CMAKE_SOURCE_DIR}/assets/fonts/OFL.txt"
           "${LV2_BUNDLE_DIR}/"
   DEPENDS comp_suite_lv2 comp_suite_lv2_ui)
 
+# Release tarball: both bundles, ready to drop into ~/.lv2 and ~/.clap.
+add_custom_target(dist
+  COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/dist"
+  COMMAND ${CMAKE_COMMAND} -E tar czf
+          "${CMAKE_BINARY_DIR}/dist/comp-suite-${PROJECT_VERSION}-linux-x86_64.tar.gz"
+          lv2/comp-suite.lv2 clap/CompSuite.clap clap/CompSuite.resources
+  WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
+  DEPENDS comp_suite_lv2_bundle comp_suite_bundle
+  COMMENT "Packing comp-suite-${PROJECT_VERSION}")
+
 install(TARGETS comp_suite_lv2 comp_suite_lv2_ui
-        LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}/lv2/comp-suite.lv2")
+        LIBRARY DESTINATION "${LV2_DIR}/comp-suite.lv2")
 install(FILES
   lv2/manifest.ttl
   lv2/comp_suite.ttl
+  lv2/presets.ttl
   assets/fonts/Jost-ExtraBold.ttf
   assets/fonts/OFL.txt
-  DESTINATION "${CMAKE_INSTALL_LIBDIR}/lv2/comp-suite.lv2")
+  DESTINATION "${LV2_DIR}/comp-suite.lv2")
 
 if(LILV_FOUND)
   add_executable(comp_lv2_host_test test/lv2_host_test.cpp)
@@ -163,4 +190,22 @@ if(LILV_FOUND)
   add_dependencies(comp_lv2_host_test comp_suite_lv2_bundle)
   add_test(NAME comp_lv2_host
     COMMAND comp_lv2_host_test "${LV2_BUNDLE_DIR}")
+endif()
+
+# The UI is loaded directly (no suil) so the test can drive the idle
+# interface and the resize handshake itself.
+add_executable(comp_lv2_ui_host_test test/lv2_ui_host_test.cpp)
+target_include_directories(comp_lv2_ui_host_test PRIVATE
+  "${CMAKE_SOURCE_DIR}/src" ${PKG_CONFIG_LV2_INCLUDE_DIRS})
+target_link_libraries(comp_lv2_ui_host_test PRIVATE
+  PkgConfig::X11 ${CMAKE_DL_LIBS})
+target_compile_features(comp_lv2_ui_host_test PRIVATE cxx_std_17)
+add_dependencies(comp_lv2_ui_host_test comp_suite_lv2_bundle)
+if(XVFB_RUN)
+  add_test(NAME comp_lv2_ui_host
+    COMMAND "${XVFB_RUN}" -a -s "-screen 0 1600x1000x24"
+      "$<TARGET_FILE:comp_lv2_ui_host_test>" "${LV2_BUNDLE_DIR}")
+else()
+  add_test(NAME comp_lv2_ui_host
+    COMMAND comp_lv2_ui_host_test "${LV2_BUNDLE_DIR}")
 endif()

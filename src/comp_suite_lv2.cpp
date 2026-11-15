@@ -12,6 +12,7 @@
 #include <memory>
 
 #include "dsp/engine.hpp"
+#include "dsp/inline_display.hpp"
 #include "params.hpp"
 
 namespace {
@@ -50,15 +51,28 @@ struct Plugin {
   float* outPeak = nullptr;
   float* inPeak = nullptr;
   float* outVu = nullptr;
+
+  comp::InlineDisplay display;
+  const comp::InlineDisplayQueueDraw* queueDraw = nullptr;
+  uint32_t drawCounter = 0;
 };
 
 LV2_Handle instantiate(const LV2_Descriptor*, double rate, const char*,
-                       const LV2_Feature* const*) {
+                       const LV2_Feature* const* features) {
   auto* p = new Plugin();
   p->sampleRate = static_cast<float>(rate);
   p->engine.prepare(p->sampleRate);
   // Start from the defaults already in Shared.
   p->engine.setControls(comp::controlsFrom(p->shared));
+
+  // Ardour's mixer-strip gain-reduction display.
+  for (const LV2_Feature* const* f = features; f && *f; ++f) {
+    if (!std::strcmp((*f)->URI, comp::kInlineDisplayQueueDrawURI) &&
+        (*f)->data) {
+      p->queueDraw = static_cast<const comp::InlineDisplayQueueDraw*>(
+          static_cast<const void*>((*f)->data));
+    }
+  }
   return p;
 }
 
@@ -147,11 +161,33 @@ void run(LV2_Handle handle, uint32_t frames) {
   if (p->outVu) {
     *p->outVu = p->meters.outVuDb;
   }
+
+  // Feed the Ardour mixer-strip display.  The render itself happens on the
+  // host's GUI thread; the audio thread only publishes a number and asks for
+  // a redraw every 32 blocks.
+  p->display.setGainReductionDb(p->meters.grDb);
+  if (p->queueDraw && p->queueDraw->queue_draw &&
+      ((p->drawCounter++ & 31u) == 0u)) {
+    p->queueDraw->queue_draw(p->queueDraw->handle);
+  }
 }
 
 void cleanup(LV2_Handle handle) { delete static_cast<Plugin*>(handle); }
 
-const void* extensionData(const char*) { return nullptr; }
+comp::InlineDisplaySurface* renderInlineDisplay(void* instance, uint32_t width,
+                                                uint32_t height) {
+  auto* p = static_cast<Plugin*>(instance);
+  return p ? p->display.render(width, height) : nullptr;
+}
+
+const comp::InlineDisplayInterface kInlineDisplay = {&renderInlineDisplay};
+
+const void* extensionData(const char* uri) {
+  if (uri && !std::strcmp(uri, comp::kInlineDisplayInterfaceURI)) {
+    return &kInlineDisplay;
+  }
+  return nullptr;
+}
 
 const LV2_Descriptor kDescriptor = {
     kPluginUri, instantiate, connectPort, activate, run, deactivate,
