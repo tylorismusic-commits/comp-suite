@@ -23,7 +23,7 @@
     doap:homepage <https://github.com/tylorismusic-commits/comp-suite> ;
     lv2:majorVersion 0 ;
     lv2:minorVersion 4 ;
-    lv2:microVersion 3 ;
+    lv2:microVersion 4 ;
     lv2:binary <comp_suite.so> ;
     rdfs:seeAlso <manifest.ttl> ;
     ui:ui <https://github.com/tylorismusic-commits/comp-suite#ui> ;
@@ -316,8 +316,8 @@
     [
         a lv2:OutputPort , lv2:ControlPort ;
         lv2:index 27 ;
-        lv2:symbol "out_peak" ;
-        lv2:name "Output Peak" ;
+        lv2:symbol "out_peak_l" ;
+        lv2:name "Output Peak Left" ;
         lv2:default 0 ;
         lv2:minimum -120 ;
         lv2:maximum 24 ;
@@ -328,8 +328,8 @@
     [
         a lv2:OutputPort , lv2:ControlPort ;
         lv2:index 28 ;
-        lv2:symbol "in_peak" ;
-        lv2:name "Input Peak" ;
+        lv2:symbol "out_peak_r" ;
+        lv2:name "Output Peak Right" ;
         lv2:default 0 ;
         lv2:minimum -120 ;
         lv2:maximum 24 ;
@@ -340,6 +340,30 @@
     [
         a lv2:OutputPort , lv2:ControlPort ;
         lv2:index 29 ;
+        lv2:symbol "in_peak_l" ;
+        lv2:name "Input Peak Left" ;
+        lv2:default 0 ;
+        lv2:minimum -120 ;
+        lv2:maximum 24 ;
+        units:unit units:db ;
+        lv2:portProperty pprops:notOnGUI ;
+        pg:group <https://github.com/tylorismusic-commits/comp-suite#meter> ;
+    ] ,
+    [
+        a lv2:OutputPort , lv2:ControlPort ;
+        lv2:index 30 ;
+        lv2:symbol "in_peak_r" ;
+        lv2:name "Input Peak Right" ;
+        lv2:default 0 ;
+        lv2:minimum -120 ;
+        lv2:maximum 24 ;
+        units:unit units:db ;
+        lv2:portProperty pprops:notOnGUI ;
+        pg:group <https://github.com/tylorismusic-commits/comp-suite#meter> ;
+    ] ,
+    [
+        a lv2:OutputPort , lv2:ControlPort ;
+        lv2:index 31 ;
         lv2:symbol "out_vu" ;
         lv2:name "Output VU" ;
         lv2:default 0 ;

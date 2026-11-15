@@ -43,7 +43,7 @@ constexpr const char* kPluginBinary = "comp_suite.so";
 constexpr const char* kUiBinary = "comp_suite_ui.so";
 constexpr int kVersionMajor = 0;
 constexpr int kVersionMinor = 4;
-constexpr int kVersionMicro = 3;  // LV2 has major/minor/micro, no patch
+constexpr int kVersionMicro = 4;  // LV2 has major/minor/micro, no patch
 
 // The meter outputs are not parameters: they exist only in the LV2 port list,
 // after the control ports.
@@ -54,8 +54,10 @@ struct MeterPort {
 
 constexpr MeterPort kMeters[] = {
     {"gr_meter", "Gain Reduction"},
-    {"out_peak", "Output Peak"},
-    {"in_peak", "Input Peak"},
+    {"out_peak_l", "Output Peak Left"},
+    {"out_peak_r", "Output Peak Right"},
+    {"in_peak_l", "Input Peak Left"},
+    {"in_peak_r", "Input Peak Right"},
     {"out_vu", "Output VU"},
 };
 

@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.4.4 — 2026-11-15
+
+### Changed
+
+- **Stereo level meters.** Input and output are now drawn as L/R pairs instead
+  of a single mono bar. The engine publishes per-channel peaks, CLAP forwards
+  them to the editor, and the LV2 build exposes `in_peak_l`, `in_peak_r`,
+  `out_peak_l` and `out_peak_r` output ports in place of the mono
+  `in_peak`/`out_peak`.
+- **Side Chain / Output tabs moved** out of the output meter's scale numbers.
+  They now sit in the gap between the gain-reduction LEDs and the meter scale:
+  x 776-932 at the same height.
+
+### Note
+
+- The LV2 meter ports changed symbol. Meter outputs carry no session state, so
+  saved sessions are unaffected; a host that had explicitly bound the old
+  `in_peak`/`out_peak` ports would need to re-scan.
+
 ## 0.4.3 — 2026-11-15
 
 ### Changed

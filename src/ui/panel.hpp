@@ -28,6 +28,10 @@ struct PanelState {
   int grHead = 0;
   float inLevel = 0.0f;
   float outLevel = 0.0f;
+  float inLevelL = 0.0f;
+  float inLevelR = 0.0f;
+  float outLevelL = 0.0f;
+  float outLevelR = 0.0f;
   float outPeakHold = 0.0f;
 };
 
@@ -116,7 +120,8 @@ private:
                  int model) const;
   void drawLeds(cairo_t* cr, const Shared& shared) const;
   void drawLevelMeter(cairo_t* cr, double x, double y, double w, double h,
-                      double db, double minDb, double maxDb, int model) const;
+                      double dbL, double dbR, double minDb, double maxDb,
+                      int model, bool labelsRight) const;
   void drawWidget(cairo_t* cr, const Widget& w, const Shared& shared,
                   const PanelState& state, int model) const;
   void drawKnob(cairo_t* cr, const Widget& w, double value, int model) const;

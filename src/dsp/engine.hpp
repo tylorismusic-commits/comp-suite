@@ -89,6 +89,10 @@ public:
     float peak = 0.0f;
     float grMax = 0.0f;
     float inPeak = 0.0f;
+    float outPeakL = 0.0f;
+    float outPeakR = 0.0f;
+    float inPeakL = 0.0f;
+    float inPeakR = 0.0f;
     for (int i = 0; i < frames; ++i) {
       const float dryL = left[i];
       const float dryR = right[i];
@@ -160,12 +164,20 @@ public:
       grMax = std::max(grMax, gr);
       peak = std::max(peak, std::max(std::fabs(outL), std::fabs(outR)));
       inPeak = std::max(inPeak, std::max(std::fabs(dryL), std::fabs(dryR)));
+      outPeakL = std::max(outPeakL, std::fabs(outL));
+      outPeakR = std::max(outPeakR, std::fabs(outR));
+      inPeakL = std::max(inPeakL, std::fabs(dryL));
+      inPeakR = std::max(inPeakR, std::fabs(dryR));
       const float power = 0.5f * (outL * outL + outR * outR);
       vuPower_ = vuCoeff_ * vuPower_ + (1.0f - vuCoeff_) * power;
     }
     meters.grDb = grMax;
     meters.outPeakDb = gainToDb(peak);
     meters.inPeakDb = gainToDb(inPeak);
+    meters.outPeakLDb = gainToDb(outPeakL);
+    meters.outPeakRDb = gainToDb(outPeakR);
+    meters.inPeakLDb = gainToDb(inPeakL);
+    meters.inPeakRDb = gainToDb(inPeakR);
     meters.outVuDb = gainToDb(std::sqrt(vuPower_)) + 18.0f;
   }
 

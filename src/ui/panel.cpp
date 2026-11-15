@@ -527,12 +527,14 @@ void Panel::layout(const Shared& shared, const PanelState& state) {
   }
 
   if (hasSideChain(model)) {
-    const double pageW = 88;
+    // Narrow and placed in the gap between the LED column (which ends at 770)
+    // and the output meter's numbers (which start around 960).
+    const double pageW = 76;
     for (int i = 0; i < 2; ++i) {
       Widget t{};
       t.kind = Kind::PageTab;
       t.value = i;
-      t.x = 800 + i * (pageW + 4);
+      t.x = 776 + i * (pageW + 4);
       t.y = 136;
       t.w = pageW;
       t.h = 24;
@@ -706,6 +708,10 @@ void Panel::tick(const Shared& shared, PanelState& state) const {
 
   state.inLevel = shared.inPeakDb.load(std::memory_order_relaxed);
   state.outLevel = shared.outPeakDb.load(std::memory_order_relaxed);
+  state.inLevelL = shared.inPeakLDb.load(std::memory_order_relaxed);
+  state.inLevelR = shared.inPeakRDb.load(std::memory_order_relaxed);
+  state.outLevelL = shared.outPeakLDb.load(std::memory_order_relaxed);
+  state.outLevelR = shared.outPeakRDb.load(std::memory_order_relaxed);
   state.outPeakHold = std::max(state.outPeakHold - 0.2f, state.outLevel);
 }
 
@@ -727,8 +733,10 @@ void Panel::draw(cairo_t* cr, const Shared& shared, const PanelState& state) {
   drawLeds(cr, shared);
 
   // Input and output level meters, as in the Logic reference.
-  drawLevelMeter(cr, 28, 150, 16, 352, state.inLevel, -60.0, 0.0, model);
-  drawLevelMeter(cr, 1000, 150, 16, 352, state.outLevel, -60.0, 3.0, model);
+  drawLevelMeter(cr, 28, 150, 16, 352, state.inLevelL, state.inLevelR, -60.0,
+                 0.0, model, true);
+  drawLevelMeter(cr, 986, 150, 16, 352, state.outLevelL, state.outLevelR,
+                 -60.0, 3.0, model, false);
 
   for (const Widget& w : widgets_) {
     drawWidget(cr, w, shared, state, model);
@@ -1135,20 +1143,27 @@ void Panel::drawLeds(cairo_t* cr, const Shared& shared) const {
 }
 
 void Panel::drawLevelMeter(cairo_t* cr, double x, double y, double w, double h,
-                           double db, double minDb, double maxDb, int model) const {
+                           double dbL, double dbR, double minDb, double maxDb,
+                           int model, bool labelsRight) const {
   const Skin skin = skinFor(model);
-  // Inset well, as in the reference layout: a dark recess with a hairline.
-  cairo_rectangle(cr, x, y, w, h);
-  cairo_set_source_rgb(cr, 0.055, 0.055, 0.06);
-  cairo_fill(cr);
-  cairo_set_line_width(cr, 1.0);
-  cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.65);
-  cairo_rectangle(cr, x + 0.5, y + 0.5, w - 1, h - 1);
-  cairo_stroke(cr);
+  const double gap = 4.0;
+  const double pairWidth = w * 2.0 + gap;
+  const double outer = labelsRight ? x + pairWidth : x;
 
-  // Scale ticks and labels beside the meter.
+  // Two wells, one per channel, in a shared recess.
+  for (int ch = 0; ch < 2; ++ch) {
+    const double bx = x + ch * (w + gap);
+    cairo_rectangle(cr, bx, y, w, h);
+    cairo_set_source_rgb(cr, 0.055, 0.055, 0.06);
+    cairo_fill(cr);
+    cairo_set_line_width(cr, 1.0);
+    cairo_set_source_rgba(cr, 0.0, 0.0, 0.0, 0.65);
+    cairo_rectangle(cr, bx + 0.5, y + 0.5, w - 1, h - 1);
+    cairo_stroke(cr);
+  }
+
+  // Scale ticks and labels beside the pair.
   static const double kMarks[] = {3, 0, -6, -12, -24, -36, -48};
-  const bool labelsRight = x < 60;
   for (double m : kMarks) {
     const double f = (m - minDb) / (maxDb - minDb);
     const double ty = y + h - h * f;
@@ -1157,27 +1172,35 @@ void Panel::drawLevelMeter(cairo_t* cr, double x, double y, double w, double h,
     }
     setRgb(cr, skin.legend, 0.55);
     cairo_set_line_width(cr, 1.0);
-    const double tx0 = labelsRight ? x + w : x - 4;
-    const double tx1 = labelsRight ? x + w + 4 : x;
+    const double tx0 = labelsRight ? outer : outer - 4;
+    const double tx1 = labelsRight ? outer + 4 : outer;
     cairo_move_to(cr, tx0, ty);
     cairo_line_to(cr, tx1, ty);
     cairo_stroke(cr);
     char buf[8];
     std::snprintf(buf, sizeof(buf), "%+.0f", m);
-    text(cr, buf, labelsRight ? x + w + 8 : x - 8, ty + 3, 9,
+    text(cr, buf, labelsRight ? outer + 8 : outer - 8, ty + 3, 9,
          labelsRight ? 0 : 2, skin.legend.r, skin.legend.g, skin.legend.b);
   }
-  const double f = clamp01((db - minDb) / (maxDb - minDb));
-  const double fh = h * f;
-  cairo_pattern_t* pat = cairo_pattern_create_linear(0, y + h, 0, y);
-  cairo_pattern_add_color_stop_rgb(pat, 0.0, 0.24, 0.48, 0.62);
-  cairo_pattern_add_color_stop_rgb(pat, 0.82, 0.42, 0.70, 0.82);
-  cairo_pattern_add_color_stop_rgb(pat, 0.96, 0.93, 0.86, 0.55);
-  cairo_pattern_add_color_stop_rgb(pat, 1.0, 0.95, 0.35, 0.28);
-  cairo_rectangle(cr, x, y + h - fh, w, fh);
-  cairo_set_source(cr, pat);
-  cairo_fill(cr);
-  cairo_pattern_destroy(pat);
+
+  const double levels[2] = {dbL, dbR};
+  for (int ch = 0; ch < 2; ++ch) {
+    const double f = clamp01((levels[ch] - minDb) / (maxDb - minDb));
+    const double fh = h * f;
+    if (fh <= 0.5) {
+      continue;
+    }
+    const double bx = x + ch * (w + gap);
+    cairo_pattern_t* pat = cairo_pattern_create_linear(0, y + h, 0, y);
+    cairo_pattern_add_color_stop_rgb(pat, 0.0, 0.24, 0.48, 0.62);
+    cairo_pattern_add_color_stop_rgb(pat, 0.82, 0.42, 0.70, 0.82);
+    cairo_pattern_add_color_stop_rgb(pat, 0.96, 0.93, 0.86, 0.55);
+    cairo_pattern_add_color_stop_rgb(pat, 1.0, 0.95, 0.35, 0.28);
+    cairo_rectangle(cr, bx, y + h - fh, w, fh);
+    cairo_set_source(cr, pat);
+    cairo_fill(cr);
+    cairo_pattern_destroy(pat);
+  }
 }
 
 void Panel::drawWidget(cairo_t* cr, const Widget& w, const Shared& shared,

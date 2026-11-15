@@ -31,8 +31,10 @@ enum Port : uint32_t {
   PORT_SC_IN_L = PORT_FIRST_PARAM + comp::P_COUNT,
   PORT_SC_IN_R,
   PORT_GR_METER,
-  PORT_OUT_PEAK,
-  PORT_IN_PEAK,
+  PORT_OUT_PEAK_L,
+  PORT_OUT_PEAK_R,
+  PORT_IN_PEAK_L,
+  PORT_IN_PEAK_R,
   PORT_OUT_VU,
   PORT_COUNT
 };
@@ -54,8 +56,10 @@ struct Plugin {
   float* scInL = nullptr;
   float* scInR = nullptr;
   float* gr = nullptr;
-  float* outPeak = nullptr;
-  float* inPeak = nullptr;
+  float* outPeakL = nullptr;
+  float* outPeakR = nullptr;
+  float* inPeakL = nullptr;
+  float* inPeakR = nullptr;
   float* outVu = nullptr;
 
   comp::InlineDisplay display;
@@ -92,8 +96,10 @@ void connectPort(LV2_Handle handle, uint32_t port, void* data) {
     case PORT_SC_IN_L: p->scInL = static_cast<float*>(data); break;
     case PORT_SC_IN_R: p->scInR = static_cast<float*>(data); break;
     case PORT_GR_METER: p->gr = static_cast<float*>(data); break;
-    case PORT_OUT_PEAK: p->outPeak = static_cast<float*>(data); break;
-    case PORT_IN_PEAK: p->inPeak = static_cast<float*>(data); break;
+    case PORT_OUT_PEAK_L: p->outPeakL = static_cast<float*>(data); break;
+    case PORT_OUT_PEAK_R: p->outPeakR = static_cast<float*>(data); break;
+    case PORT_IN_PEAK_L: p->inPeakL = static_cast<float*>(data); break;
+    case PORT_IN_PEAK_R: p->inPeakR = static_cast<float*>(data); break;
     case PORT_OUT_VU: p->outVu = static_cast<float*>(data); break;
     default:
       // Control input: stash the pointer so run() can read it.
@@ -160,11 +166,17 @@ void run(LV2_Handle handle, uint32_t frames) {
   if (p->gr) {
     *p->gr = p->meters.grDb;
   }
-  if (p->outPeak) {
-    *p->outPeak = p->meters.outPeakDb;
+  if (p->outPeakL) {
+    *p->outPeakL = p->meters.outPeakLDb;
   }
-  if (p->inPeak) {
-    *p->inPeak = p->meters.inPeakDb;
+  if (p->outPeakR) {
+    *p->outPeakR = p->meters.outPeakRDb;
+  }
+  if (p->inPeakL) {
+    *p->inPeakL = p->meters.inPeakLDb;
+  }
+  if (p->inPeakR) {
+    *p->inPeakR = p->meters.inPeakRDb;
   }
   if (p->outVu) {
     *p->outVu = p->meters.outVuDb;

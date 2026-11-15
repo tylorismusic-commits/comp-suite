@@ -42,9 +42,14 @@ struct Controls {
 // Metering published by the engine, in dB or normalised units.
 struct Meters {
   float grDb = 0.0f;        // gain reduction, positive dB
-  float outPeakDb = -120.0f;
-  float outVuDb = -120.0f;  // averaged output for the VU needle
-  float inPeakDb = -120.0f;
+  float outPeakDb = -120.0f;  // louder of the two output channels
+  float outVuDb = -120.0f;    // averaged output for the VU needle
+  float inPeakDb = -120.0f;   // louder of the two input channels
+  // Per-channel levels, for stereo meters.
+  float outPeakLDb = -120.0f;
+  float outPeakRDb = -120.0f;
+  float inPeakLDb = -120.0f;
+  float inPeakRDb = -120.0f;
 };
 
 } // namespace comp

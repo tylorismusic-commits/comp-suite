@@ -913,6 +913,10 @@ clap_process_status pluginProcess(const clap_plugin_t* p, const clap_process_t* 
   s->shared.inPeakDb.store(s->meters.inPeakDb, std::memory_order_relaxed);
   s->shared.outPeakDb.store(s->meters.outPeakDb, std::memory_order_relaxed);
   s->shared.outVuDb.store(s->meters.outVuDb, std::memory_order_relaxed);
+  s->shared.inPeakLDb.store(s->meters.inPeakLDb, std::memory_order_relaxed);
+  s->shared.inPeakRDb.store(s->meters.inPeakRDb, std::memory_order_relaxed);
+  s->shared.outPeakLDb.store(s->meters.outPeakLDb, std::memory_order_relaxed);
+  s->shared.outPeakRDb.store(s->meters.outPeakRDb, std::memory_order_relaxed);
   return CLAP_PROCESS_CONTINUE;
 }
 

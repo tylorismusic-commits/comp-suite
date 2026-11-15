@@ -135,6 +135,10 @@ public:
     inPeakDb.store(-120.0f, std::memory_order_relaxed);
     outPeakDb.store(-120.0f, std::memory_order_relaxed);
     outVuDb.store(-120.0f, std::memory_order_relaxed);
+    inPeakLDb.store(-120.0f, std::memory_order_relaxed);
+    inPeakRDb.store(-120.0f, std::memory_order_relaxed);
+    outPeakLDb.store(-120.0f, std::memory_order_relaxed);
+    outPeakRDb.store(-120.0f, std::memory_order_relaxed);
   }
 
   double get(uint32_t p) const noexcept {
@@ -186,6 +190,10 @@ public:
   std::atomic<float> inPeakDb;
   std::atomic<float> outPeakDb;
   std::atomic<float> outVuDb;
+  std::atomic<float> inPeakLDb;
+  std::atomic<float> inPeakRDb;
+  std::atomic<float> outPeakLDb;
+  std::atomic<float> outPeakRDb;
 
 private:
   std::atomic<double> values_[P_COUNT];

@@ -63,7 +63,7 @@ int main(int argc, char** argv) {
   check(lilv_uis_size(uis) == 1, "one X11 UI declared");
 
   const uint32_t nPorts = lilv_plugin_get_num_ports(plugin);
-  const uint32_t expected = 4 + comp::P_COUNT + 2 + 4;
+  const uint32_t expected = 4 + comp::P_COUNT + 2 + 6;
   char portCountLabel[96];
   std::snprintf(portCountLabel, sizeof(portCountLabel),
                 "%u ports declared (%u expected: 4 audio + %u params + 4 "
