@@ -98,7 +98,7 @@ inline constexpr ParamSpec kParamSpecs[P_COUNT] = {
      labels(kMeterLabels)},
     {"limiter_on", "Limiter", "Limiter", 0.0, 1.0, 0.0, true, false, true,
      nullptr, {}},
-    {"limiter_threshold", "Limiter Threshold", "Limiter", 0.0, 1.0, 0.5, false,
+    {"limiter_threshold", "Limiter Threshold", "Limiter", 0.0, 1.0, 1.0, false,
      false, false, nullptr, {}},
 };
 

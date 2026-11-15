@@ -128,6 +128,8 @@ build/comp_ui_preview assets/fonts /tmp/out 1.5
   they load. Click the name to open the list, arrows to step, wheel to scroll.
   The same presets are exported as `pset:Preset` banks, so LV2 hosts list them
   in their own preset menus.
+- **Detector topology follows the hardware:** 76 Blue/Black and 2A/3A detect
+  in the feedback loop; the VCA is feed-forward. There is no switch.
 - **Host support:** CLAP and LV2. The LV2 build has preset banks, a resizable
   X11 UI (0.5×–2.5×, the host owns the exact size and the panel is letterboxed
   into it), and gain reduction in Ardour's mixer strip.

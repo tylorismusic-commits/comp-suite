@@ -121,7 +121,7 @@ int main() {
       Engine engine;
       engine.prepare(kSr);
       Controls c = baseControls(Model::Opto2A);
-      c.threshold = 0.7f;
+      c.threshold = 0.9f;
       return renderSine(engine, c, freq, -12.0f, 2.0f).peakGr;
     };
     const float low = grAt(40.0f);
@@ -131,7 +131,10 @@ int main() {
                   "2A ducks bass less than mid (40 Hz %.1f dB vs 1 kHz "
                   "%.1f dB)",
                   low, mid);
-    check(low < mid - 1.0f, label);
+    // Feedback narrows this differential relative to the feed-forward
+    // reference, so the guard is 0.5 dB rather than the 1 dB the structure
+    // shows on its own.
+    check(low < mid - 0.5f, label);
   }
 
   // Maximum peak reduction on a hot low sine: the cell must stay bounded.
@@ -192,6 +195,29 @@ int main() {
                   "3A releases faster than 2A (residual %.2f vs %.2f dB)", b,
                   a);
     check(b < a - 0.3f, label);
+  }
+
+  // A feedback detector is a closed loop: at maximum input, ratio and the
+  // fastest attack it must still settle rather than oscillate.
+  {
+    Engine engine;
+    engine.prepare(kSr);
+    Controls c = baseControls(Model::Blue76);
+    c.input = 1.0f;
+    c.ratio = 1.0f;   // ALL
+    c.attack = 0.0f;  // fastest
+    c.release = 0.0f;
+    const Render r = renderSine(engine, c, 40.0f, 0.0f, 3.0f);
+    float peak = 0.0f;
+    for (float v : r.left) {
+      peak = std::max(peak, std::fabs(v));
+    }
+    char label[144];
+    std::snprintf(label, sizeof(label),
+                  "76 feedback loop is stable at maximum settings (peak %.2f, "
+                  "GR %.1f dB)",
+                  peak, r.peakGr);
+    check(allFinite(r) && peak < 8.0f && r.peakGr > 3.0f, label);
   }
 
   // Peak reduction must increase reduction monotonically, and the control

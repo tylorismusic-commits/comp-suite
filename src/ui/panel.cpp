@@ -140,7 +140,7 @@ const char* const kScaleOutput76[] = {"0", "6", "12", "18", "24"};
 const char* const kScaleDistortion[] = {"OFF", "DIST 2", "DIST 3", "CLIP"};
 const char* const kScaleHpf[] = {"OFF", "40", "90", "190", "400"};
 const char* const kScaleMix[] = {"DRY", "", "", "", "COMP"};
-const char* const kScaleLimit[] = {"-24", "-12", "-6", "-3", "0"};
+const char* const kScaleLimit[] = {"-24", "-18", "-12", "-6", "0"};
 const char* const kScaleOutputGeneric[] = {"-12", "0", "+12"};
 
 const char* const kMeterLabelsGr[] = {"0", "2", "4", "6", "8", "10", "12", "14", "16", "18", "20"};

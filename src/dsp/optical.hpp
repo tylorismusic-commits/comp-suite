@@ -102,8 +102,13 @@ public:
     double levelMax = 0.0;
 
     for (int ch = 0; ch < 2; ++ch) {
+      // The cell sits inside the side-chain loop: the detector taps the output
+      // of the attenuator, not the input (one-sample implicit feedback).
+      const double detector = topology_ == Topology::Feedback
+                                  ? kFeedbackLoopGain * prevOut_[ch]
+                                  : x[ch];
       const double sc = scDip_[ch].process(
-          scHighShelf_[ch].process(scLowShelf_[ch].process(x[ch])));
+          scHighShelf_[ch].process(scLowShelf_[ch].process(detector)));
       sidechain_[ch] = sc;
       rms_[ch] += (sc * sc - rms_[ch]) * rmsK_;
       const double level = std::sqrt(std::max(rms_[ch], 0.0)) * 0.25 +
@@ -160,6 +165,9 @@ public:
 
     left = saturateStage(x[0], gain, deltaGain, makeup, outputGain);
     right = saturateStage(x[1], gain, deltaGain, makeup, outputGain);
+    // Tap for the next sample's detector: the cell output, before make-up.
+    prevOut_[0] = x[0] * gain;
+    prevOut_[1] = x[1] * gain;
 
     return static_cast<float>(-20.0 * std::log10(std::max(gain, 1e-6)));
   }
@@ -172,6 +180,7 @@ public:
       integrated_[ch].reset();
       rms_[ch] = 0.0;
       sidechain_[ch] = 0.0;
+      prevOut_[ch] = 0.0;
     }
     grFilter_ = 1.0;
     levelDirectLevel_ = 0.0;
@@ -263,6 +272,11 @@ private:
 
   double rms_[2] = {0.0, 0.0};
   double sidechain_[2] = {0.0, 0.0};
+  double prevOut_[2] = {0.0, 0.0};
+  Topology topology_ = Topology::Feedback;
+  // Loop-gain compensation: the detector taps the attenuated output, so the
+  // same control positions would otherwise reduce far less.
+  static constexpr double kFeedbackLoopGain = 3.0;
 
   double grFilter_ = 1.0;
   double levelDirectLevel_ = 0.0;

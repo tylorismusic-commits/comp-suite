@@ -105,7 +105,15 @@ public:
     const float inL = left * inputGain;
     const float inR = right * inputGain;
 
-    const float peak = std::max(std::fabs(inL), std::fabs(inR));
+    // The 1176 is a feedback compressor: the side-chain taps the output of
+    // the gain cell, not the input.  The detector therefore sees the already
+    // attenuated signal, which is where the unit's soft knee and its recovery
+    // shape come from.  The one-sample delay is the implicit loop.
+    const float detL =
+        topology_ == Topology::Feedback ? kFeedbackLoopGain * lastOutL_ : inL;
+    const float detR =
+        topology_ == Topology::Feedback ? kFeedbackLoopGain * lastOutR_ : inR;
+    const float peak = std::max(std::fabs(detL), std::fabs(detR));
     const bool blackDeep = variant_ == Variant::Black && grPrev_ > 6.0f;
     if (peak > env_) {
       env_ = attackCoeff_ * env_ + (1.0f - attackCoeff_) * peak;
@@ -139,8 +147,10 @@ public:
     const float fetDrive =
         2.2f + 3.2f * grNorm + ratioDrive + (allButtons_ ? allDrive : 0.0f);
 
-    left = processChannel(inL * gain, 0, fetDrive, drive) * outputGain_;
-    right = processChannel(inR * gain, 1, fetDrive, drive) * outputGain_;
+    lastOutL_ = processChannel(inL * gain, 0, fetDrive, drive);
+    lastOutR_ = processChannel(inR * gain, 1, fetDrive, drive);
+    left = lastOutL_ * outputGain_;
+    right = lastOutR_ * outputGain_;
     return std::max(grDb, 0.0f);
   }
 
@@ -153,6 +163,8 @@ public:
     }
     env_ = 0.0f;
     grPrev_ = 0.0f;
+    lastOutL_ = 0.0f;
+    lastOutR_ = 0.0f;
     gainSmooth_.reset(1.0f);
   }
 
@@ -185,6 +197,13 @@ private:
   float outputGain_ = 1.0f;
   float env_ = 0.0f;
   float grPrev_ = 0.0f;
+  float lastOutL_ = 0.0f;
+  float lastOutR_ = 0.0f;
+  Topology topology_ = Topology::Feedback;
+  // A feedback detector sees the attenuated output, so at the same knob
+  // position it would reduce far less than a feed-forward one.  This restores
+  // the operating point without changing what the ratio buttons mean.
+  static constexpr float kFeedbackLoopGain = 4.0f;
   OnePoleLP lpOut_[2];
   OnePoleLP dcLp_[2];
   Smoothed inputSmooth_;

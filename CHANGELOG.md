@@ -34,10 +34,34 @@ Measured in `comp_dsp_test`:
 - 2A and 3A differ in release tail: 1.13 dB vs 0.68 dB residual.
 - Maximum reduction on a hot 40 Hz sine stays bounded.
 
+### Feedback topology
+
+- **76 Blue/Black and 2A/3A now detect in the feedback loop**, as the hardware
+  does: the side-chain taps the output of the gain cell, not the input. That
+  changes the knee and the recovery shape, and it is the main reason a real
+  1176 sounds "thick" rather than "grabby". The VCA model stays feed-forward,
+  because the bus compressor it follows genuinely is.
+- A **loop-gain compensation** (×4 on the FET, ×3 on the optical) keeps the
+  control positions meaningful. Without it, a feedback detector sees the
+  attenuated output and reduces far less at the same setting.
+- No topology switch: it is a property of the model, not a user choice.
+- Tested stable at maximum input, ALL ratio and fastest attack on a 40 Hz
+  sine.
+
+### Limiter
+
+- **Limiter threshold now defaults to 0 dB** instead of −12 dB, so every model
+  and mode starts with the limiter fully open.
+- **Corrected the limiter threshold labels.** They were spaced −24 / −12 / −6
+  / −3 / 0 over a linear −24..0 dB mapping, so the knob read −6 where the
+  threshold was actually −12. They now read −24 / −18 / −12 / −6 / 0.
+
 ### Known
 
-- The 31 factory presets have not been retuned for the new optical response
-  yet. That is the next step of this release.
+- The 31 factory presets have not been retuned. This matters more now than
+  before P1: feedback changes how input level maps to gain reduction, so a
+  preset's level and amount will not match what it used to do. Retuning is the
+  next step of this release.
 - CPU for the optical models is ~2% of one core at 48 kHz stereo, up from
   ~0.6%, because the side-chain runs six filters and several transcendentals
   per sample. Optimisation is deferred to the 0.4.0 feature pass.
