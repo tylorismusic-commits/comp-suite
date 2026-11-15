@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.4.3 — 2026-11-15
+
+### Changed
+
+- **All 76 presets now start with Input at 50%** (the "24" mark). The previous
+  retune preserved each preset's gain reduction from v0.2.0, but those targets
+  were themselves too hot: presets opened already deep into compression with no
+  headroom, so the input knob had nowhere useful to go. Set by ear against drum
+  loops rather than against the old numbers.
+
+  Measured range after the change: 3.2-6.4 dB of reduction on a -6 dBFS tone and
+  7.2-12.2 dB at 0 dBFS, so the presets still differ from each other (Vocal
+  Gentle 3.2 vs Vocal Slam 6.4) while all leaving room to push.
+
+  The retune tool still targets -12 dBFS, which is fine for the other models but
+  reads as "no reduction" for the 76 at this input setting; the 76 presets are
+  now tuned by ear and only the engine's behaviour is regression-tested.
+
 ## 0.4.2 — 2026-11-15
 
 ### Fixed
