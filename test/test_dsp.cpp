@@ -564,6 +564,27 @@ int main() {
                   "Molot Alpha and Sigma differ (GR %.1f vs %.1f dB)",
                   dry.peakGr, sigma.peakGr);
     check(std::fabs(dry.peakGr - sigma.peakGr) > 0.5f, label);
+
+    // In M/S the saturator is bypassed, so the SAT DRIVE knob must not change
+    // the sound while Saturation is off.
+    const auto renderMs = [](float satDrive) {
+      Engine engine;
+      engine.prepare(kSr);
+      Controls c = baseControls(Model::Molot);
+      c.stereoMode = 4.0f;      // M/S
+      c.distortion = 0.0f;      // Saturation off
+      c.satDrive = satDrive;
+      return renderSine(engine, c, 500.0f, -6.0f, 1.5f);
+    };
+    const Render msLow = renderMs(0.0f);
+    const Render msHigh = renderMs(1.0f);
+    float maxDelta = 0.0f;
+    for (size_t i = msLow.left.size() / 2; i < msLow.left.size(); ++i) {
+      maxDelta = std::max(maxDelta, std::fabs(msLow.left[i] - msHigh.left[i]));
+    }
+    std::snprintf(label, sizeof(label),
+                  "Molot M/S bypasses saturation (max delta %.4f)", maxDelta);
+    check(maxDelta < 1.0e-4f, label);
   }
 
   // Peak reduction must increase reduction monotonically, and the control
@@ -607,21 +628,77 @@ int main() {
     const float expected = dbToGain(-6.0f) / std::sqrt(2.0f);
     check(std::fabs(rmsTail(r.left, 0.1f) - expected) < 0.01f,
           "disabled engine is transparent");
+    check(r.peakGr < 1.0e-6f, "disabled engine reports no reduction");
+
+    // Bypass must bypass the limiter too.
+    Engine limited;
+    limited.prepare(kSr);
+    Controls cl = c;
+    cl.limiterOn = true;
+    cl.limitThreshold = 0.0f;  // -24 dBFS, hard
+    const Render rl = renderSine(limited, cl, 100.0f, -6.0f, 0.5f);
+    check(std::fabs(rmsTail(rl.left, 0.1f) - expected) < 0.01f,
+          "limiter is bypassed with the engine");
+  }
+
+  // Below its ceiling the output limiter is transparent: it must not colour
+  // or attenuate a signal it is not limiting.
+  {
+    Engine engine;
+    engine.prepare(kSr);
+    Controls c = baseControls(Model::Clean);
+    c.threshold = 1.0f;      // no compression
+    c.limiterOn = true;
+    c.limitThreshold = 1.0f; // 0 dBFS ceiling
+    const Render r = renderSine(engine, c, 100.0f, -6.0f, 0.5f);
+    const float expected = dbToGain(-6.0f) / std::sqrt(2.0f);
+    char label[96];
+    std::snprintf(label, sizeof(label),
+                  "limiter is transparent below its ceiling (%.1f dB off)",
+                  gainToDb(rmsTail(r.left, 0.1f)) - gainToDb(expected));
+    check(std::fabs(rmsTail(r.left, 0.1f) - expected) < 0.01f, label);
   }
 
   // Every model's mix at 0% gives the dry signal back.
-  for (Model m : {Model::Blue76, Model::Black76, Model::Opto2A, Model::Opto3A,
-                  Model::Xpress, Model::Vca}) {
+  for (int m = 0; m < static_cast<int>(Model::Count); ++m) {
     Engine engine;
     engine.prepare(kSr);
-    Controls c = baseControls(m);
+    Controls c = baseControls(static_cast<Model>(m));
     c.mix = 0.0f;
     const Render r = renderSine(engine, c, 100.0f, -6.0f, 1.0f);
     const float expected = dbToGain(-6.0f) / std::sqrt(2.0f);
     char label[64];
-    std::snprintf(label, sizeof(label), "model %d mix 0%% is dry",
-                  static_cast<int>(m));
+    std::snprintf(label, sizeof(label), "model %d mix 0%% is dry", m);
     check(std::fabs(rmsTail(r.left, 0.1f) - expected) < 0.01f, label);
+  }
+
+  // A 50% mix must be exactly halfway between dry and wet.  Applying the
+  // blend inside a model as well as in the engine made the control quadratic.
+  for (int m = 0; m < static_cast<int>(Model::Count); ++m) {
+    auto renderAt = [&](float mix) {
+      Engine engine;
+      engine.prepare(kSr);
+      Controls c = baseControls(static_cast<Model>(m));
+      c.input = 0.75f;
+      c.threshold = 0.25f;
+      c.mix = mix;
+      return renderSine(engine, c, 100.0f, -6.0f, 0.8f);
+    };
+    const Render dry = renderAt(0.0f);
+    const Render wet = renderAt(1.0f);
+    const Render half = renderAt(0.5f);
+    const size_t start = half.left.size() - static_cast<size_t>(0.2f * kSr);
+    bool linear = true;
+    for (size_t i = start; i < half.left.size(); ++i) {
+      const float want = 0.5f * dry.left[i] + 0.5f * wet.left[i];
+      if (std::fabs(half.left[i] - want) > 2.0e-4f) {
+        linear = false;
+        break;
+      }
+    }
+    char label[96];
+    std::snprintf(label, sizeof(label), "model %d mix is a single blend", m);
+    check(linear, label);
   }
 
   // Both 76 revisions have an all-buttons mode, and it compresses harder
@@ -656,7 +733,8 @@ int main() {
     bool ok = true;
     float maxAbs = 0.0f;
     for (int round = 0; round < 60; ++round) {
-      Controls c = baseControls(static_cast<Model>(round % 6));
+      Controls c = baseControls(
+          static_cast<Model>(round % static_cast<int>(Model::Count)));
       c.input = 0.9f;
       engine.setControls(c);
       for (int block = 0; block < 4; ++block) {
@@ -676,6 +754,62 @@ int main() {
     std::snprintf(label, sizeof(label),
                   "model switching stays finite and bounded (peak %.1f)", maxAbs);
     check(ok && maxAbs < 8.0f, label);
+  }
+
+  // Easy's Side Chain HPF overrides the Drum Type default; it used to be
+  // drawn but never read by the DSP.
+  {
+    const auto grWithHpf = [](float hpf) {
+      Engine engine;
+      engine.prepare(kSr);
+      Controls c = baseControls(Model::Easy);
+      c.threshold = 0.45f;
+      c.drumType = 0.0f;   // Toms: 40 Hz detector high-pass
+      c.sidechainHpf = hpf;
+      return renderSine(engine, c, 60.0f, -6.0f, 1.5f).peakGr;
+    };
+    const float autoHz = grWithHpf(0.0f);
+    const float high = grWithHpf(1.0f);  // 400 Hz
+    char label[128];
+    std::snprintf(label, sizeof(label),
+                  "Easy side-chain HPF changes the detector (%.1f vs %.1f dB)",
+                  autoHz, high);
+    check(high < autoHz - 0.2f, label);
+  }
+
+  // A non-finite or absurd input sample must not poison the model state.
+  for (int m = 0; m < static_cast<int>(Model::Count); ++m) {
+    Engine engine;
+    engine.prepare(kSr);
+    Controls c = baseControls(static_cast<Model>(m));
+    c.input = 0.9f;
+    c.threshold = 0.2f;
+    engine.setControls(c);
+    Meters meters;
+    std::vector<float> l(256), r(256);
+    for (int i = 0; i < 256; ++i) {
+      l[i] = (i % 3 == 0) ? std::nanf("") : ((i % 3 == 1) ? INFINITY : 1.0e30f);
+      r[i] = -l[i];
+    }
+    engine.process(l.data(), r.data(), 256, meters);
+    bool ok = std::isfinite(meters.grDb) && std::isfinite(meters.outPeakDb);
+    // Then normal audio must still come through cleanly.
+    for (int block = 0; block < 20; ++block) {
+      for (int i = 0; i < 256; ++i) {
+        const float t = static_cast<float>(block * 256 + i) / kSr;
+        l[i] = r[i] = 0.3f * std::sin(2.0f * kPi * 220.0f * t);
+      }
+      engine.process(l.data(), r.data(), 256, meters);
+      for (int i = 0; i < 256; ++i) {
+        if (!std::isfinite(l[i]) || !std::isfinite(r[i])) {
+          ok = false;
+        }
+      }
+    }
+    char label[96];
+    std::snprintf(label, sizeof(label),
+                  "model %d survives non-finite input", m);
+    check(ok, label);
   }
 
   // With neutral settings and a quiet signal, every model passes audio at
@@ -756,6 +890,7 @@ int main() {
     engine.prepare(kSr);
     Controls c = baseControls(Model::Blue76);
     c.input = 0.8f;
+    engine.setControls(c);
     Meters meters;
     std::vector<float> l(256), r(256);
     std::vector<float> out;
@@ -813,6 +948,10 @@ int main() {
     check(sh.get(P_INPUT) == 1.0, "huge parameter clamps to range");
     sh.set(P_RATIO, 5.4);
     check(sh.get(P_RATIO) == 5.0, "stepped parameter rounds");
+    sh.setFromHost(P_RATIO, 5.6);
+    check(sh.get(P_RATIO) == 6.0, "stepped host parameter rounds");
+    sh.setFromHost(P_MODEL, 9.4);
+    check(sh.get(P_MODEL) == 9.0, "model value from host rounds");
     sh.set(P_MODEL, -7.0);
     check(sh.get(P_MODEL) == 0.0, "negative parameter clamps");
   }

@@ -24,14 +24,14 @@ enum class Model : int {
 struct Controls {
   int model = 0;
   bool enabled = true;      // power / compress on
-  float input = 0.0f;       // Input (76, Xpress) — drive
-  float threshold = 0.5f;   // 2A/3A Peak Reduction, VCA threshold, Xpress input drive
+  float input = 0.0f;       // Input gain (76, Xpress, Clean, Molot, Red, Easy)
+  float threshold = 0.5f;   // threshold, or 2A/3A Peak Reduction
   float ratio = 0.5f;       // 76: 4/8/12/20/all, Xpress: ratio steps, VCA: 2..10, 2A: Limit switch
   float attack = 0.5f;      // 76 steps 1..7, Xpress/VCA continuous
   float release = 0.5f;
-  float makeup = 0.5f;      // 2A/3A Gain, VCA makeup
+  float makeup = 0.5f;      // 2A/3A Gain, VCA/Clean/Molot/Red make-up
   float output = 0.5f;      // 76 and Xpress output, 2A output level switch
-  float mix = 1.0f;         // parallel blend (Xpress, VCA)
+  float mix = 1.0f;         // parallel blend, applied once by the engine
   float sidechainHpf = 0.0f;
   float distortion = 0.0f;  // Xpress: Off / Dist 2 / Dist 3 / Clip
   bool limiterOn = false;   // output limiter, as in the reference suite
@@ -48,7 +48,7 @@ struct Controls {
   float beef = 0.35f;              // Easy: low end into the compressor
   float air = 0.2f;                // Easy: top end after the compressor
   float drumType = 2.0f;           // Easy: 0 Toms .. 5 Parallel
-  float easyMode = 0.0f;           // Easy: 0 Smash, 1 Grab
+  float easyMode = 0.0f;           // Easy: 0 Squish, 1 Lift
   float easyChar = 0.0f;           // Easy: 0 Normal, 1 Extreme
   float satType = 1.0f;            // Easy: 0 Soft, 1 Tape, 2 Hard
 };

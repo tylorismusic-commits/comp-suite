@@ -20,7 +20,6 @@ public:
     sr_ = sampleRate;
     for (int ch = 0; ch < 2; ++ch) {
       sidechain_[ch].reset();
-      shaper_[ch].reset();
     }
     inputSmooth_.setTime(25.0f, sr_);
     inputSmooth_.reset(dbToGain(-80.0f));
@@ -111,7 +110,6 @@ public:
   void reset() noexcept {
     for (int ch = 0; ch < 2; ++ch) {
       sidechain_[ch].reset();
-      shaper_[ch].reset();
       dcLp_[ch].reset();
     }
     env_ = 0.0f;
@@ -156,7 +154,6 @@ private:
   bool sidechainOn_ = false;
   float env_ = 0.0f;
   HighPass2 sidechain_[2];
-  AsymShaper shaper_[2];
   OnePoleLP dcLp_[2];
   Smoothed inputSmooth_;
 };

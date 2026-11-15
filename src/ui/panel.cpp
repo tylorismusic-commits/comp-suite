@@ -190,7 +190,6 @@ std::vector<const char*> sc(const char* const (&labels)[N]) {
 
 const char* const kScaleStep7[] = {"1", "2", "3", "4", "5", "6", "7"};
 const char* const kScaleThreshold[] = {"-40", "-30", "-20", "-10", "0"};
-const char* const kScaleRatio[] = {"1.5", "2", "3", "4", "6", "8", "12", "20", "ALL"};
 const char* const kScaleRatioNoAll[] = {"1.5", "2", "3", "4", "6", "8", "12", "20"};
 // The Red only has six ratios; the shared ladder snaps to the nearest.
 const char* const kScaleRatioRed[] = {"1.5", "2", "3", "5", "7", "10"};
@@ -208,7 +207,22 @@ const char* const kScaleInputXp[] = {"0", "10", "20", "30", "40"};
 const char* const kScaleAttackXp[] = {"0.1", "1", "10", "50 ms"};
 const char* const kScaleReleaseXp[] = {"50 ms", "0.3 s", "1 s", "3 s"};
 const char* const kScaleInput76[] = {"0", "12", "24", "36", "48"};
-const char* const kScaleOutput76[] = {"0", "6", "12", "18", "24"};
+const char* const kScaleOutput76[] = {"-12", "0", "+12"};
+const char* const kScaleInput18[] = {"-18", "0", "+18"};
+// Clean's input and output trims are wider than the other models'.
+const char* const kScale30[] = {"-30", "0", "+30"};
+// Clean's time constants span a wider range than the VCA's.
+const char* const kScaleAttackClean[] = {"0.1", "0.7", "3", "18", "200"};
+const char* const kScaleReleaseClean[] = {"5 ms", "30", "160", "900", "5 s"};
+// Molot's attack is linear in milliseconds, release linear too.
+const char* const kScaleAttackMolot[] = {"1", "26", "50", "75", "100"};
+const char* const kScaleReleaseMolot[] = {"50 ms", "0.3 s", "0.5 s", "0.8 s",
+                                          "1 s"};
+// Red's attack and release run longer than the VCA's.
+const char* const kScaleAttackRed[] = {"0.3", "1.2", "5", "22", "90"};
+const char* const kScaleReleaseRed[] = {"100 ms", "0.25 s", "0.6 s", "1.6 s",
+                                        "4 s"};
+const char* const kScaleHpfEasy[] = {"AUTO", "40", "90", "190", "400"};
 const char* const kScaleDistortion[] = {"OFF", "DIST 2", "DIST 3", "CLIP"};
 const char* const kScaleHpf[] = {"OFF", "40", "90", "190", "400"};
 const char* const kScaleMix[] = {"DRY", "", "", "", "COMP"};
@@ -418,6 +432,12 @@ void Panel::layout(const Shared& shared, const PanelState& state) {
                                       "Xpress", "VCA",     "Clean", "Molot",
                                       "Red",    "Easy"};
   static const int kTabOrder[10] = {6, 9, 0, 1, 2, 3, 4, 5, 7, 8};
+  static_assert(sizeof(kTabNames) / sizeof(kTabNames[0]) ==
+                    static_cast<size_t>(comp::Model::Count),
+                "tab names must cover every model");
+  static_assert(sizeof(kTabOrder) / sizeof(kTabOrder[0]) ==
+                    static_cast<size_t>(comp::Model::Count),
+                "tab order must cover every model");
   const int tabCount = static_cast<int>(comp::Model::Count);
   const double tabW = (980.0 - (tabCount - 1) * 8.0) / tabCount;
   for (int i = 0; i < tabCount; ++i) {
@@ -527,7 +547,7 @@ void Panel::layout(const Shared& shared, const PanelState& state) {
       toggle(P_RATIO, 400, 430, 8.0, "LIMIT", "COMP");
       knob(P_MAKEUP, 560, 446, 34, "GAIN", sc(kScaleGain));
       knob(P_MIX, 796, 508, 25, "MIX", sc(kScaleMix), true);
-      toggle(P_OUTPUT, 930, 470, 0.0, "+10", "+4");
+      toggle(P_OUTPUT, 930, 470, 0.0, "+6", "0");
       break;
     }
     case kOpto3A: {
@@ -570,13 +590,14 @@ void Panel::layout(const Shared& shared, const PanelState& state) {
       knob(P_DRUM_TYPE, 800, 420, 24, "DRUM TYPE", sc(kScaleDrumType), false,
            0, 1.56);
       knob(P_SAT_TYPE, 620, 552, 26, "SAT TYPE", sc(kScaleSatType));
-      knob(P_INPUT, 120, 520, 26, "INPUT", sc(kScaleOutputGeneric), true);
+      knob(P_INPUT, 120, 520, 26, "INPUT", sc(kScaleInput18), true);
       knob(P_MIX, 796, 508, 25, "MIX", sc(kScaleMix), true);
       knob(P_OUTPUT, 912, 500, 27, "OUTPUT", sc(kScaleOutputGeneric));
       toggle(P_EASY_MODE, 320, 515, 1.0, "LIFT", "SQUISH");
       toggle(P_EASY_CHAR, 480, 515, 1.0, "EXTREME", "NORMAL");
       if (state.rightPage == 0) {
-        knob(P_SC_HPF, 888, 260, 34, "SIDE CHAIN HPF", sc(kScaleHpf));
+        // Auto follows the Drum Type high-pass; moving it overrides it.
+        knob(P_SC_HPF, 888, 260, 34, "SIDE CHAIN HPF", sc(kScaleHpfEasy));
       }
       break;
     }
@@ -585,9 +606,9 @@ void Panel::layout(const Shared& shared, const PanelState& state) {
       knob(P_RATIO, 400, 424, 34, "RATIO", sc(kScaleRatioRed), false, 6);
       knob(P_MAKEUP, 560, 424, 34, "MAKE UP", sc(kScaleMakeupVca));
       knob(P_KNEE, 700, 424, 26, "KNEE", {});
-      knob(P_ATTACK, 320, 552, 30, "ATTACK", sc(kScaleAttackVca));
-      knob(P_RELEASE, 480, 552, 30, "RELEASE", sc(kScaleReleaseVca));
-      knob(P_INPUT, 120, 520, 26, "INPUT GAIN", sc(kScaleOutputGeneric), true);
+      knob(P_ATTACK, 320, 552, 30, "ATTACK", sc(kScaleAttackRed));
+      knob(P_RELEASE, 480, 552, 30, "RELEASE", sc(kScaleReleaseRed));
+      knob(P_INPUT, 120, 520, 26, "INPUT GAIN", sc(kScaleInput18), true);
       knob(P_OUTPUT, 912, 500, 27, "OUTPUT", sc(kScaleOutputGeneric));
       toggle(P_VCA_AUTO, 700, 520, 1.0, "AUTO", "MAN");
       if (state.rightPage == 0) {
@@ -600,8 +621,8 @@ void Panel::layout(const Shared& shared, const PanelState& state) {
       knob(P_RATIO, 400, 424, 34, "RATIO", sc(kScaleRatioNoAll));
       knob(P_MAKEUP, 560, 424, 34, "MAKE UP", sc(kScaleOutputGeneric));
       knob(P_KNEE, 700, 424, 26, "KNEE", {});
-      knob(P_ATTACK, 320, 552, 30, "ATTACK", sc(kScaleAttackVca));
-      knob(P_RELEASE, 480, 552, 30, "RELEASE", sc(kScaleReleaseVca));
+      knob(P_ATTACK, 320, 552, 30, "ATTACK", sc(kScaleAttackMolot));
+      knob(P_RELEASE, 480, 552, 30, "RELEASE", sc(kScaleReleaseMolot));
       knob(P_INPUT, 120, 520, 26, "INPUT", sc(kScaleOutputGeneric), true);
       knob(P_SAT_DRIVE, 700, 520, 24, "SAT DRIVE", {});
       knob(P_MIX, 796, 508, 25, "DRY / WET", sc(kScaleMix), true);
@@ -610,7 +631,8 @@ void Panel::layout(const Shared& shared, const PanelState& state) {
       } else {
         toggle(P_DISTORTION, 830, 380, 1.0, "SAT", "OFF");
         toggle(P_ATTACK_MODE, 888, 380, 1.0, "SIGMA", "ALPHA");
-        knob(P_STEREO_MODE, 888, 530, 22, "STEREO", sc(kScaleStereo));
+        knob(P_STEREO_MODE, 888, 530, 22, "STEREO", sc(kScaleStereo), false,
+             0, 1.60);
       }
       break;
     }
@@ -619,9 +641,9 @@ void Panel::layout(const Shared& shared, const PanelState& state) {
       knob(P_RATIO, 400, 424, 34, "RATIO", sc(kScaleRatioNoAll));
       knob(P_MAKEUP, 560, 424, 34, "MAKE UP", sc(kScaleMakeupVca));
       knob(P_KNEE, 700, 424, 26, "KNEE", {});
-      knob(P_ATTACK, 320, 552, 30, "ATTACK", sc(kScaleAttackVca));
-      knob(P_RELEASE, 480, 552, 30, "RELEASE", sc(kScaleReleaseVca));
-      knob(P_INPUT, 120, 520, 26, "INPUT", sc(kScaleOutputGeneric), true);
+      knob(P_ATTACK, 320, 552, 30, "ATTACK", sc(kScaleAttackClean));
+      knob(P_RELEASE, 480, 552, 30, "RELEASE", sc(kScaleReleaseClean));
+      knob(P_INPUT, 120, 520, 26, "INPUT", sc(kScale30), true);
       if (state.rightPage == 0) {
         knob(P_SC_HPF, 888, 260, 34, "SIDE CHAIN HPF", sc(kScaleHpf));
       } else {
@@ -630,7 +652,7 @@ void Panel::layout(const Shared& shared, const PanelState& state) {
         button(P_DISTORTION, 826, 400, 60, 22, 2.0, "HARD");
         button(P_DISTORTION, 890, 400, 60, 22, 3.0, "CLIP");
         knob(P_MIX, 796, 508, 25, "MIX", sc(kScaleMix), true);
-        knob(P_OUTPUT, 912, 500, 27, "OUTPUT", sc(kScaleOutputGeneric));
+        knob(P_OUTPUT, 912, 500, 27, "OUTPUT", sc(kScale30));
       }
       break;
     }
@@ -1006,8 +1028,11 @@ void Panel::drawPresetList(cairo_t* cr, const Shared& shared,
            i == state.presetIndex ? 1.0 : 0.88,
            i == state.presetIndex ? 1.0 : 0.90);
       // Which unit this preset uses, so the list reads at a glance.
-      static const char* kModelShort[6] = {"76B", "76K", "2A", "3A", "XP", "VCA"};
-      text(cr, kModelShort[std::clamp(p.model, 0, 5)], kPresetX + kPresetW - 16,
+      static const char* kModelShort[10] = {"76B", "76K", "2A", "3A",  "XP",
+                                            "VCA", "CLN", "MOL", "RED", "EZY"};
+      text(cr, kModelShort[std::clamp(p.model, 0,
+                                      static_cast<int>(comp::Model::Count) - 1)],
+           kPresetX + kPresetW - 16,
            y + 15, 10.5, 2, 0.56, 0.60, 0.66);
     }
     y += kListRow;
@@ -1022,7 +1047,7 @@ void Panel::applyPreset(Shared& shared, PanelState& state, int index) const {
   const Preset& p = kPresets[index];
   shared.set(P_MODEL, p.model);
   for (const PresetValue& v : p.values) {
-    if (v.param >= 0) {
+    if (v.param >= 0 && v.param < static_cast<int>(P_COUNT)) {
       shared.set(static_cast<uint32_t>(v.param), v.value);
     }
   }
@@ -1166,7 +1191,7 @@ double curveTransferDb(int model, double inDb, const Shared& shared) {
                                     8.0, 12.0, 20.0, 20.0};
   const int step = std::clamp(
       static_cast<int>(std::lround(shared.get(P_RATIO))), 0, 8);
-  const double ratio = kRatios[step];
+  double ratio = kRatios[step];
   double slope = 1.0 - 1.0 / std::max(ratio, 1.0);
   switch (model) {
     case kBlue76:
@@ -1184,6 +1209,21 @@ double curveTransferDb(int model, double inDb, const Shared& shared) {
       threshold = -20.0;
       knee = 2.0;
       break;
+    case kEasy: {
+      const bool squish = shared.get(P_EASY_MODE) < 0.5;
+      ratio = squish ? 8.0 : 2.5;
+      knee = squish ? 3.0 : 9.0;
+      slope = 1.0 - 1.0 / ratio;
+      break;
+    }
+    case kRed: {
+      // Red's ratio control has six positions, and its knee tops out at 12 dB.
+      static const double kRedRatios[6] = {1.5, 2.0, 3.0, 5.0, 7.0, 10.0};
+      ratio = kRedRatios[std::clamp(step, 0, 5)];
+      slope = 1.0 - 1.0 / ratio;
+      knee = 12.0 * shared.get(P_KNEE);
+      break;
+    }
     default:
       break;
   }

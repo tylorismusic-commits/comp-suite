@@ -42,7 +42,6 @@ public:
     // The reference maps Attack Mode 0 (Alpha) to the sharp/exp curve.
     const bool sharp = c.attackMode < 0.5f;
     const double makeup = std::pow(10.0, (-12.0 + 24.0 * clampf(c.makeup, 0.0f, 1.0f)) / 20.0);
-    const double dry = 1.0 - clampf(c.mix, 0.0f, 1.0f);
     const double drive = -12.0 + 24.0 * clampf(c.satDrive, 0.0f, 1.0f);
     const double satThreshold = std::pow(10.0, (12.0 - drive) / 20.0);
 
@@ -84,7 +83,6 @@ public:
       Channel& comp = channels_[ch];
       comp.inGain = std::pow(10.0, inputDb / 20.0);
       comp.gain = makeup;
-      comp.dry = dry;
       comp.detectorFix = detectorFix;
       comp.useSat = satAllowed;
       comp.useScFlt = usePhon;
@@ -109,8 +107,8 @@ public:
     double sc1 = sc.active ? sc.left : x1;
     double sc2 = sc.active ? sc.right : x2;
 
-    double y1 = x1;
-    double y2 = x2;
+    double y1;
+    double y2;
     double gr = 1.0;
 
     switch (stereoMode_) {
@@ -164,8 +162,11 @@ public:
         const double s = (x1 - x2) * 0.5;
         const double ym = channels_[0].postprocess(m, env);
         const double ys = channels_[1].postprocess(s, env);
-        y1 = channels_[0].sat.process(ym + ys);
-        y2 = channels_[1].sat.process(ym - ys);
+        // Saturation is bypassed in M/S, as the comment on satAllowed says.
+        // Applying it here unconditionally coloured the signal even with the
+        // SAT switch off.
+        y1 = ym + ys;
+        y2 = ym - ys;
         gr = std::min(channels_[0].gr, channels_[1].gr);
         break;
       }
@@ -381,7 +382,6 @@ private:
     bool useScFlt = false;
     bool useSat = false;
     double gain = 1.0;
-    double dry = 0.0;
     double inGain = 1.0;
     double detectorFix = 1.0;
     double gr = 1.0;
@@ -399,7 +399,9 @@ private:
       if (useSat) {
         wet = sat.process(wet);
       }
-      return wet * gain * (1.0 - dry) + xDry * dry;
+      // Dry/wet is applied once, by the engine: doing it here as well made the
+      // mix control quadratic.
+      return wet * gain;
     }
 
     double process(double x, double sc) noexcept {

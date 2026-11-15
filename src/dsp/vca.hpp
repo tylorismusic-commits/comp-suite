@@ -21,7 +21,6 @@ public:
     for (auto& f : sidechain_) {
       f.reset();
     }
-    rmsPower_ = 0.0f;
     for (int ch = 0; ch < 2; ++ch) {
       env_[ch] = 0.0f;
       hold_[ch] = 0;
@@ -29,7 +28,6 @@ public:
     for (auto& sh : shaper_) {
       sh.reset();
     }
-    rmsCoeff_ = timeCoeff(10.0f, sr_);
     holdSamples_ = static_cast<int>(0.002f * sr_);
     setControls(controls_);
   }
@@ -96,7 +94,6 @@ public:
     for (auto& f : sidechain_) {
       f.reset();
     }
-    rmsPower_ = 0.0f;
     for (int ch = 0; ch < 2; ++ch) {
       env_[ch] = 0.0f;
       hold_[ch] = 0;
@@ -123,9 +120,12 @@ private:
       if (autoRelease_) {
         // Two-stage automatic release: quick while the reduction is small,
         // progressively slower as it deepens, as on the bus compressor.
-        const float depth =
-            clampf(-gainToDb(std::max(env_[ch], 1e-6f)) / 20.0f, 0.0f, 1.0f);
-        coeff = timeCoeff(releaseMs_ * (1.0f + 10.0f * depth), sr_);
+        // Depth is how far the detector sits over the threshold, not the
+        // absolute level: a quiet signal must not get the slowest release.
+        const float over =
+            clampf((gainToDb(std::max(env_[ch], 1e-6f)) - thresholdDb_) / 20.0f,
+                   0.0f, 1.0f);
+        coeff = timeCoeff(releaseMs_ * (1.0f + 10.0f * over), sr_);
       }
       env_[ch] = coeff * env_[ch] + (1.0f - coeff) * level;
     }
@@ -139,13 +139,11 @@ private:
   float releaseMs_ = 300.0f;
   float attackCoeff_ = 0.0f;
   float releaseCoeff_ = 0.0f;
-  float rmsCoeff_ = 0.0f;
   float makeupGain_ = 1.0f;
   bool sidechainOn_ = false;
   bool autoRelease_ = false;
   float link_ = 1.0f;
   int holdSamples_ = 0;
-  float rmsPower_ = 0.0f;
   float env_[2] = {0.0f, 0.0f};
   int hold_[2] = {0, 0};
   HighPass2 sidechain_[2];

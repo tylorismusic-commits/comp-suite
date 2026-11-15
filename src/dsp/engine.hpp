@@ -49,7 +49,6 @@ public:
     truePeakL_.reset();
     truePeakR_.reset();
     limiterGain_ = 1.0f;
-    limiterEnv_ = 0.0f;
     limiterAttack_ = timeCoeff(0.5f, sr_);
     limiterRelease_ = timeCoeff(80.0f, sr_);
     fade_ = 1.0f;
@@ -102,14 +101,21 @@ public:
     float inPeakL = 0.0f;
     float inPeakR = 0.0f;
     for (int i = 0; i < frames; ++i) {
-      const float dryL = left[i];
-      const float dryR = right[i];
+      // A host may hand us NaN, inf, or absurd values from a broken bus.  A
+      // single one would poison every recursive state in the model, so the
+      // boundary is sanitised once, here.
+      const float rawL = std::isfinite(left[i]) ? left[i] : 0.0f;
+      const float rawR = std::isfinite(right[i]) ? right[i] : 0.0f;
+      const float dryL = clampf(rawL, -32.0f, 32.0f);
+      const float dryR = clampf(rawR, -32.0f, 32.0f);
       float wetL = dryL;
       float wetR = dryR;
       SidechainFrame sc;
       if (scReady) {
-        sc.left = scLeft[i];
-        sc.right = scRight[i];
+        sc.left = clampf(std::isfinite(scLeft[i]) ? scLeft[i] : 0.0f, -32.0f,
+                         32.0f);
+        sc.right = clampf(std::isfinite(scRight[i]) ? scRight[i] : 0.0f, -32.0f,
+                          32.0f);
         sc.active = true;
       }
       float gr = processModel(active_, wetL, wetR, sc);
@@ -143,7 +149,7 @@ public:
       float outL = dryL + wetMix * (wetL - dryL);
       float outR = dryR + wetMix * (wetR - dryR);
 
-      if (controls_.limiterOn &&
+      if (controls_.limiterOn && on > 0.001f &&
           active_ != static_cast<int>(Model::Red)) {
         // Output limiter: stereo-linked peak limiter with a hard safety
         // ceiling, matching the limiter section in the reference layout.
@@ -164,8 +170,16 @@ public:
         } else {
           limiterGain_ = limiterRelease_ * limiterGain_ + (1.0f - limiterRelease_) * target;
         }
-        outL = std::tanh(outL * limiterGain_);
-        outR = std::tanh(outR * limiterGain_);
+        float yL = outL * limiterGain_;
+        float yR = outR * limiterGain_;
+        if (std::fabs(yL) > thresh) {
+          yL = std::copysign(thresh * std::tanh(std::fabs(yL) / thresh), yL);
+        }
+        if (std::fabs(yR) > thresh) {
+          yR = std::copysign(thresh * std::tanh(std::fabs(yR) / thresh), yR);
+        }
+        outL = yL;
+        outR = yR;
       }
 
       // The Clean model's colour sits after the limiter, right before the
@@ -174,8 +188,8 @@ public:
         clean_.postColour(outL, outR);
       }
 
-      left[i] = outL;
-      right[i] = outR;
+      left[i] = std::isfinite(outL) ? outL : 0.0f;
+      right[i] = std::isfinite(outR) ? outR : 0.0f;
       grMax = std::max(grMax, gr);
       peak = std::max(peak, std::max(std::fabs(outL), std::fabs(outR)));
       inPeak = std::max(inPeak, std::max(std::fabs(dryL), std::fabs(dryR)));
@@ -186,7 +200,10 @@ public:
       const float power = 0.5f * (outL * outL + outR * outR);
       vuPower_ = vuCoeff_ * vuPower_ + (1.0f - vuCoeff_) * power;
     }
-    meters.grDb = grMax;
+    // A bypassed compressor is not reducing anything, and hosts use this
+    // figure for automatic gain compensation: reporting wet-path reduction
+    // while the output is dry would make them compensate for nothing.
+    meters.grDb = controls_.enabled ? grMax : 0.0f;
     meters.outPeakDb = gainToDb(peak);
     meters.inPeakDb = gainToDb(inPeak);
     meters.outPeakLDb = gainToDb(outPeakL);
@@ -208,6 +225,14 @@ public:
     red_.reset();
     easy_.reset();
     vuPower_ = 0.0f;
+    autoMakeupDb_ = 0.0f;
+    limiterGain_ = 1.0f;
+    truePeakL_.reset();
+    truePeakR_.reset();
+    fade_ = 1.0f;
+    previous_ = active_;
+    mixSmooth_.snap();
+    enableSmooth_.snap();
   }
 
 private:
@@ -274,7 +299,6 @@ private:
   TruePeakDetector truePeakL_;
   TruePeakDetector truePeakR_;
   float limiterGain_ = 1.0f;
-  float limiterEnv_ = 0.0f;
   float limiterAttack_ = 0.0f;
   float limiterRelease_ = 0.0f;
   Smoothed mixSmooth_;

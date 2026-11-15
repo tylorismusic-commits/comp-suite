@@ -28,6 +28,42 @@
   list cannot be filtered — LV2 has no equivalent flag — but those ports are
   inert on models that do not use them, so the sound is unaffected.
 
+### Fixed
+
+- **Mix is applied once.** Easy and Molot also blended dry/wet inside the model,
+  so a 50% mix sounded like 75% wet. The engine now owns the blend for every
+  model, and a test checks that 50% is exactly halfway between dry and wet.
+- **Auto release follows reduction, not level.** The VCA and Red derived their
+  release depth from the absolute signal level, which made quiet passages
+  release slowest. Depth now comes from how far the detector sits over the
+  threshold.
+- **Easy's Side Chain HPF knob works.** The DSP ignored it; it now overrides the
+  Drum Type high-pass, labelled **AUTO** at the bottom of its travel.
+- **The output limiter is transparent below its ceiling.** `tanh()` was applied
+  to every sample, attenuating and colouring a signal it was not limiting. Only
+  overshoots are soft-clipped now, and switching the engine off bypasses the
+  limiter too.
+- **Non-finite input is rejected** at the engine boundary (NaN, inf and absurd
+  values), and non-finite output is zeroed, so one bad host sample cannot poison
+  the recursive state of a model.
+- **Labels match the DSP.** Clean's input/output are ±30 dB (were ±12), Red's
+  input is ±18 dB, the 76 output is ±12 dB (was 0..24), the 2A output switch is
+  +6/0, and Clean/Molot/Red have their own attack and release scales instead of
+  the VCA's.
+- **Preset list tags** show CLN/MOL/RED/EZY instead of mislabelling the newer
+  models as 76 variants.
+- Stepped parameters arriving from a host are rounded like UI values, and a 76
+  ratio that snaps to a button is reported back to the host.
+- Molot's M/S mode no longer applies the saturator when Saturation is off.
+- A bypassed engine reports **zero reduction** to the host, so automatic gain
+  compensation does not chase a compressor that is switched off.
+- The CLAP descriptor advertises the real version (0.9.0, it said 0.1.0) from
+  the same header as the LV2 metadata, and the LV2 description lists all ten
+  models.
+- Removed dead code (unused RMS fields, an unused shaper, an unused limiter
+  state, an unused TTL helper) and widened the tests to all ten models,
+  sample-rate extremes and dirty-model switching.
+
 ### Notes
 
 - `P_COUNT` grew by six; CLAP state saved by an older build will not load, as

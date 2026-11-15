@@ -104,7 +104,7 @@ public:
     if (level > env_) {
       env_ += (level - env_) * (1.0f - attackCoeff_);
     } else {
-      env_ += (level - env_) * (1.0f - releaseFor(env_));
+      env_ += (level - env_) * (1.0f - releaseCoeffFor(env_, thresholdDb_));
     }
     env_ = std::max(env_, 1e-9f);
 
@@ -124,7 +124,7 @@ public:
                        (1.0f - limiterAttackCoeff_);
       } else {
         limiterEnv_ += (compressedPeak - limiterEnv_) *
-                       (1.0f - releaseFor(limiterEnv_));
+                       (1.0f - releaseCoeffFor(limiterEnv_, limitDb_));
       }
       limiterEnv_ = std::max(limiterEnv_, 1e-9f);
       const float overDb = gainToDb(limiterEnv_) - limitDb_;
@@ -162,13 +162,16 @@ public:
   }
 
 private:
-  float releaseFor(float amount) const noexcept {
+  // Program-dependent release: the further the detector sits over the stage's
+  // threshold, the slower it lets go.  Using the absolute level here made a
+  // quiet signal release slowest of all.
+  float releaseCoeffFor(float level, float thresholdDb) const noexcept {
     if (!autoRelease_) {
       return releaseCoeff_;
     }
-    // Program-dependent: the more it is pulling down, the slower it lets go.
-    const float depth = clampf(gainToDb(amount) / -40.0f, 0.0f, 1.0f);
-    return timeCoeff(releaseMs_ * (1.0f + 3.0f * depth), sr_);
+    const float over =
+        clampf((gainToDb(level) - thresholdDb) / 20.0f, 0.0f, 1.0f);
+    return timeCoeff(releaseMs_ * (1.0f + 3.0f * over), sr_);
   }
 
   float sr_ = 48000.0f;

@@ -227,6 +227,33 @@ int main(int argc, char** argv) {
   check(params->get_value(plugin, 4, &value) && std::fabs(value - 8.0) < 1e-9,
         "ratio value round-trips through the host");
 
+  // 6:1 is on the shared ladder but not on the 76 button bank: it snaps to
+  // the nearest button (4:1), and the host sees the corrected value.
+  {
+    events.inputs.push_back(paramEvent(4, 4.0));
+    clap_input_events_t snapIn{&events, inSize, inGet};
+    clap_output_events_t snapOut{&events, outTryPush};
+    clap_process_t snapProc{};
+    snapProc.frames_count = 0;
+    snapProc.audio_inputs = &inBuf;
+    snapProc.audio_outputs = &outBuf;
+    snapProc.audio_inputs_count = 1;
+    snapProc.audio_outputs_count = 1;
+    snapProc.in_events = &snapIn;
+    snapProc.out_events = &snapOut;
+    plugin->process(plugin, &snapProc);
+    events.inputs.clear();
+    params->get_value(plugin, 4, &value);
+    check(std::fabs(value - 3.0) < 1e-9,
+          "76 ratio snaps to a button and is reported back");
+    // Put ALL back so the state round-trip below still has its reference.
+    // The first call clears the dirty flag, the second accepts the event.
+    events.inputs.push_back(paramEvent(4, 8.0));
+    plugin->process(plugin, &snapProc);
+    plugin->process(plugin, &snapProc);
+    events.inputs.clear();
+  }
+
   // The sweep started on 76Blue, which has no Easy controls.
   plugin->on_main_thread(plugin);  // dispatch the initial rescan request
   check(hidden(comp::P_BEEF), "Beef hidden on 76Blue");
@@ -416,26 +443,26 @@ int main(int argc, char** argv) {
         events.inputs.clear();
         std::this_thread::sleep_for(std::chrono::milliseconds(150));
       };
-      auto value = [&](uint32_t id) {
+      auto paramValue = [&](uint32_t id) {
         double v = 0.0;
         params->get_value(plugin, id, &v);
         return v;
       };
 
       selectModel(0.0);  // 76Blue
-      double inBefore = value(2);
+      double inBefore = paramValue(2);
       drag(112, 520, -50);
-      std::printf("  76 input %.2f -> %.2f\n", inBefore, value(2));
-      check(value(2) > inBefore + 0.05, "dragging 76 INPUT moves it");
-      double outBefore = value(8);
+      std::printf("  76 input %.2f -> %.2f\n", inBefore, paramValue(2));
+      check(paramValue(2) > inBefore + 0.05, "dragging 76 INPUT moves it");
+      double outBefore = paramValue(8);
       drag(930, 500, -50);
-      std::printf("  76 output %.2f -> %.2f\n", outBefore, value(8));
-      check(value(8) > outBefore + 0.05, "dragging 76 OUTPUT moves it");
+      std::printf("  76 output %.2f -> %.2f\n", outBefore, paramValue(8));
+      check(paramValue(8) > outBefore + 0.05, "dragging 76 OUTPUT moves it");
 
       selectModel(4.0);  // Xpress: DISTORTION advances on click at (890,260)
       drag(880, 411, 0);  // the DIST 3 button
-      std::printf("  Xpress distortion mode -> %.2f\n", value(11));
-      check(value(11) == 2.0, "clicking DIST 3 selects that mode");
+      std::printf("  Xpress distortion mode -> %.2f\n", paramValue(11));
+      check(paramValue(11) == 2.0, "clicking DIST 3 selects that mode");
 
       // Text values must be readable, not bare numbers.
       {
@@ -471,16 +498,16 @@ int main(int argc, char** argv) {
       }
 
       selectModel(5.0);  // VCA: RATIO knob at (400,424)
-      double ratioBefore = value(4);
+      double ratioBefore = paramValue(4);
       drag(400, 424, 60);
-      std::printf("  VCA ratio %.2f -> %.2f\n", ratioBefore, value(4));
-      check(value(4) < ratioBefore, "dragging VCA RATIO moves it");
+      std::printf("  VCA ratio %.2f -> %.2f\n", ratioBefore, paramValue(4));
+      check(paramValue(4) < ratioBefore, "dragging VCA RATIO moves it");
 
       selectModel(2.0);  // 2A: GAIN at (560,446)
-      double gainBefore = value(7);
+      double gainBefore = paramValue(7);
       drag(560, 446, -50);
-      std::printf("  2A gain %.2f -> %.2f\n", gainBefore, value(7));
-      check(value(7) > gainBefore + 0.05, "dragging 2A GAIN moves it");
+      std::printf("  2A gain %.2f -> %.2f\n", gainBefore, paramValue(7));
+      check(paramValue(7) > gainBefore + 0.05, "dragging 2A GAIN moves it");
 
       // Mono buffers must not crash: the plugin mirrors the left channel.
       {

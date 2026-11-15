@@ -111,15 +111,15 @@ public:
                     : (topology_ == Topology::Feedback
                            ? kFeedbackLoopGain * prevOut_[ch]
                            : x[ch]);
-      const double sc = scDip_[ch].process(
+      const double shaped = scDip_[ch].process(
           scHighShelf_[ch].process(scLowShelf_[ch].process(detector)));
-      sidechain_[ch] = sc;
-      rms_[ch] += (sc * sc - rms_[ch]) * rmsK_;
+      sidechain_[ch] = shaped;
+      rms_[ch] += (shaped * shaped - rms_[ch]) * rmsK_;
       if (rms_[ch] < 1.0e-20) {
         rms_[ch] = 0.0;  // keep denormals out of the detector
       }
       const double level = std::sqrt(std::max(rms_[ch], 0.0)) * 0.25 +
-                           std::fabs(sc) * 0.75;
+                           std::fabs(shaped) * 0.75;
       levelMax = std::max(levelMax, level);
     }
     levelMax = std::max(levelMax, kTiny);

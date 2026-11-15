@@ -100,10 +100,9 @@ A release tarball is produced by `cmake --build build --target dist`.
 
 ## Status
 
-The plugin is usable and released. Work continues on:
+The plugin is usable and released. Ten models is the set; the roadmap now
+focuses on quality rather than more compressors:
 
-- **Hearth Compressor** — a British Neve-family compressor, named after the
-  Hearth channel strip. Next model.
 - **Oversampling** — 2× FET gain cell with latency compensation.
 
 Measured behaviour lives in `tools/measure.py`, which renders reference

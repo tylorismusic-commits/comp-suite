@@ -24,6 +24,7 @@ public:
     sr_ = sampleRate > 0.0f ? sampleRate : 48000.0f;
     inputSmooth_.setTime(15.0f, sr_);
     outputSmooth_.setTime(15.0f, sr_);
+    holdSamples_ = std::max(1, static_cast<int>(0.001f * sr_));
     reset();
     setControls(controls_);
     inputSmooth_.snap();
@@ -60,15 +61,19 @@ public:
     }
     attackCoeff_ = timeCoeff(attackMs, sr_);
     releaseCoeff_ = timeCoeff(releaseMs, sr_);
+    // Drum Type sets the default detector high-pass.  The Side Chain HPF
+    // knob overrides it when moved off Auto, so the control is not inert.
+    const float hpf = clampf(c.sidechainHpf, 0.0f, 1.0f);
+    const float scHz =
+        hpf > 0.01f ? 20.0f * std::pow(20.0f, hpf) : kScHz[type];
     for (auto& f : scHpf_) {
-      f.set(kScHz[type], sr_);
+      f.set(scHz, sr_);
     }
 
     inputSmooth_.setTarget(
         dbToGain(-18.0f + 36.0f * clampf(c.input, 0.0f, 1.0f)));
     outputSmooth_.setTarget(
         dbToGain(-12.0f + 24.0f * clampf(c.output, 0.0f, 1.0f)));
-    mix_ = clampf(c.mix, 0.0f, 1.0f);
     link_ = clampf(c.link, 0.0f, 1.0f);
 
     const float beefDb = 12.0f * clampf(c.beef, 0.0f, 1.0f);
@@ -88,10 +93,10 @@ public:
     const float inputGain = inputSmooth_.next();
     const float outputGain = outputSmooth_.next();
 
-    const float dryL = left;
-    const float dryR = right;
-    float inL = dryL * inputGain;
-    float inR = dryR * inputGain;
+    // Dry/wet is applied once, by the engine, so presets and the host's mix
+    // parameter mean the same thing on every model.
+    float inL = left * inputGain;
+    float inR = right * inputGain;
 
     // Beef shapes the signal entering both the detector and the compressor.
     inL = beef_[0].process(inL);
@@ -130,10 +135,8 @@ public:
     wetL = air_[0].process(wetL);
     wetR = air_[1].process(wetR);
 
-    const float wet = mix_;
-    const float dry = 1.0f - mix_;
-    left = (dryL * dry + wetL * wet) * outputGain;
-    right = (dryR * dry + wetR * wet) * outputGain;
+    left = wetL * outputGain;
+    right = wetR * outputGain;
     return std::max(grL, grR);
   }
 
@@ -165,7 +168,6 @@ private:
   float kneeDb_ = 3.0f;
   float attackCoeff_ = 0.0f;
   float releaseCoeff_ = 0.0f;
-  float mix_ = 1.0f;
   float link_ = 1.0f;
   float satDrive_ = 0.0f;
   int satType_ = 0;

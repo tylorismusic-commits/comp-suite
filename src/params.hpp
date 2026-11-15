@@ -96,9 +96,15 @@ inline constexpr const char* kMeterLabels[] = {"GR",   "+8", "+4", "Graph",
                                                "Off",  "Curve"};
 inline constexpr const char* kScSourceLabels[] = {"Internal", "External"};
 
+static_assert(static_cast<int>(Model::Count) ==
+                  static_cast<int>(sizeof(kModelLabels) /
+                                   sizeof(kModelLabels[0])),
+              "kModelLabels must name every model");
+
 inline constexpr ParamSpec kParamSpecs[P_COUNT] = {
-    {"model", "Model", "Compressor", 0.0, 9.0, 0.0, true, false, false, nullptr,
-     labels(kModelLabels)},
+    {"model", "Model", "Compressor", 0.0,
+     static_cast<double>(static_cast<int>(Model::Count) - 1), 0.0, true, false,
+     false, nullptr, labels(kModelLabels)},
     {"power", "Power", "Compressor", 0.0, 1.0, 1.0, true, false, true, nullptr,
      {}},
     {"input", "Input", "Compressor", 0.0, 1.0, 0.6, false, false, false,
@@ -199,12 +205,17 @@ public:
   }
 
   // Stores a value that came from the host, without marking it dirty.
+  // Stepped parameters are rounded here too: a host may send an unquantised
+  // value, and a fractional model or ratio would disagree with the UI.
   void setFromHost(uint32_t p, double v) noexcept {
     if (!std::isfinite(v)) {
       return;
     }
     const ParamSpec& s = kParamSpecs[p];
     v = std::min(std::max(v, s.min), s.max);
+    if (s.stepped) {
+      v = static_cast<double>(static_cast<int>(v + (v >= 0 ? 0.5 : -0.5)));
+    }
     values_[p].store(v, std::memory_order_relaxed);
   }
 

@@ -65,7 +65,6 @@ public:
                      const PanelState& state) const;
   void drawPresetList(cairo_t* cr, const Shared& shared,
                       const PanelState& state) const;
-  void markEdited(PanelState& state) const { state.presetDirty = true; }
   bool wheel(Shared& shared, PanelState& state, double x, double y, double dy);
 
   bool dragging() const { return dragParam_ >= 0; }

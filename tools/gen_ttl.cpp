@@ -25,6 +25,7 @@
 
 #include "params.hpp"
 #include "presets.hpp"
+#include "version.hpp"
 
 namespace {
 
@@ -33,17 +34,14 @@ constexpr const char* kUri =
 constexpr const char* kName = "Comp Suite";
 constexpr const char* kShortDesc = "Ten compressor models in one plugin";
 constexpr const char* kDescription =
-    "76Blue, 76Black, 2A, 3A, Xpress and VCA, with a shared ratio ladder, "
-    "parallel mix and an output limiter.";
+    "Clean, Easy, 76Blue, 76Black, 2A, 3A, Xpress, VCA, Molot and Red, with a "
+    "shared ratio ladder, parallel mix and an output limiter.";
 constexpr const char* kLicense = "https://spdx.org/licenses/GPL-3.0-or-later.html";
 constexpr const char* kMaintainer = "tylorismusic";
 constexpr const char* kHomepage =
     "https://github.com/tylorismusic-commits/comp-suite";
 constexpr const char* kPluginBinary = "comp_suite.so";
 constexpr const char* kUiBinary = "comp_suite_ui.so";
-constexpr int kVersionMajor = 0;
-constexpr int kVersionMinor = 9;
-constexpr int kVersionMicro = 0;  // LV2 has major/minor/micro, no patch
 
 // The meter outputs are not parameters: they exist only in the LV2 port list,
 // after the control ports.
@@ -62,13 +60,6 @@ constexpr MeterPort kMeters[] = {
 };
 
 constexpr int kAudioPorts = 4;
-
-std::string lower(std::string s) {
-  for (char& c : s) {
-    c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
-  }
-  return s;
-}
 
 // "Side Chain" -> "sidechain"; the same token is the pg:Group fragment.
 std::string groupSlug(const char* module) {
@@ -187,9 +178,9 @@ std::string buildPluginTtl() {
   out << "        foaf:homepage <" << kHomepage << "> ;\n";
   out << "    ] ;\n";
   out << "    doap:homepage <" << kHomepage << "> ;\n";
-  out << "    lv2:majorVersion " << kVersionMajor << " ;\n";
-  out << "    lv2:minorVersion " << kVersionMinor << " ;\n";
-  out << "    lv2:microVersion " << kVersionMicro << " ;\n";
+  out << "    lv2:majorVersion " << comp::kVersionMajor << " ;\n";
+  out << "    lv2:minorVersion " << comp::kVersionMinor << " ;\n";
+  out << "    lv2:microVersion " << comp::kVersionMicro << " ;\n";
   out << "    lv2:binary <" << kPluginBinary << "> ;\n";
   out << "    rdfs:seeAlso <manifest.ttl> ;\n";
   out << "    ui:ui <" << kUri << "#ui> ;\n";

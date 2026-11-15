@@ -25,6 +25,7 @@
 #include "dsp/engine.hpp"
 #include "dsp/common.hpp"
 #include "params.hpp"
+#include "version.hpp"
 #include "ui/geometry.hpp"
 #include "ui/panel.hpp"
 
@@ -56,7 +57,6 @@ void dbg(const char* fmt, ...) {
 constexpr const char* kPluginId = "com.tylorismusic.compsuite";
 constexpr const char* kPluginName = "Comp Suite";
 constexpr const char* kVendor = "tylorismusic";
-constexpr const char* kVersion = "0.1.0";
 
 std::string bundleResourceDir() {
   Dl_info info{};
@@ -375,26 +375,56 @@ int currentModel(const Plugin* s) {
 // list.  Hidden parameters keep their index and value, so automation and
 // saved states survive a model change.
 bool paramAppliesToModel(uint32_t param, int model) {
+  const int blue = static_cast<int>(Model::Blue76);
+  const int black = static_cast<int>(Model::Black76);
+  const int la2a = static_cast<int>(Model::Opto2A);
+  const int la3a = static_cast<int>(Model::Opto3A);
+  const int xpress = static_cast<int>(Model::Xpress);
+  const int vca = static_cast<int>(Model::Vca);
+  const int clean = static_cast<int>(Model::Clean);
+  const int molot = static_cast<int>(Model::Molot);
+  const int red = static_cast<int>(Model::Red);
+  const int easy = static_cast<int>(Model::Easy);
   switch (param) {
+    case P_INPUT:
+      return model == blue || model == black || model == xpress ||
+             model == clean || model == molot || model == red || model == easy;
+    case P_OUTPUT:
+      // Both optical models read P_OUTPUT; only the 2A shows the switch.
+      return model == blue || model == black || model == la2a ||
+             model == la3a || model == xpress || model == clean ||
+             model == red || model == easy;
+    case P_MAKEUP:
+      return model == la2a || model == la3a || model == vca || model == clean ||
+             model == molot || model == red;
+    case P_RATIO:
+      return model != easy;  // Easy's ratio follows its Character switch
+    case P_ATTACK:
+    case P_RELEASE:
+      return model != la2a && model != la3a && model != easy;
+    case P_KNEE:
+      return model == clean || model == molot || model == red;
+    case P_DISTORTION:
+      return model == xpress || model == clean || model == molot;
+    case P_SC_HPF:
+      return model == xpress || model == vca || model == clean ||
+             model == molot || model == red || model == easy;
     case P_BEEF:
     case P_AIR:
     case P_DRUM_TYPE:
     case P_EASY_MODE:
     case P_EASY_CHAR:
     case P_SAT_TYPE:
-      return model == static_cast<int>(Model::Easy);
+      return model == easy;
     case P_SAT_DRIVE:
-      return model == static_cast<int>(Model::Easy) ||
-             model == static_cast<int>(Model::Molot);
+      return model == easy || model == molot;
     case P_ATTACK_MODE:
     case P_STEREO_MODE:
-      return model == static_cast<int>(Model::Molot);
+      return model == molot;
     case P_VCA_LINK:
-      return model == static_cast<int>(Model::Vca) ||
-             model == static_cast<int>(Model::Easy);
+      return model == vca || model == easy;
     case P_VCA_AUTO:
-      return model == static_cast<int>(Model::Vca) ||
-             model == static_cast<int>(Model::Red);
+      return model == vca || model == red;
     default:
       return true;
   }
@@ -474,7 +504,7 @@ bool paramsValueToText(const clap_plugin_t* p, clap_id id, double value,
         std::snprintf(out, size, "%+.1f dB", -30.0 + 60.0 * value);
       } else if (model == 7) {
         std::snprintf(out, size, "%+.1f dB", -12.0 + 24.0 * value);
-      } else if (model == 8) {
+      } else if (model == 8 || model == 9) {
         std::snprintf(out, size, "%+.1f dB", -18.0 + 36.0 * value);
       } else {
         std::snprintf(out, size, "%.0f%%", value * 100.0);
@@ -499,7 +529,7 @@ bool paramsValueToText(const clap_plugin_t* p, clap_id id, double value,
         std::snprintf(out, size, "%.1f:1", RedCompressor::ratioForStep(step));
       } else if (model == 7 && ratioFromStep(step) > 10.9) {
         std::snprintf(out, size, "Limit");
-      } else if (model == 2) {
+      } else if (model == 2 || model == 3) {
         std::snprintf(out, size, "%s", step >= 4 ? "Limit" : "Compress");
       } else if (model <= 1 && step >= 8) {
         std::snprintf(out, size, "ALL");
@@ -563,10 +593,10 @@ bool paramsValueToText(const clap_plugin_t* p, clap_id id, double value,
       }
       return true;
     case P_OUTPUT:
-      if (model == 2) {
-        std::snprintf(out, size, "%s", value > 0.5 ? "+10" : "+4");
+      if (model == 2 || model == 3) {
+        std::snprintf(out, size, "%s", value > 0.5 ? "+6" : "0");
       } else if (model <= 1) {
-        std::snprintf(out, size, "%.1f dB", value * 24.0);
+        std::snprintf(out, size, "%+.1f dB", -12.0 + 24.0 * value);
       } else if (model == 6) {
         std::snprintf(out, size, "%+.1f dB", -30.0 + 60.0 * value);
       } else {
@@ -577,7 +607,9 @@ bool paramsValueToText(const clap_plugin_t* p, clap_id id, double value,
       std::snprintf(out, size, "%.0f%%", value * 100.0);
       return true;
     case P_SC_HPF:
-      if (value < 0.01) {
+      if (value < 0.01 && model == 9) {
+        std::snprintf(out, size, "Auto");
+      } else if (value < 0.01) {
         std::snprintf(out, size, "Off");
       } else if (model == 7) {
         std::snprintf(out, size, "%.0f Hz", 40.0 + 220.0 * value);
@@ -600,7 +632,16 @@ bool paramsValueToText(const clap_plugin_t* p, clap_id id, double value,
       std::snprintf(out, size, "%.1f dB", -24.0 + 24.0 * value);
       return true;
     case P_KNEE:
-      std::snprintf(out, size, "%.1f dB", 18.0 * value);
+      // Clean and Red are in dB; Molot's knee is a fraction of its threshold.
+      if (model == 6) {
+        std::snprintf(out, size, "%.1f dB", 18.0 * value);
+      } else if (model == 8) {
+        std::snprintf(out, size, "%.1f dB", 12.0 * value);
+      } else if (model == 7) {
+        std::snprintf(out, size, "%.0f%%", value * 100.0);
+      } else {
+        std::snprintf(out, size, "%.1f dB", 18.0 * value);
+      }
       return true;
     case P_SAT_DRIVE:
       if (model == 9) {
@@ -1018,13 +1059,15 @@ clap_process_status pluginProcess(const clap_plugin_t* p, const clap_process_t* 
       static const int kPresets[5] = {3, 5, 6, 7, 8};
       const int step = ratioStepFrom(static_cast<float>(s->shared.get(P_RATIO)));
       int best = kPresets[0];
-      for (int p : kPresets) {
-        if (std::abs(p - step) < std::abs(best - step)) {
-          best = p;
+      for (int preset : kPresets) {
+        if (std::abs(preset - step) < std::abs(best - step)) {
+          best = preset;
         }
       }
       if (best != step) {
-        s->shared.setFromHost(P_RATIO, static_cast<double>(best));
+        // Mark it dirty as well: the host's generic view should be told the
+        // ratio landed on a real button, not left showing the old value.
+        s->shared.set(P_RATIO, static_cast<double>(best));
       }
     }
   }
