@@ -332,6 +332,11 @@ struct Plugin {
   double sampleRate = 48000.0;
   Meters meters;
   std::atomic<float> grForHost{0.0f};
+  // The host caches parameter flags, so a model change is announced with a
+  // rescan.  rescan() is main-thread only, so audio-thread changes queue a
+  // main-thread callback.
+  std::atomic<int> infoModel{-1};
+  std::atomic<bool> rescanQueued{false};
 };
 
 const clap_plugin_descriptor_t kDescriptor = {
@@ -343,7 +348,7 @@ const clap_plugin_descriptor_t kDescriptor = {
     "",
     "",
     kVersion,
-    "Six compressor models in one plugin: 76Blue, 76Black, 2A, 3A, Xpress, and VCA.",
+    "Ten compressor models in one plugin: Clean, Easy, 76Blue, 76Black, 2A, 3A, Xpress, VCA, Molot and Red.",
     nullptr,
 };
 
@@ -360,9 +365,44 @@ Plugin* self(const clap_plugin_t* p) { return static_cast<Plugin*>(p->plugin_dat
 
 // --- Parameters -------------------------------------------------------------
 
+int currentModel(const Plugin* s) {
+  return static_cast<int>(s->shared.get(P_MODEL) + 0.5);
+}
+
+// Controls that exist for one model (or one pair) only.  CLAP describes
+// CLAP_PARAM_IS_HIDDEN as "currently not used", which is exactly this: a Beef
+// knob on a 76Blue does nothing, so it should not be in the host's generic
+// list.  Hidden parameters keep their index and value, so automation and
+// saved states survive a model change.
+bool paramAppliesToModel(uint32_t param, int model) {
+  switch (param) {
+    case P_BEEF:
+    case P_AIR:
+    case P_DRUM_TYPE:
+    case P_EASY_MODE:
+    case P_EASY_CHAR:
+    case P_SAT_TYPE:
+      return model == static_cast<int>(Model::Easy);
+    case P_SAT_DRIVE:
+      return model == static_cast<int>(Model::Easy) ||
+             model == static_cast<int>(Model::Molot);
+    case P_ATTACK_MODE:
+    case P_STEREO_MODE:
+      return model == static_cast<int>(Model::Molot);
+    case P_VCA_LINK:
+      return model == static_cast<int>(Model::Vca) ||
+             model == static_cast<int>(Model::Easy);
+    case P_VCA_AUTO:
+      return model == static_cast<int>(Model::Vca) ||
+             model == static_cast<int>(Model::Red);
+    default:
+      return true;
+  }
+}
+
 uint32_t paramsCount(const clap_plugin_t*) { return P_COUNT; }
 
-bool paramsInfo(const clap_plugin_t*, uint32_t index, clap_param_info_t* info) {
+bool paramsInfo(const clap_plugin_t* p, uint32_t index, clap_param_info_t* info) {
   if (index >= P_COUNT) {
     return false;
   }
@@ -373,7 +413,7 @@ bool paramsInfo(const clap_plugin_t*, uint32_t index, clap_param_info_t* info) {
   if (s.stepped) {
     info->flags |= CLAP_PARAM_IS_STEPPED;
   }
-  if (s.hidden) {
+  if (s.hidden || !paramAppliesToModel(index, currentModel(self(p)))) {
     info->flags |= CLAP_PARAM_IS_HIDDEN;
   }
   // Power is a normal parameter.  It must NOT be flagged CLAP_PARAM_IS_BYPASS:
@@ -401,10 +441,6 @@ namespace {
 const char* const kDistortionNames[4] = {"Off", "Dist 2", "Dist 3", "Clip"};
 const char* const kMeterNames[6] = {"GR",   "+8", "+4",
                                     "Graph", "Off", "Curve"};
-
-int currentModel(const Plugin* s) {
-  return static_cast<int>(s->shared.get(P_MODEL) + 0.5);
-}
 
 } // namespace
 
@@ -733,6 +769,20 @@ void emitDirty(Plugin* s, const clap_output_events_t* out) {
   }
 }
 
+// Queue a parameter-info rescan if the model changed since the last one.
+// Safe on the audio thread: it only sets a flag and asks the host for a
+// main-thread callback.
+void noteModelChange(Plugin* s) {
+  if (currentModel(s) == s->infoModel.load(std::memory_order_relaxed)) {
+    return;
+  }
+  if (!s->rescanQueued.exchange(true, std::memory_order_relaxed)) {
+    if (s->host && s->host->request_callback) {
+      s->host->request_callback(s->host);
+    }
+  }
+}
+
 void paramsFlush(const clap_plugin_t* p, const clap_input_events_t* in,
                  const clap_output_events_t* out) {
   Plugin* s = self(p);
@@ -740,6 +790,7 @@ void paramsFlush(const clap_plugin_t* p, const clap_input_events_t* in,
     applyEvents(s, in);
   }
   emitDirty(s, out);
+  noteModelChange(s);
 }
 
 const clap_plugin_params_t kParamsExt = {
@@ -772,6 +823,7 @@ bool stateLoad(const clap_plugin_t* p, const clap_istream_t* stream) {
   for (uint32_t i = 0; i < P_COUNT; ++i) {
     s->shared.setFromHost(i, values[i]);
   }
+  noteModelChange(s);
   // The UI scale is optional, so states saved before it still load.
   double scale = 0.0;
   if (stream->read(stream, &scale, sizeof(scale)) == static_cast<int64_t>(sizeof(scale)) &&
@@ -1001,6 +1053,7 @@ clap_process_status pluginProcess(const clap_plugin_t* p, const clap_process_t* 
   s->shared.inPeakRDb.store(s->meters.inPeakRDb, std::memory_order_relaxed);
   s->shared.outPeakLDb.store(s->meters.outPeakLDb, std::memory_order_relaxed);
   s->shared.outPeakRDb.store(s->meters.outPeakRDb, std::memory_order_relaxed);
+  noteModelChange(s);
   return CLAP_PROCESS_CONTINUE;
 }
 
@@ -1023,7 +1076,21 @@ const void* pluginGetExtension(const clap_plugin_t*, const char* id) {
   return nullptr;
 }
 
-void pluginOnMainThread(const clap_plugin_t*) {}
+void pluginOnMainThread(const clap_plugin_t* p) {
+  Plugin* s = self(p);
+  if (!s->rescanQueued.exchange(false, std::memory_order_relaxed)) {
+    return;
+  }
+  s->infoModel.store(currentModel(s), std::memory_order_relaxed);
+  if (!s->host || !s->host->get_extension) {
+    return;
+  }
+  const auto* params = static_cast<const clap_host_params_t*>(
+      s->host->get_extension(s->host, CLAP_EXT_PARAMS));
+  if (params && params->rescan) {
+    params->rescan(s->host, CLAP_PARAM_RESCAN_INFO);
+  }
+}
 
 Plugin* createPlugin(const clap_host_t* host) {
   Plugin* s = new Plugin();

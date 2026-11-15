@@ -1588,7 +1588,9 @@ void Panel::drawKnob(cairo_t* cr, const Widget& w, double value, int model) cons
   if (w.scale.empty() && !paramSpec.stepped) {
     const double a0 = knobAngle(0.0);
     const double a1 = knobAngle(1.0);
-    text(cr, "-", cx + std::cos(a0) * (r * 1.44),
+    // U+2212, not a hyphen: a hyphen is short and reads as a speck next to
+    // the plus at the same point size.
+    text(cr, "\u2212", cx + std::cos(a0) * (r * 1.44),
          cy + std::sin(a0) * (r * 1.44) + 4, 12, 1, skin.legendDim.r,
          skin.legendDim.g, skin.legendDim.b);
     text(cr, "+", cx + std::cos(a1) * (r * 1.44),

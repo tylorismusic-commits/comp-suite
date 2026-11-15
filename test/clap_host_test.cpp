@@ -66,6 +66,21 @@ clap_host_t makeHost() {
   return host;
 }
 
+int gRescans = 0;
+int gCallbacks = 0;
+
+void hostRescan(const clap_host_t*, clap_param_rescan_flags) { ++gRescans; }
+void hostRequestCallback(const clap_host_t*) { ++gCallbacks; }
+
+const clap_host_params_t kHostParams = {hostRescan, nullptr, nullptr};
+
+const void* hostGetExtension(const clap_host_t*, const char* id) {
+  if (std::strcmp(id, CLAP_EXT_PARAMS) == 0) {
+    return &kHostParams;
+  }
+  return nullptr;
+}
+
 const clap_host_t kHost = makeHost();
 
 clap_event_param_value_t paramEvent(uint32_t id, double value) {
@@ -122,8 +137,11 @@ int main(int argc, char** argv) {
       entry->get_factory(CLAP_PLUGIN_FACTORY_ID));
   check(factory && factory->get_plugin_count(factory) == 1, "one plugin in factory");
 
+  clap_host_t host = makeHost();
+  host.get_extension = hostGetExtension;
+  host.request_callback = hostRequestCallback;
   const clap_plugin_t* plugin =
-      factory->create_plugin(factory, &kHost, "com.tylorismusic.compsuite");
+      factory->create_plugin(factory, &host, "com.tylorismusic.compsuite");
   check(plugin != nullptr, "plugin instantiates");
   if (!plugin) {
     return 1;
@@ -150,6 +168,14 @@ int main(int argc, char** argv) {
 
   check(plugin->activate(plugin, 48000.0, kFrames, kFrames), "activate");
   check(plugin->start_processing(plugin), "start processing");
+
+  // Model-specific controls are hidden from the host's generic list, and a
+  // model change announces itself with a parameter-info rescan.
+  auto hidden = [&](uint32_t id) {
+    clap_param_info_t pi{};
+    return params->get_info(plugin, id, &pi) &&
+           (pi.flags & CLAP_PARAM_IS_HIDDEN) != 0;
+  };
 
   // Process a loud sine through the 76Blue model with the 'all' ratio, so it
   // reduces gain, and check the output stays finite and bounded.
@@ -200,6 +226,49 @@ int main(int argc, char** argv) {
   double value = 0.0;
   check(params->get_value(plugin, 4, &value) && std::fabs(value - 8.0) < 1e-9,
         "ratio value round-trips through the host");
+
+  // The sweep started on 76Blue, which has no Easy controls.
+  plugin->on_main_thread(plugin);  // dispatch the initial rescan request
+  check(hidden(comp::P_BEEF), "Beef hidden on 76Blue");
+
+  // Switch to Clean: the Easy controls disappear from the host list.
+  events.inputs.push_back(paramEvent(0, 6.0));  // Clean
+  clap_input_events_t modelIn{&events, inSize, inGet};
+  clap_output_events_t modelOut{&events, outTryPush};
+  clap_process_t modelProc{};
+  modelProc.frames_count = 0;
+  modelProc.audio_inputs = &inBuf;
+  modelProc.audio_outputs = &outBuf;
+  modelProc.audio_inputs_count = 1;
+  modelProc.audio_outputs_count = 1;
+  modelProc.in_events = &modelIn;
+  modelProc.out_events = &modelOut;
+  const int callbacksBefore = gCallbacks;
+  plugin->process(plugin, &modelProc);
+  events.inputs.clear();
+  check(gCallbacks > callbacksBefore, "model change asks for a main-thread callback");
+  const int rescansBefore = gRescans;
+  plugin->on_main_thread(plugin);
+  check(gRescans > rescansBefore, "main-thread callback rescans parameter info");
+  check(hidden(comp::P_BEEF), "Beef hidden on Clean");
+  check(hidden(comp::P_AIR), "Air hidden on Clean");
+  check(hidden(comp::P_DRUM_TYPE), "Drum Type hidden on Clean");
+  check(hidden(comp::P_EASY_MODE), "Character hidden on Clean");
+  check(hidden(comp::P_SAT_TYPE), "Saturation Type hidden on Clean");
+  check(hidden(comp::P_SAT_DRIVE), "Saturation hidden on Clean");
+  check(hidden(comp::P_STEREO_MODE), "Stereo Mode hidden on Clean");
+  check(!hidden(comp::P_THRESHOLD), "Threshold still visible on Clean");
+  check(!hidden(comp::P_RATIO), "Ratio still visible on Clean");
+
+  // Back to Easy: they return, and nothing else gained a flag.
+  events.inputs.push_back(paramEvent(0, 9.0));  // Easy
+  plugin->process(plugin, &modelProc);
+  events.inputs.clear();
+  plugin->on_main_thread(plugin);
+  check(!hidden(comp::P_BEEF), "Beef visible again on Easy");
+  check(!hidden(comp::P_DRUM_TYPE), "Drum Type visible again on Easy");
+  check(!hidden(comp::P_SAT_TYPE), "Saturation Type visible again on Easy");
+  check(hidden(comp::P_STEREO_MODE), "Stereo Mode stays hidden on Easy");
 
   // State round trip: save, change, restore.
   MemStream saved;

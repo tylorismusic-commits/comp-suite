@@ -13,7 +13,7 @@
 <https://github.com/tylorismusic-commits/comp-suite>
     a lv2:Plugin , lv2:CompressorPlugin ;
     doap:name "Comp Suite" ;
-    doap:shortdesc "Six compressor models in one plugin" ;
+    doap:shortdesc "Ten compressor models in one plugin" ;
     doap:description "76Blue, 76Black, 2A, 3A, Xpress and VCA, with a shared ratio ladder, parallel mix and an output limiter."@en ;
     doap:license <https://spdx.org/licenses/GPL-3.0-or-later.html> ;
     doap:maintainer [

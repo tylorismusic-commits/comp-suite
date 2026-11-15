@@ -17,8 +17,16 @@
 - Easy sits directly after Clean in the tab order, so a new user meets it before
   the model-specific units.
 - Scale legends on Drum Type, Saturation Type and Molot's Stereo Mode; any
-  continuous unlabelled knob now shows a **-** and **+** at the ends of its
-  travel.
+  continuous unlabelled knob now shows a **−** and **+** at the ends of its
+  travel (a true minus sign, not a hyphen).
+- **Model-specific controls are hidden from the host's generic parameter list**
+  when a different model is selected. Beef, Air, Drum Type, Character,
+  Intensity, Saturation Type/Drive, Stereo Mode, Attack Mode and VCA Link/Auto
+  carry `CLAP_PARAM_IS_HIDDEN` while they do nothing, and a model change asks
+  the host for a parameter-info rescan. Values and automation are kept, and
+  hosts that ignore the flag simply show everything as before. The LV2 port
+  list cannot be filtered — LV2 has no equivalent flag — but those ports are
+  inert on models that do not use them, so the sound is unaffected.
 
 ### Notes
 

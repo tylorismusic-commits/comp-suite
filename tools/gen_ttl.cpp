@@ -31,7 +31,7 @@ namespace {
 constexpr const char* kUri =
     "https://github.com/tylorismusic-commits/comp-suite";
 constexpr const char* kName = "Comp Suite";
-constexpr const char* kShortDesc = "Six compressor models in one plugin";
+constexpr const char* kShortDesc = "Ten compressor models in one plugin";
 constexpr const char* kDescription =
     "76Blue, 76Black, 2A, 3A, Xpress and VCA, with a shared ratio ladder, "
     "parallel mix and an output limiter.";

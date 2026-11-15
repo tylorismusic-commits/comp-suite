@@ -19,7 +19,7 @@
 
 namespace comp {
 
-// Hosts all six compressor models.  Only the selected model runs, except
+// Hosts every compressor model.  Only the selected model runs, except
 // during a short crossfade when the selection changes, so switching between
 // models does not click.  Mix and bypass are applied here, sample by sample.
 class Engine {

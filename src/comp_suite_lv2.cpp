@@ -1,7 +1,7 @@
 // Comp Suite — LV2 plugin
 // SPDX-License-Identifier: GPL-3.0-or-later
 //
-// Six compressor models in one plugin.  The control ports mirror the CLAP
+// Ten compressor models in one plugin.  The control ports mirror the CLAP
 // parameter ids: port = kPortFirstParam + ParamId.
 
 #include <lv2/core/lv2.h>
