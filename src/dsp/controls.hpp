@@ -15,7 +15,8 @@ enum class Model : int {
   Clean = 6,    // clean digital compressor
   Molot = 7,    // character compressor with stereo modes and saturation
   Red = 8,      // British Class-A VCA, compression then limiting
-  Count = 9
+  Easy = 9,     // drum-focused character compressor
+  Count = 10
 };
 
 // Every control is normalised to 0..1.  Each model maps the shared slots to
@@ -44,6 +45,12 @@ struct Controls {
   float satDrive = 0.5f;           // Molot: saturator drive, 0..1
   float attackMode = 0.0f;         // Molot: 0 Alpha, 1 Sigma
   float stereoMode = 5.0f;         // Molot: 0 Mono .. 5 Stereo
+  float beef = 0.35f;              // Easy: low end into the compressor
+  float air = 0.2f;                // Easy: top end after the compressor
+  float drumType = 2.0f;           // Easy: 0 Toms .. 5 Parallel
+  float easyMode = 0.0f;           // Easy: 0 Smash, 1 Grab
+  float easyChar = 0.0f;           // Easy: 0 Normal, 1 Extreme
+  float satType = 1.0f;            // Easy: 0 Soft, 1 Tape, 2 Hard
 };
 
 // Metering published by the engine, in dB or normalised units.

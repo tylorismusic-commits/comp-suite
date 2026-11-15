@@ -179,6 +179,24 @@ inline constexpr Preset kPresets[] = {
     {"Red Bass Control", "Bass", 8,
      {{P_THRESHOLD, 0.58f}, {P_RATIO, 1.f}, {P_KNEE, 0.45f}, {P_ATTACK, 0.40f},
       {P_RELEASE, 0.55f}, {P_MAKEUP, 0.54f}, {P_MIX, 1.f}, {-1, 0}}},
+
+    // --- Easy ---------------------------------------------------------------
+    {"Easy Squish Drums", "Drums", 9,
+     {{P_THRESHOLD, 0.50f}, {P_DRUM_TYPE, 2.f}, {P_BEEF, 0.45f}, {P_AIR, 0.30f},
+      {P_SAT_DRIVE, 0.40f}, {P_SAT_TYPE, 2.f}, {P_EASY_MODE, 0.f},
+      {P_EASY_CHAR, 1.f}, {P_MIX, 1.f}, {-1, 0}}},
+    {"Easy Lift Drums", "Drums", 9,
+     {{P_THRESHOLD, 0.55f}, {P_DRUM_TYPE, 2.f}, {P_BEEF, 0.35f}, {P_AIR, 0.35f},
+      {P_SAT_DRIVE, 0.20f}, {P_SAT_TYPE, 1.f}, {P_EASY_MODE, 1.f},
+      {P_EASY_CHAR, 0.f}, {P_MIX, 1.f}, {-1, 0}}},
+    {"Easy Room Glue", "Mix Bus", 9,
+     {{P_THRESHOLD, 0.60f}, {P_DRUM_TYPE, 3.f}, {P_BEEF, 0.30f}, {P_AIR, 0.40f},
+      {P_SAT_DRIVE, 0.15f}, {P_SAT_TYPE, 1.f}, {P_EASY_MODE, 1.f},
+      {P_EASY_CHAR, 0.f}, {P_MIX, 1.f}, {-1, 0}}},
+    {"Easy Parallel Squish", "Parallel", 9,
+     {{P_THRESHOLD, 0.45f}, {P_DRUM_TYPE, 5.f}, {P_BEEF, 0.50f},
+      {P_AIR, 0.25f}, {P_SAT_DRIVE, 0.60f}, {P_SAT_TYPE, 2.f},
+      {P_EASY_MODE, 0.f}, {P_EASY_CHAR, 1.f}, {P_MIX, 0.40f}, {-1, 0}}},
 };
 
 inline constexpr int kPresetCount =

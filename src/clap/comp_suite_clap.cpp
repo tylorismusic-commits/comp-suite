@@ -567,7 +567,31 @@ bool paramsValueToText(const clap_plugin_t* p, clap_id id, double value,
       std::snprintf(out, size, "%.1f dB", 18.0 * value);
       return true;
     case P_SAT_DRIVE:
-      std::snprintf(out, size, "%+.1f dB", -12.0 + 24.0 * value);
+      if (model == 9) {
+        std::snprintf(out, size, "%.0f%%", value * 100.0);
+      } else {
+        std::snprintf(out, size, "%+.1f dB", -12.0 + 24.0 * value);
+      }
+      return true;
+    case P_BEEF:
+    case P_AIR:
+      std::snprintf(out, size, "%.0f%%", value * 100.0);
+      return true;
+    case P_DRUM_TYPE:
+      std::snprintf(
+          out, size, "%s",
+          kDrumTypeLabels[std::clamp(static_cast<int>(value + 0.5), 0, 5)]);
+      return true;
+    case P_EASY_MODE:
+      std::snprintf(out, size, "%s", kEasyModeLabels[value > 0.5 ? 1 : 0]);
+      return true;
+    case P_EASY_CHAR:
+      std::snprintf(out, size, "%s", kEasyCharLabels[value > 0.5 ? 1 : 0]);
+      return true;
+    case P_SAT_TYPE:
+      std::snprintf(
+          out, size, "%s",
+          kSatTypeLabels[std::clamp(static_cast<int>(value + 0.5), 0, 2)]);
       return true;
     case P_ATTACK_MODE:
       std::snprintf(out, size, "%s", kAttackModeLabels[value > 0.5 ? 1 : 0]);

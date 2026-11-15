@@ -687,15 +687,23 @@ int main() {
     // Clean's input gain is centred: 0.5 is unity.  The 76s use 0.6.
     c.input = (m == static_cast<int>(Model::Clean) ||
                m == static_cast<int>(Model::Molot) ||
-               m == static_cast<int>(Model::Red))
+               m == static_cast<int>(Model::Red) ||
+               m == static_cast<int>(Model::Easy))
                   ? 0.5f
                   : 0.6f;
     c.threshold = (m == static_cast<int>(Model::Vca) ||
                    m == static_cast<int>(Model::Clean) ||
                    m == static_cast<int>(Model::Molot) ||
-                   m == static_cast<int>(Model::Red))
+                   m == static_cast<int>(Model::Red) ||
+                   m == static_cast<int>(Model::Easy))
                       ? 1.0f
                       : 0.0f;
+    if (m == static_cast<int>(Model::Easy)) {
+      // Easy's tone section is intentionally active by default.
+      c.beef = 0.0f;
+      c.air = 0.0f;
+      c.satDrive = 0.0f;
+    }
     c.makeup = 0.5f;  // unity: the make-up controls are bipolar
     c.output = 0.5f;
     c.ratio = 0.5f;

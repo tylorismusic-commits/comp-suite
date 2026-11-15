@@ -39,6 +39,12 @@ enum ParamId : uint32_t {
   P_SAT_DRIVE,
   P_ATTACK_MODE,
   P_STEREO_MODE,
+  P_BEEF,
+  P_AIR,
+  P_DRUM_TYPE,
+  P_EASY_MODE,
+  P_EASY_CHAR,
+  P_SAT_TYPE,
   P_COUNT
 };
 
@@ -74,10 +80,16 @@ struct ParamSpec {
 
 inline constexpr const char* kModelLabels[] = {"76Blue", "76Black", "2A",
                                                "3A",     "Xpress",  "VCA",
-                                               "Clean",  "Molot",  "Red"};
+                                               "Clean",  "Molot",  "Red",
+                                               "Easy"};
 inline constexpr const char* kAttackModeLabels[] = {"Alpha", "Sigma"};
 inline constexpr const char* kStereoModeLabels[] = {
     "Mono", "Dual Mono", "M", "S", "M/S", "Stereo"};
+inline constexpr const char* kDrumTypeLabels[] = {"Toms",  "Kick", "Snare",
+                                                  "Room",  "OH",   "Parallel"};
+inline constexpr const char* kEasyModeLabels[] = {"Squish", "Lift"};
+inline constexpr const char* kEasyCharLabels[] = {"Normal", "Extreme"};
+inline constexpr const char* kSatTypeLabels[] = {"Soft", "Tape", "Hard"};
 inline constexpr const char* kDistortionLabels[] = {"Off", "Dist 2", "Dist 3",
                                                     "Clip"};
 inline constexpr const char* kMeterLabels[] = {"GR",   "+8", "+4", "Graph",
@@ -85,7 +97,7 @@ inline constexpr const char* kMeterLabels[] = {"GR",   "+8", "+4", "Graph",
 inline constexpr const char* kScSourceLabels[] = {"Internal", "External"};
 
 inline constexpr ParamSpec kParamSpecs[P_COUNT] = {
-    {"model", "Model", "Compressor", 0.0, 8.0, 0.0, true, false, false, nullptr,
+    {"model", "Model", "Compressor", 0.0, 9.0, 0.0, true, false, false, nullptr,
      labels(kModelLabels)},
     {"power", "Power", "Compressor", 0.0, 1.0, 1.0, true, false, true, nullptr,
      {}},
@@ -132,6 +144,17 @@ inline constexpr ParamSpec kParamSpecs[P_COUNT] = {
      false, nullptr, labels(kAttackModeLabels)},
     {"stereo_mode", "Stereo Mode", "Compressor", 0.0, 5.0, 5.0, true, false,
      false, nullptr, labels(kStereoModeLabels)},
+    {"beef", "Beef", "Compressor", 0.0, 1.0, 0.35, false, false, false, nullptr,
+     {}},
+    {"air", "Air", "Compressor", 0.0, 1.0, 0.2, false, false, false, nullptr, {}},
+    {"drum_type", "Drum Type", "Compressor", 0.0, 5.0, 2.0, true, false, false,
+     nullptr, labels(kDrumTypeLabels)},
+    {"easy_mode", "Character", "Compressor", 0.0, 1.0, 0.0, true, false, false,
+     nullptr, labels(kEasyModeLabels)},
+    {"easy_char", "Intensity", "Compressor", 0.0, 1.0, 0.0, true, false, false,
+     nullptr, labels(kEasyCharLabels)},
+    {"sat_type", "Saturation Type", "Compressor", 0.0, 2.0, 1.0, true, false,
+     false, nullptr, labels(kSatTypeLabels)},
 };
 
 static_assert(sizeof(kParamSpecs) / sizeof(kParamSpecs[0]) == P_COUNT,
@@ -242,6 +265,12 @@ inline Controls controlsFrom(const Shared& s) {
   c.satDrive = static_cast<float>(s.get(P_SAT_DRIVE));
   c.attackMode = static_cast<float>(s.get(P_ATTACK_MODE));
   c.stereoMode = static_cast<float>(s.get(P_STEREO_MODE));
+  c.beef = static_cast<float>(s.get(P_BEEF));
+  c.air = static_cast<float>(s.get(P_AIR));
+  c.drumType = static_cast<float>(s.get(P_DRUM_TYPE));
+  c.easyMode = static_cast<float>(s.get(P_EASY_MODE));
+  c.easyChar = static_cast<float>(s.get(P_EASY_CHAR));
+  c.satType = static_cast<float>(s.get(P_SAT_TYPE));
   return c;
 }
 

@@ -27,7 +27,8 @@ int main(int argc, char** argv) {
 
   static const char* kNames[] = {"76blue", "76black", "2a",    "3a",
                                 "xpress", "vca",     "clean", "molot",
-                                "red"};
+                                "red",
+                                "easy"};
   Panel panel;
   panel.loadFont(fontDir);
   for (int model = 0; model < static_cast<int>(comp::Model::Count); ++model) {

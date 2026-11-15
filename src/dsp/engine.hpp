@@ -8,6 +8,7 @@
 #include "clean.hpp"
 #include "common.hpp"
 #include "molot.hpp"
+#include "easy.hpp"
 #include "red.hpp"
 #include "controls.hpp"
 #include "distressor.hpp"
@@ -34,6 +35,7 @@ public:
     clean_.prepare(sr_);
     molot_.prepare(sr_);
     red_.prepare(sr_);
+    easy_.prepare(sr_);
 
     fadeStep_ = 1.0f / std::max(1.0f, 0.02f * sr_);
     mixSmooth_.setTime(10.0f, sr_);
@@ -204,6 +206,7 @@ public:
     clean_.reset();
     molot_.reset();
     red_.reset();
+    easy_.reset();
     vuPower_ = 0.0f;
   }
 
@@ -220,6 +223,7 @@ private:
       case Model::Clean: return clean_.process(l, r, sc);
       case Model::Molot: return molot_.process(l, r, sc);
       case Model::Red: return red_.process(l, r, sc);
+      case Model::Easy: return easy_.process(l, r, sc);
       default: return 0.0f;
     }
   }
@@ -235,6 +239,7 @@ private:
       case Model::Clean: clean_.setControls(c); break;
       case Model::Molot: molot_.setControls(c); break;
       case Model::Red: red_.setControls(c); break;
+      case Model::Easy: easy_.setControls(c); break;
       default: break;
     }
   }
@@ -250,6 +255,7 @@ private:
       case Model::Clean: clean_.reset(); break;
       case Model::Molot: molot_.reset(); break;
       case Model::Red: red_.reset(); break;
+      case Model::Easy: easy_.reset(); break;
       default: break;
     }
   }
@@ -282,6 +288,7 @@ private:
   CleanCompressor clean_;
   MolotCompressor molot_;
   RedCompressor red_;
+  EasyCompressor easy_;
 };
 
 } // namespace comp

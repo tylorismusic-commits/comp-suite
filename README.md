@@ -1,8 +1,8 @@
 # Comp Suite
 
-**Version 0.8.0** · GPL-3.0-or-later · [Releases](https://github.com/tylorismusic-commits/comp-suite/releases)
+**Version 0.9.0** · GPL-3.0-or-later · [Releases](https://github.com/tylorismusic-commits/comp-suite/releases)
 
-Nine compressor models in one CLAP and LV2 plugin for Linux. The goal is a
+Ten compressor models in one CLAP and LV2 plugin for Linux. The goal is a
 single plugin that covers a whole mix: transparent digital control, classic
 FET / optical / VCA behaviour, and character models with saturation and stereo
 tricks.
@@ -22,6 +22,7 @@ tricks.
 | VCA | SSL-style stereo bus compressor | Feed-forward VCA, link and auto release |
 | Molot | Character compressor | Diode envelope, soft-knee transfer, saturator, six stereo modes |
 | **Red** | British Class-A VCA (Focusrite Red family) | True-peak feed-forward, compression then limiting, transformer colour |
+| **Easy** | Drum character compressor | Squish/Lift, drum-type voicing, Beef/Air, Soft/Tape/Hard saturation |
 
 Every model shares one ratio ladder, so the same control position means the
 same ratio when switching tabs. Clean, VCA and Molot also share the same
@@ -92,7 +93,8 @@ A release tarball is produced by `cmake --build build --target dist`.
 |---|---|
 | ![Clean](docs/clean.png) | ![Molot](docs/molot.png) |
 | ![76Blue](docs/76.png) | ![VCA](docs/vca.png) |
-| ![Red](docs/red.png) | ![Curve](docs/clean-curve.png) |
+| ![Red](docs/red.png) | ![Easy](docs/easy.png) |
+| ![Curve](docs/clean-curve.png) | |
 
 ![Xpress](docs/xpress.png)
 
@@ -101,7 +103,7 @@ A release tarball is produced by `cmake --build build --target dist`.
 The plugin is usable and released. Work continues on:
 
 - **Hearth Compressor** — a British Neve-family compressor, named after the
-  Hearth channel strip.
+  Hearth channel strip. Next model.
 - **Oversampling** — 2× FET gain cell with latency compensation.
 
 Measured behaviour lives in `tools/measure.py`, which renders reference

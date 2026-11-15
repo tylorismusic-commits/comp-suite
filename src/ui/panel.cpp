@@ -39,7 +39,7 @@ struct Skin {
 };
 
 enum Model { kBlue76, kBlack76, kOpto2A, kOpto3A, kXpress, kVca, kClean,
-             kMolot, kRed };
+             kMolot, kRed, kEasy };
 
 Skin skinFor(int model) {
   switch (model) {
@@ -103,6 +103,22 @@ Skin skinFor(int model) {
               false,
               {0.08, 0.08, 0.08}, {0.95, 0.95, 0.95}, {0.92, 0.92, 0.92}, {0.05, 0.05, 0.05},
               {0.40, 0.40, 0.40}};
+    case kEasy:
+      return {"Easy  -  drum character compressor",
+              {0.16, 0.42, 0.52}, {0.10, 0.30, 0.38},
+              {0.92, 0.94, 0.93}, {0.62, 0.72, 0.74},
+              {0.09, 0.20, 0.25},
+              {0.22, 0.45, 0.53}, {0.12, 0.32, 0.40}, {0.85, 0.92, 0.94},
+              {0.55, 0.95, 1.0},
+              {0.08, 0.14, 0.17}, {0.88, 0.90, 0.89}, {0.10, 0.10, 0.10},
+              {0.15, 0.18, 0.20},
+              {0.08, 0.14, 0.17}, false,
+              {0.78, 0.80, 0.82}, {0.45, 0.48, 0.50}, {0.10, 0.26, 0.33},
+              {0.90, 0.95, 1.0},
+              true,
+              {0.14, 0.30, 0.36}, {0.85, 0.25, 0.18}, {0.90, 0.94, 0.95},
+              {1.0, 0.96, 0.92},
+              {0.55, 0.60, 0.62}};
     case kRed:
       return {"Red  -  class-A VCA compressor",
               {0.58, 0.12, 0.11}, {0.46, 0.08, 0.08},
@@ -259,7 +275,7 @@ Rgb mix(Rgb a, Rgb b, double t) {
 // Models that have a Side Chain page.
 bool hasSideChain(int model) {
   return model == kXpress || model == kVca || model == kClean ||
-         model == kMolot || model == kRed;
+         model == kMolot || model == kRed || model == kEasy;
 }
 
 bool isLimiter76(int model) {
@@ -393,10 +409,10 @@ void Panel::layout(const Shared& shared, const PanelState& state) {
   // Labels are indexed by model value; display order is separate so the tab
   // strip can lead with Clean without renumbering the model parameter (which
   // would silently repoint every saved session and preset).
-  static const char* kTabNames[9] = {"76Blue", "76Black", "2A",    "3A",
-                                     "Xpress", "VCA",     "Clean", "Molot",
-                                     "Red"};
-  static const int kTabOrder[9] = {6, 0, 1, 2, 3, 4, 5, 7, 8};
+  static const char* kTabNames[10] = {"76Blue", "76Black", "2A",    "3A",
+                                      "Xpress", "VCA",     "Clean", "Molot",
+                                      "Red",    "Easy"};
+  static const int kTabOrder[10] = {6, 0, 1, 2, 3, 4, 5, 7, 8, 9};
   const int tabCount = static_cast<int>(comp::Model::Count);
   const double tabW = (980.0 - (tabCount - 1) * 8.0) / tabCount;
   for (int i = 0; i < tabCount; ++i) {
@@ -537,6 +553,23 @@ void Panel::layout(const Shared& shared, const PanelState& state) {
         button(P_DISTORTION, 890, 400, 60, 22, 3.0, "CLIP");
         knob(P_MIX, 796, 508, 25, "MIX", sc(kScaleMix), true);
         knob(P_OUTPUT, 912, 500, 27, "OUTPUT", sc(kScaleOutputGeneric));
+      }
+      break;
+    }
+    case kEasy: {
+      knob(P_THRESHOLD, 240, 424, 34, "THRESHOLD", sc(kScaleThreshold));
+      knob(P_BEEF, 400, 424, 30, "BEEF", {});
+      knob(P_AIR, 560, 424, 30, "AIR", {});
+      knob(P_SAT_DRIVE, 700, 424, 30, "SATURATION", {});
+      knob(P_DRUM_TYPE, 852, 420, 24, "DRUM TYPE", {});
+      knob(P_SAT_TYPE, 620, 552, 26, "SAT TYPE", {});
+      knob(P_INPUT, 120, 520, 26, "INPUT", sc(kScaleOutputGeneric), true);
+      knob(P_MIX, 796, 508, 25, "MIX", sc(kScaleMix), true);
+      knob(P_OUTPUT, 912, 500, 27, "OUTPUT", sc(kScaleOutputGeneric));
+      toggle(P_EASY_MODE, 320, 515, 1.0, "LIFT", "SQUISH");
+      toggle(P_EASY_CHAR, 480, 515, 1.0, "EXTREME", "NORMAL");
+      if (state.rightPage == 0) {
+        knob(P_SC_HPF, 888, 260, 34, "SIDE CHAIN HPF", sc(kScaleHpf));
       }
       break;
     }

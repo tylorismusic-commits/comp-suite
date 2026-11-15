@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.9.0 — 2026-11-15
+
+### Added
+
+- **Easy model** — a drum-focused character compressor in a teal and cream
+  finish, with two characters on one switch:
+  - **Squish** — fast, 8:1, hard-ish knee, aggressive.
+  - **Lift** — slower, 2.5:1, softer knee, glues.
+  - **Drum Type** (Toms / Kick / Snare / Room / OH / Parallel) re-voices the
+    detector high-pass and the attack/release pair.
+  - **Beef** (low shelf into the compressor), **Air** (high shelf after it) and
+    **Saturation** with Soft / Tape / Hard flavours.
+  - Normal/Extreme intensity, link control, parallel mix.
+- Four Easy presets: Squish Drums, Lift Drums, Room Glue, Parallel Squish.
+
+### Notes
+
+- `P_COUNT` grew by six; CLAP state saved by an older build will not load, as
+  it is size-checked.
+
 ## 0.8.0 — 2026-11-15
 
 ### Added
