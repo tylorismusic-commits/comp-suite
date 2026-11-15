@@ -110,6 +110,8 @@ public:
     releaseDeepCoeff_ = timeCoeff(releaseMs_ * 1.35f, sr_);
 
     outputGain_ = dbToGain(-12.0f + 24.0f * clampf(c.output, 0.0f, 1.0f));
+    // Bipolar make-up, like the other models, independent of the output trim.
+    makeupGain_ = dbToGain(20.0f * (clampf(c.makeup, 0.0f, 1.0f) - 0.5f));
   }
 
   // Processes one stereo frame in place.  Returns gain reduction in dB (>= 0).
@@ -170,8 +172,10 @@ public:
 
     const float cellL = inL * gain;
     const float cellR = inR * gain;
-    left = processChannel(cellL, 0, fetDrive, drive) * outputGain_;
-    right = processChannel(cellR, 1, fetDrive, drive) * outputGain_;
+    left = processChannel(cellL, 0, fetDrive, drive) * makeupGain_ *
+           outputGain_;
+    right = processChannel(cellR, 1, fetDrive, drive) * makeupGain_ *
+            outputGain_;
     return grDb;
   }
 
@@ -212,6 +216,7 @@ private:
   float releaseCoeff_ = 0.0f;
   float releaseDeepCoeff_ = 0.0f;
   float outputGain_ = 1.0f;
+  float makeupGain_ = 1.0f;
   float overDb_ = 0.0f;
   OnePoleLP lpOut_[2];
   OnePoleLP dcLp_[2];

@@ -22,23 +22,24 @@ enum class Model : int {
 };
 
 // Output calibration so the models sit at roughly the same level when the
-// controls are in the same place.  Measured on broadband programme material at
-// noon settings (input/output/makeup 0.5, attack/release 0.5, 4:1), anchored to
-// the 76s, and averaged against a 100 Hz tone so bass-heavy and broadband
-// sources are both within about 2 dB.  The output knob is a trim around this
-// calibrated level; it does not change the model's dynamics.
+// controls are in the same place.  Measured at noon settings
+// (input/output/makeup 0.5, attack/release 0.5, 4:1) on broadband programme
+// material and on a 100 Hz tone, then averaged so neither is more than about
+// 2 dB out.  The 76s are the anchor at the level where their OUTPUT reaches a
+// Tukan NC76 at noon; the other models are trimmed to them.  The output knob
+// is a trim around this calibrated level and does not change the dynamics.
 inline constexpr float kModelTrimDb[static_cast<std::size_t>(
     Model::Count)] = {
-    0.0f,   // Blue76: reference
-    0.0f,   // Black76
-    -7.5f,  // Opto2A
-    -7.5f,  // Opto3A
-    -6.5f,  // Xpress
-    -8.0f,  // Vca
-    -12.0f, // Clean
-    -12.0f, // Molot
-    -7.5f,  // Red
-    -7.5f,  // Easy
+    12.0f, // Blue76: reference, matching the NC76 at noon
+    12.0f, // Black76
+    4.5f,  // Opto2A
+    4.5f,  // Opto3A
+    5.5f,  // Xpress
+    4.0f,  // Vca
+    0.0f,  // Clean
+    0.0f,  // Molot
+    4.5f,  // Red
+    3.0f,  // Easy
 };
 
 // Every control is normalised to 0..1.  Each model maps the shared slots to

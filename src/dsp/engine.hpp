@@ -276,8 +276,19 @@ private:
       // dry signal whatever the mix setting is.
       const float wetMix = on * mix;
 
-      // The limiter and Clean's colour work on the untrimmed model output, so
-      // the calibration trim changes level only, never how they behave.
+      // Clean's colour sees the untrimmed model output, then the calibration
+      // trim sets the model's level, then the limiter protects that final
+      // level.  The trim never changes the colour's drive or the detector.
+      if (active_ == static_cast<int>(Model::Clean) && controls_.enabled) {
+        clean_.postColour(wetL, wetR);
+      }
+
+      // Model level calibration: applied to the wet path only, after the
+      // model's colour, so it changes level without touching dynamics.
+      const float trim = dbToGain(kModelTrimDb[active_]);
+      wetL *= trim;
+      wetR *= trim;
+
       if (controls_.limiterOn && on > 0.001f &&
           active_ != static_cast<int>(Model::Red)) {
         // Output limiter: stereo-linked peak limiter with a hard safety
@@ -314,19 +325,6 @@ private:
         wetL = yL;
         wetR = yR;
       }
-
-      // The Clean model's colour sits after the limiter, right before the
-      // output, and only while the plugin is active.
-      if (active_ == static_cast<int>(Model::Clean) && controls_.enabled) {
-        clean_.postColour(wetL, wetR);
-      }
-
-      // Model level calibration: applied to the wet path only, after all
-      // nonlinear stages, so every model lands at the same output level at
-      // noon without changing its dynamics or colour.
-      const float trim = dbToGain(kModelTrimDb[active_]);
-      wetL *= trim;
-      wetR *= trim;
 
       float outL = dryL + wetMix * (wetL - dryL);
       float outR = dryR + wetMix * (wetR - dryR);

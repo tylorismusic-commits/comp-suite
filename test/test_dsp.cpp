@@ -1219,7 +1219,7 @@ int main() {
     Meters meters;
     std::vector<float> l(256), r(256);
     std::vector<float> out;
-    for (int block = 0; block < 40; ++block) {
+    for (int block = 0; block < 100; ++block) {
       for (int i = 0; i < 256; ++i) {
         const int n = block * 256 + i;
         const float env = std::exp(-static_cast<float>(n) / (0.12f * kSr));
@@ -1229,7 +1229,9 @@ int main() {
       out.insert(out.end(), l.begin(), l.end());
     }
     double sum = 0.0;
-    const size_t tail = out.size() / 4;
+    // Five whole 55 Hz cycles in the fully decayed tail: the mean is DC, not
+    // an artefact of a partial cycle.
+    const size_t tail = static_cast<size_t>(5.0f * kSr / 55.0f);
     for (size_t i = out.size() - tail; i < out.size(); ++i) sum += out[i];
     const double dc = sum / static_cast<double>(tail);
     char label[96];

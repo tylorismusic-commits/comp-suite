@@ -61,7 +61,8 @@ intensity, and link plus parallel mix behave as on the other models.
 - **Molot stereo modes** — Mono, Dual Mono, Mid, Side, M/S and Stereo.
 - **Level-matched models** — every model is output-calibrated at noon, so
   switching tabs changes the sound, not the monitoring level. The output knob
-  is a trim around that calibrated level.
+  is a trim around that calibrated level; the 76s also have a separate make-up
+  control.
 - **Preset banks** — 49 factory presets, exported as LV2 `pset:Preset` banks.
 - **Ardour integration** — gain reduction in the mixer strip through the
   Harrison inline-display extension.

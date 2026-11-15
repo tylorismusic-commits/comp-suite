@@ -538,6 +538,7 @@ void Panel::layout(const Shared& shared, const PanelState& state) {
       button(P_RATIO, 378, 412, 44, 26, 5.0, "8");
       button(P_RATIO, 378, 442, 44, 26, 3.0, "4");
       button(P_RATIO, 378, 472, 44, 26, 8.0, "ALL");
+      knob(P_MAKEUP, 560, 424, 34, "MAKE UP", sc(kScaleMakeupVca));
       knob(P_MIX, 796, 508, 25, "MIX", sc(kScaleMix), true);
       knob(P_OUTPUT, 912, 500, 32, "OUTPUT", sc(kScaleOutput76));
       break;

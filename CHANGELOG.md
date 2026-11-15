@@ -4,12 +4,12 @@
 
 ### Added
 
-- **Level-matched models.** Every model now carries an output calibration trim,
-  measured at noon settings on both broadband and bass-heavy material, so
-  flipping tabs no longer jumps the monitoring level. The 76s are the
-  reference; Clean and Molot were about 12 dB hot and are now in line. The
-  trim sits after the model's colour and limiter, so it changes level only,
-  never dynamics.
+- **Level-matched models.** The 76s are calibrated to the NC76's level at noon,
+  and every other model is trimmed to them, measured on broadband and
+  bass-heavy material. Flipping tabs no longer jumps the monitoring level.
+  The trim changes level only, never dynamics. The 76s also gain a **MAKE UP**
+  control, separate from OUTPUT, so their level can be matched and then trimmed
+  independently.
 - **Oversampling: Off / 2× / 4×**, selected from an **OS** control in the
   header. Off is the default and stays zero-latency.
   - 2× adds **30 samples** of latency, 4× adds **45 samples** at the host rate;

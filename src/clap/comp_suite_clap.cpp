@@ -397,7 +397,8 @@ bool paramAppliesToModel(uint32_t param, int model) {
              model == la3a || model == xpress || model == clean ||
              model == red || model == easy;
     case P_MAKEUP:
-      return model == la2a || model == la3a || model == vca || model == clean ||
+      return model == blue || model == black || model == la2a ||
+             model == la3a || model == vca || model == clean ||
              model == molot || model == red;
     case P_RATIO:
       return model != easy;  // Easy's ratio follows its Character switch
