@@ -63,11 +63,11 @@ int main(int argc, char** argv) {
   check(lilv_uis_size(uis) == 1, "one X11 UI declared");
 
   const uint32_t nPorts = lilv_plugin_get_num_ports(plugin);
-  const uint32_t expected = 4 + comp::P_COUNT + 2 + 6;
+  const uint32_t expected = 4 + comp::P_COUNT + 2 + 7 + 1 + 1;
   char portCountLabel[96];
   std::snprintf(portCountLabel, sizeof(portCountLabel),
-                "%u ports declared (%u expected: 4 audio + %u params + 4 "
-                "meters), got %u",
+                "%u ports declared (%u expected: 4 audio + %u params + 7 "
+                "meters + sc state + latency), got %u",
                 expected, expected, comp::P_COUNT, nPorts);
   check(nPorts == expected, portCountLabel);
 
@@ -245,6 +245,20 @@ int main(int argc, char** argv) {
       peak = std::max(peak, std::fabs(outL[i]));
     }
   }
+  const uint32_t scActivePort = 4 + comp::P_COUNT + 2 + 7;
+  const uint32_t latencyPort = scActivePort + 1;
+  check(values[scActivePort] == 0.0f,
+        "sidechain-active port is false without a routed side-chain");
+  check(values[latencyPort] == 0.0f, "latency port is zero when off");
+
+  // The latency follows the oversampling mode.
+  values[4 + comp::P_OVERSAMPLE] = 1.0f;
+  lilv_instance_run(inst, frames);
+  check(values[latencyPort] == 30.0f, "latency port reports 2x (30 samples)");
+  values[4 + comp::P_OVERSAMPLE] = 2.0f;
+  lilv_instance_run(inst, frames);
+  check(values[latencyPort] == 45.0f, "latency port reports 4x (45 samples)");
+
   lilv_instance_deactivate(inst);
   check(finite, "LV2 processing stays finite");
   check(peak > 0.01f && peak < 2.0f, "LV2 output has a sane level");

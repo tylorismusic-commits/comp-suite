@@ -68,15 +68,23 @@ clap_host_t makeHost() {
 
 int gRescans = 0;
 int gCallbacks = 0;
+int gLatencyChanges = 0;
+int gRestarts = 0;
 
 void hostRescan(const clap_host_t*, clap_param_rescan_flags) { ++gRescans; }
 void hostRequestCallback(const clap_host_t*) { ++gCallbacks; }
+void hostLatencyChanged(const clap_host_t*) { ++gLatencyChanges; }
+void hostRequestRestart(const clap_host_t*) { ++gRestarts; }
 
 const clap_host_params_t kHostParams = {hostRescan, nullptr, nullptr};
+const clap_host_latency_t kHostLatency = {hostLatencyChanged};
 
 const void* hostGetExtension(const clap_host_t*, const char* id) {
   if (std::strcmp(id, CLAP_EXT_PARAMS) == 0) {
     return &kHostParams;
+  }
+  if (std::strcmp(id, CLAP_EXT_LATENCY) == 0) {
+    return &kHostLatency;
   }
   return nullptr;
 }
@@ -140,6 +148,7 @@ int main(int argc, char** argv) {
   clap_host_t host = makeHost();
   host.get_extension = hostGetExtension;
   host.request_callback = hostRequestCallback;
+  host.request_restart = hostRequestRestart;
   const clap_plugin_t* plugin =
       factory->create_plugin(factory, &host, "com.tylorismusic.compsuite");
   check(plugin != nullptr, "plugin instantiates");
@@ -156,8 +165,13 @@ int main(int argc, char** argv) {
       plugin->get_extension(plugin, CLAP_EXT_GUI));
   auto* meter = static_cast<const clap_plugin_gain_adjustment_metering_t*>(
       plugin->get_extension(plugin, CLAP_EXT_GAIN_ADJUSTMENT_METERING));
+  auto* latency = static_cast<const clap_plugin_latency_t*>(
+      plugin->get_extension(plugin, CLAP_EXT_LATENCY));
   check(params && params->count(plugin) == comp::P_COUNT,
         "parameter count matches the table");
+  check(latency != nullptr, "latency extension present");
+  check(latency && latency->get(plugin) == 0,
+        "latency is zero with oversampling off");
   check(state != nullptr, "state extension present");
   check(gui != nullptr, "gui extension present");
   check(meter != nullptr, "gain-adjustment metering present");
@@ -246,6 +260,45 @@ int main(int argc, char** argv) {
     params->get_value(plugin, 4, &value);
     check(std::fabs(value - 3.0) < 1e-9,
           "76 ratio snaps to a button and is reported back");
+
+  // Oversampling changes the reported latency and asks the host for a
+  // restart, because CLAP only allows latency to change while activating.
+  {
+    clap_input_events_t osIn{&events, inSize, inGet};
+    clap_output_events_t osOut{&events, outTryPush};
+    clap_process_t osProc{};
+    osProc.frames_count = 0;
+    osProc.audio_inputs = &inBuf;
+    osProc.audio_outputs = &outBuf;
+    osProc.audio_inputs_count = 1;
+    osProc.audio_outputs_count = 1;
+    osProc.in_events = &osIn;
+    osProc.out_events = &osOut;
+
+    const int restartsBefore = gRestarts;
+    events.inputs.push_back(paramEvent(comp::P_OVERSAMPLE, 1.0));
+    plugin->process(plugin, &osProc);
+    events.inputs.clear();
+    check(latency && latency->get(plugin) == 30,
+          "2x oversampling reports 30 samples");
+    plugin->on_main_thread(plugin);
+    check(gRestarts > restartsBefore,
+          "oversampling change requests a host restart");
+
+    events.inputs.push_back(paramEvent(comp::P_OVERSAMPLE, 2.0));
+    plugin->process(plugin, &osProc);
+    events.inputs.clear();
+    check(latency && latency->get(plugin) == 45,
+          "4x oversampling reports 45 samples");
+    plugin->on_main_thread(plugin);
+
+    events.inputs.push_back(paramEvent(comp::P_OVERSAMPLE, 0.0));
+    plugin->process(plugin, &osProc);
+    events.inputs.clear();
+    check(latency && latency->get(plugin) == 0,
+          "oversampling off reports zero again");
+    plugin->on_main_thread(plugin);
+  }
     // Put ALL back so the state round-trip below still has its reference.
     // The first call clears the dirty flag, the second accepts the event.
     events.inputs.push_back(paramEvent(4, 8.0));

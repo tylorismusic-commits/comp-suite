@@ -45,6 +45,7 @@ enum ParamId : uint32_t {
   P_EASY_MODE,
   P_EASY_CHAR,
   P_SAT_TYPE,
+  P_OVERSAMPLE,
   P_COUNT
 };
 
@@ -90,6 +91,7 @@ inline constexpr const char* kDrumTypeLabels[] = {"Toms",  "Kick", "Snare",
 inline constexpr const char* kEasyModeLabels[] = {"Squish", "Lift"};
 inline constexpr const char* kEasyCharLabels[] = {"Normal", "Extreme"};
 inline constexpr const char* kSatTypeLabels[] = {"Soft", "Tape", "Hard"};
+inline constexpr const char* kOversampleLabels[] = {"Off", "2x", "4x"};
 inline constexpr const char* kDistortionLabels[] = {"Off", "Dist 2", "Dist 3",
                                                     "Clip"};
 inline constexpr const char* kMeterLabels[] = {"GR",   "+8", "+4", "Graph",
@@ -161,6 +163,8 @@ inline constexpr ParamSpec kParamSpecs[P_COUNT] = {
      nullptr, labels(kEasyCharLabels)},
     {"sat_type", "Saturation Type", "Compressor", 0.0, 2.0, 1.0, true, false,
      false, nullptr, labels(kSatTypeLabels)},
+    {"oversample", "Oversampling", "Oversampling", 0.0, 2.0, 0.0, true, false,
+     false, nullptr, labels(kOversampleLabels)},
 };
 
 static_assert(sizeof(kParamSpecs) / sizeof(kParamSpecs[0]) == P_COUNT,
@@ -184,6 +188,8 @@ public:
     inPeakRDb.store(-120.0f, std::memory_order_relaxed);
     outPeakLDb.store(-120.0f, std::memory_order_relaxed);
     outPeakRDb.store(-120.0f, std::memory_order_relaxed);
+    scPeakDb.store(-120.0f, std::memory_order_relaxed);
+    scActive.store(false, std::memory_order_relaxed);
   }
 
   double get(uint32_t p) const noexcept {
@@ -244,6 +250,8 @@ public:
   std::atomic<float> inPeakRDb;
   std::atomic<float> outPeakLDb;
   std::atomic<float> outPeakRDb;
+  std::atomic<float> scPeakDb;
+  std::atomic<bool> scActive;
 
 private:
   std::atomic<double> values_[P_COUNT];
@@ -282,6 +290,7 @@ inline Controls controlsFrom(const Shared& s) {
   c.easyMode = static_cast<float>(s.get(P_EASY_MODE));
   c.easyChar = static_cast<float>(s.get(P_EASY_CHAR));
   c.satType = static_cast<float>(s.get(P_SAT_TYPE));
+  c.oversample = static_cast<float>(s.get(P_OVERSAMPLE));
   return c;
 }
 

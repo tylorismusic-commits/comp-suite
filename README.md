@@ -1,6 +1,6 @@
 # Comp Suite
 
-**Version 0.9.0** · GPL-3.0-or-later · [Releases](https://github.com/tylorismusic-commits/comp-suite/releases)
+**Version 1.0.0** · GPL-3.0-or-later · [Releases](https://github.com/tylorismusic-commits/comp-suite/releases)
 
 Ten compressor models in one CLAP and LV2 plugin for Linux. The goal is a
 single plugin that covers a whole mix: transparent digital control, classic
@@ -45,13 +45,18 @@ intensity, and link plus parallel mix behave as on the other models.
 
 - **Metering** — stereo L/R input and output meters, gain-reduction meter with
   LED column, and five displays: gain reduction, +8/+4 VU, GR history, a live
-  **transfer curve** with the operating point, and Off.
+  **transfer curve** with the operating point, and Off. When the external
+  side-chain is routed, the curve follows the side-chain input and marks it
+  **SC**.
 - **Detection that matches the hardware** — 76 and 2A/3A detect in the feedback
   loop; the VCA and Clean are feed-forward. A bounded gain computer keeps the
   76 from nulling on transients.
 - **External side-chain** on both formats, with an Internal/External switch.
 - **Auto-makeup** — tracks average reduction and restores the level.
 - **True-peak limiting** — optional four-times oversampled detector.
+- **Oversampling** — Off, 2× or 4× across the whole signal path, Off by default.
+  2× adds 30 samples of latency and 4× adds 45; both are reported to the host
+  for delay compensation.
 - **Molot stereo modes** — Mono, Dual Mono, Mid, Side, M/S and Stereo.
 - **Preset banks** — 49 factory presets, exported as LV2 `pset:Preset` banks.
 - **Ardour integration** — gain reduction in the mixer strip through the
@@ -113,10 +118,9 @@ A release tarball is produced by `cmake --build build --target dist`.
 
 ## Status
 
-The plugin is usable and released. Ten models is the set; the roadmap now
-focuses on quality rather than more compressors:
-
-- **Oversampling** — 2× FET gain cell with latency compensation.
+1.0 is the finished feature set: ten models, off/2×/4× oversampling, both
+plugin formats. Ten models is the set; the Hearth compressor lives in the
+Hearth channel strip instead.
 
 Measured behaviour lives in `tools/measure.py`, which renders reference
 implementations through REAPER and compares static curves, timing and

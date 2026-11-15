@@ -49,6 +49,29 @@ int main() {
   }
 
   {
+    // The header's oversampling control cycles Off -> 2x -> 4x -> Off.
+    Shared shared;
+    Panel panel;
+    PanelState state;
+    cairo_surface_t* surf =
+        cairo_image_surface_create(CAIRO_FORMAT_RGB24, kPanelWidth, kPanelHeight);
+    cairo_t* cr = cairo_create(surf);
+    panel.draw(cr, shared, state);
+    check(shared.get(P_OVERSAMPLE) == 0.0, "oversampling starts off");
+    panel.pointerDown(shared, state, 686, 32, false);
+    panel.pointerUp();
+    check(shared.get(P_OVERSAMPLE) == 1.0, "oversampling cycles to 2x");
+    panel.pointerDown(shared, state, 686, 32, false);
+    panel.pointerUp();
+    check(shared.get(P_OVERSAMPLE) == 2.0, "oversampling cycles to 4x");
+    panel.pointerDown(shared, state, 686, 32, false);
+    panel.pointerUp();
+    check(shared.get(P_OVERSAMPLE) == 0.0, "oversampling cycles back to off");
+    cairo_destroy(cr);
+    cairo_surface_destroy(surf);
+  }
+
+  {
     // Opening the list applies the preset under the cursor, not just on arrows.
     Shared shared;
     shared.set(P_MODEL, 0);

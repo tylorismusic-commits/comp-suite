@@ -36,6 +36,9 @@ enum Port : uint32_t {
   PORT_IN_PEAK_L,
   PORT_IN_PEAK_R,
   PORT_OUT_VU,
+  PORT_SC_PEAK,
+  PORT_SC_ACTIVE,
+  PORT_LATENCY,
   PORT_COUNT
 };
 
@@ -61,6 +64,9 @@ struct Plugin {
   float* inPeakL = nullptr;
   float* inPeakR = nullptr;
   float* outVu = nullptr;
+  float* scPeak = nullptr;
+  float* scActive = nullptr;
+  float* latency = nullptr;
 
   comp::InlineDisplay display;
   const comp::InlineDisplayQueueDraw* queueDraw = nullptr;
@@ -101,6 +107,9 @@ void connectPort(LV2_Handle handle, uint32_t port, void* data) {
     case PORT_IN_PEAK_L: p->inPeakL = static_cast<float*>(data); break;
     case PORT_IN_PEAK_R: p->inPeakR = static_cast<float*>(data); break;
     case PORT_OUT_VU: p->outVu = static_cast<float*>(data); break;
+    case PORT_SC_PEAK: p->scPeak = static_cast<float*>(data); break;
+    case PORT_SC_ACTIVE: p->scActive = static_cast<float*>(data); break;
+    case PORT_LATENCY: p->latency = static_cast<float*>(data); break;
     default:
       // Control input: stash the pointer so run() can read it.
       if (!p->ports) {
@@ -117,6 +126,9 @@ void connectPort(LV2_Handle handle, uint32_t port, void* data) {
 void activate(LV2_Handle handle) {
   auto* p = static_cast<Plugin*>(handle);
   p->engine.reset();
+  if (p->latency) {
+    *p->latency = static_cast<float>(p->engine.latencySamples());
+  }
 }
 
 void deactivate(LV2_Handle) {}
@@ -180,6 +192,15 @@ void run(LV2_Handle handle, uint32_t frames) {
   }
   if (p->outVu) {
     *p->outVu = p->meters.outVuDb;
+  }
+  if (p->scPeak) {
+    *p->scPeak = p->meters.scPeakDb;
+  }
+  if (p->scActive) {
+    *p->scActive = p->meters.scActive ? 1.0f : 0.0f;
+  }
+  if (p->latency) {
+    *p->latency = static_cast<float>(p->engine.latencySamples());
   }
 
   // Feed the Ardour mixer-strip display.  The render itself happens on the

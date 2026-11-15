@@ -328,7 +328,6 @@ struct Plugin {
   Shared shared;
   Engine engine;
   Editor editor{shared};
-  bool active = false;
   double sampleRate = 48000.0;
   Meters meters;
   std::atomic<float> grForHost{0.0f};
@@ -336,7 +335,9 @@ struct Plugin {
   // rescan.  rescan() is main-thread only, so audio-thread changes queue a
   // main-thread callback.
   std::atomic<int> infoModel{-1};
+  std::atomic<int> reportedOversample{-1};
   std::atomic<bool> rescanQueued{false};
+  std::atomic<bool> active{false};
 };
 
 const clap_plugin_descriptor_t kDescriptor = {
@@ -670,6 +671,11 @@ bool paramsValueToText(const clap_plugin_t* p, clap_id id, double value,
           out, size, "%s",
           kSatTypeLabels[std::clamp(static_cast<int>(value + 0.5), 0, 2)]);
       return true;
+    case P_OVERSAMPLE:
+      std::snprintf(
+          out, size, "%s",
+          kOversampleLabels[std::clamp(static_cast<int>(value + 0.5), 0, 2)]);
+      return true;
     case P_ATTACK_MODE:
       std::snprintf(out, size, "%s", kAttackModeLabels[value > 0.5 ? 1 : 0]);
       return true;
@@ -813,8 +819,13 @@ void emitDirty(Plugin* s, const clap_output_events_t* out) {
 // Queue a parameter-info rescan if the model changed since the last one.
 // Safe on the audio thread: it only sets a flag and asks the host for a
 // main-thread callback.
-void noteModelChange(Plugin* s) {
-  if (currentModel(s) == s->infoModel.load(std::memory_order_relaxed)) {
+void noteHostChanges(Plugin* s) {
+  const bool modelChanged =
+      currentModel(s) != s->infoModel.load(std::memory_order_relaxed);
+  const int os = static_cast<int>(s->shared.get(P_OVERSAMPLE) + 0.5);
+  const bool latencyChanged =
+      os != s->reportedOversample.load(std::memory_order_relaxed);
+  if (!modelChanged && !latencyChanged) {
     return;
   }
   if (!s->rescanQueued.exchange(true, std::memory_order_relaxed)) {
@@ -831,7 +842,7 @@ void paramsFlush(const clap_plugin_t* p, const clap_input_events_t* in,
     applyEvents(s, in);
   }
   emitDirty(s, out);
-  noteModelChange(s);
+  noteHostChanges(s);
 }
 
 const clap_plugin_params_t kParamsExt = {
@@ -864,7 +875,7 @@ bool stateLoad(const clap_plugin_t* p, const clap_istream_t* stream) {
   for (uint32_t i = 0; i < P_COUNT; ++i) {
     s->shared.setFromHost(i, values[i]);
   }
-  noteModelChange(s);
+  noteHostChanges(s);
   // The UI scale is optional, so states saved before it still load.
   double scale = 0.0;
   if (stream->read(stream, &scale, sizeof(scale)) == static_cast<int64_t>(sizeof(scale)) &&
@@ -993,6 +1004,12 @@ double gainMeterGet(const clap_plugin_t* p) {
 
 const clap_plugin_gain_adjustment_metering_t kGainMeterExt = {gainMeterGet};
 
+uint32_t latencyGet(const clap_plugin_t* p) {
+  return static_cast<uint32_t>(self(p)->engine.latencySamples());
+}
+
+const clap_plugin_latency_t kLatencyExt = {latencyGet};
+
 // --- Plugin lifecycle -------------------------------------------------------
 
 bool pluginInit(const clap_plugin_t*) { return true; }
@@ -1005,13 +1022,24 @@ bool pluginActivate(const clap_plugin_t* p, double sampleRate, uint32_t,
                     uint32_t) {
   Plugin* s = self(p);
   s->sampleRate = sampleRate;
-  s->engine.prepare(static_cast<float>(sampleRate));
-  s->active = true;
+  s->engine.prepare(static_cast<float>(sampleRate),
+                    static_cast<float>(s->shared.get(P_OVERSAMPLE)));
+  s->active.store(true, std::memory_order_relaxed);
+  s->reportedOversample.store(
+      static_cast<int>(s->shared.get(P_OVERSAMPLE) + 0.5),
+      std::memory_order_relaxed);
+  if (s->host && s->host->get_extension) {
+    const auto* latency = static_cast<const clap_host_latency_t*>(
+        s->host->get_extension(s->host, CLAP_EXT_LATENCY));
+    if (latency && latency->changed) {
+      latency->changed(s->host);
+    }
+  }
   return true;
 }
 
 void pluginDeactivate(const clap_plugin_t* p) {
-  self(p)->active = false;
+  self(p)->active.store(false, std::memory_order_relaxed);
 }
 
 bool pluginStartProcessing(const clap_plugin_t*) { return true; }
@@ -1096,7 +1124,9 @@ clap_process_status pluginProcess(const clap_plugin_t* p, const clap_process_t* 
   s->shared.inPeakRDb.store(s->meters.inPeakRDb, std::memory_order_relaxed);
   s->shared.outPeakLDb.store(s->meters.outPeakLDb, std::memory_order_relaxed);
   s->shared.outPeakRDb.store(s->meters.outPeakRDb, std::memory_order_relaxed);
-  noteModelChange(s);
+  s->shared.scPeakDb.store(s->meters.scPeakDb, std::memory_order_relaxed);
+  s->shared.scActive.store(s->meters.scActive, std::memory_order_relaxed);
+  noteHostChanges(s);
   return CLAP_PROCESS_CONTINUE;
 }
 
@@ -1116,6 +1146,9 @@ const void* pluginGetExtension(const clap_plugin_t*, const char* id) {
   if (std::strcmp(id, CLAP_EXT_GAIN_ADJUSTMENT_METERING) == 0) {
     return &kGainMeterExt;
   }
+  if (std::strcmp(id, CLAP_EXT_LATENCY) == 0) {
+    return &kLatencyExt;
+  }
   return nullptr;
 }
 
@@ -1124,14 +1157,36 @@ void pluginOnMainThread(const clap_plugin_t* p) {
   if (!s->rescanQueued.exchange(false, std::memory_order_relaxed)) {
     return;
   }
-  s->infoModel.store(currentModel(s), std::memory_order_relaxed);
+  const int model = currentModel(s);
+  const bool modelChanged =
+      s->infoModel.exchange(model, std::memory_order_relaxed) != model;
+  const int os = static_cast<int>(s->shared.get(P_OVERSAMPLE) + 0.5);
+  const bool latencyChanged =
+      s->reportedOversample.exchange(os, std::memory_order_relaxed) != os;
   if (!s->host || !s->host->get_extension) {
     return;
   }
-  const auto* params = static_cast<const clap_host_params_t*>(
-      s->host->get_extension(s->host, CLAP_EXT_PARAMS));
-  if (params && params->rescan) {
-    params->rescan(s->host, CLAP_PARAM_RESCAN_INFO);
+  if (modelChanged) {
+    const auto* params = static_cast<const clap_host_params_t*>(
+        s->host->get_extension(s->host, CLAP_EXT_PARAMS));
+    if (params && params->rescan) {
+      params->rescan(s->host, CLAP_PARAM_RESCAN_INFO);
+    }
+  }
+  if (latencyChanged) {
+    if (s->active.load(std::memory_order_relaxed)) {
+      // CLAP only allows the latency to change while the plugin is being
+      // activated; ask the host to restart so it re-queries it.
+      if (s->host->request_restart) {
+        s->host->request_restart(s->host);
+      }
+    } else {
+      const auto* latency = static_cast<const clap_host_latency_t*>(
+          s->host->get_extension(s->host, CLAP_EXT_LATENCY));
+      if (latency && latency->changed) {
+        latency->changed(s->host);
+      }
+    }
   }
 }
 

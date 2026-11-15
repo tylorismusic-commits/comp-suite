@@ -1,5 +1,47 @@
 # Changelog
 
+## 1.0.0 — 2026-11-15
+
+### Added
+
+- **Oversampling: Off / 2× / 4×**, selected from an **OS** control in the
+  header. Off is the default and stays zero-latency.
+  - 2× adds **30 samples** of latency, 4× adds **45 samples** at the host rate;
+    the latency is reported through the CLAP latency extension and an LV2
+    `lv2:latency` output port, so both formats compensate correctly.
+  - Linear-phase 61-tap half-band filters (Kaiser β 8), cascaded for 4×. The
+    passband is flat to 20 kHz within 0.03 dB and the stopband is below −80 dB.
+  - Models are re-prepared at the internal rate, so attack, release, knee and
+    filter frequencies stay calibrated. The whole path — models, mix, limiter,
+    side-chain — runs oversampled.
+  - Measured on a 10 kHz tone through the Clean clip: the 18 kHz alias falls
+    from −50.6 dB to −97.6 dB at 2× and −91.3 dB at 4×.
+  - Switching the mode changes latency; CLAP hosts are asked for a restart and
+    LV2 hosts re-read the latency port. Treat it as a setup control rather than
+    something to automate during playback.
+- The header control cycles **OS OFF → OS 2X → OS 4X → OS OFF**.
+
+### Fixed
+
+- **Red presets now switch Auto Release off explicitly**, as the VCA presets
+  already did. Presets are partial by design, so a preceding preset could leave
+  Auto Release on and make the release knob appear dead.
+- **3A presets set their fixed Compress mode explicitly**, so a preceding 2A
+  Limit preset cannot leak its Limit setting into the 3A.
+- **The transfer-curve meter follows the detector.** With External side-chain
+  selected and routed, its live operating point comes from the side-chain peak
+  and the axis reads **SC** instead of **IN**. The other meters still show the
+  programme input, as they should.
+
+### Notes
+
+- `P_COUNT` grew by one again; CLAP state saved by 0.9.0 will not load (the
+  state is size-checked). Re-save it in 1.0.0. Parameter indices are
+  append-only, so LV2 sessions and automation are unaffected.
+- CPU roughly doubles at 2× and more than quintuples at 4× once the filters are
+  counted. A hot 76 instance uses about 5% of a core at 2× and 12% at 4× on
+  the development machine; Clean is about 2% and 5%.
+
 ## 0.9.0 — 2026-11-15
 
 ### Added

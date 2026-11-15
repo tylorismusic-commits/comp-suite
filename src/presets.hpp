@@ -89,13 +89,17 @@ inline constexpr Preset kPresets[] = {
 
     // --- 3A -----------------------------------------------------------------
     {"3A Vocal Presence", "Vocals", 3,
-     {{P_THRESHOLD, 0.308f}, {P_MAKEUP, 0.60f}, {P_MIX, 1.f}, {-1, 0}}},
+     {{P_RATIO, 0.f}, {P_THRESHOLD, 0.308f}, {P_MAKEUP, 0.60f},
+      {P_MIX, 1.f}, {-1, 0}}},
     {"3A Drum Room", "Drums", 3,
-     {{P_THRESHOLD, 0.419f}, {P_MAKEUP, 0.55f}, {P_MIX, 0.8f}, {-1, 0}}},
+     {{P_RATIO, 0.f}, {P_THRESHOLD, 0.419f}, {P_MAKEUP, 0.55f},
+      {P_MIX, 0.8f}, {-1, 0}}},
     {"3A Bass Fingers", "Bass", 3,
-     {{P_THRESHOLD, 0.375f}, {P_MAKEUP, 0.63f}, {P_MIX, 1.f}, {-1, 0}}},
+     {{P_RATIO, 0.f}, {P_THRESHOLD, 0.375f}, {P_MAKEUP, 0.63f},
+      {P_MIX, 1.f}, {-1, 0}}},
     {"3A Guitar Bus", "Guitars", 3,
-     {{P_THRESHOLD, 0.342f}, {P_MAKEUP, 0.56f}, {P_MIX, 0.9f}, {-1, 0}}},
+     {{P_RATIO, 0.f}, {P_THRESHOLD, 0.342f}, {P_MAKEUP, 0.56f},
+      {P_MIX, 0.9f}, {-1, 0}}},
 
     // --- Xpress -------------------------------------------------------------
     {"Xpress Vocal Dense", "Vocals", 4,
@@ -167,18 +171,21 @@ inline constexpr Preset kPresets[] = {
 
     // --- Red ----------------------------------------------------------------
     {"Red Vocal Control", "Vocals", 8,
-     {{P_THRESHOLD, 0.55f}, {P_RATIO, 2.f}, {P_KNEE, 0.5f}, {P_ATTACK, 0.35f},
-      {P_RELEASE, 0.50f}, {P_MAKEUP, 0.55f}, {P_MIX, 1.f}, {-1, 0}}},
+     {{P_VCA_AUTO, 0.f}, {P_THRESHOLD, 0.55f}, {P_RATIO, 2.f},
+      {P_KNEE, 0.5f}, {P_ATTACK, 0.35f}, {P_RELEASE, 0.50f},
+      {P_MAKEUP, 0.55f}, {P_MIX, 1.f}, {-1, 0}}},
     {"Red Drum Punch", "Drums", 8,
-     {{P_THRESHOLD, 0.48f}, {P_RATIO, 3.f}, {P_KNEE, 0.35f}, {P_ATTACK, 0.15f},
-      {P_RELEASE, 0.35f}, {P_MAKEUP, 0.56f}, {P_MIX, 1.f}, {-1, 0}}},
+     {{P_VCA_AUTO, 0.f}, {P_THRESHOLD, 0.48f}, {P_RATIO, 3.f},
+      {P_KNEE, 0.35f}, {P_ATTACK, 0.15f}, {P_RELEASE, 0.35f},
+      {P_MAKEUP, 0.56f}, {P_MIX, 1.f}, {-1, 0}}},
     {"Red Mix Glue", "Mix Bus", 8,
-     {{P_THRESHOLD, 0.60f}, {P_RATIO, 1.f}, {P_KNEE, 0.6f}, {P_ATTACK, 0.50f},
-      {P_RELEASE, 0.60f}, {P_MAKEUP, 0.53f}, {P_MIX, 1.f},
-      {P_LIMITER_ON, 1.f}, {-1, 0}}},
+     {{P_VCA_AUTO, 0.f}, {P_THRESHOLD, 0.60f}, {P_RATIO, 1.f},
+      {P_KNEE, 0.6f}, {P_ATTACK, 0.50f}, {P_RELEASE, 0.60f},
+      {P_MAKEUP, 0.53f}, {P_MIX, 1.f}, {P_LIMITER_ON, 1.f}, {-1, 0}}},
     {"Red Bass Control", "Bass", 8,
-     {{P_THRESHOLD, 0.58f}, {P_RATIO, 1.f}, {P_KNEE, 0.45f}, {P_ATTACK, 0.40f},
-      {P_RELEASE, 0.55f}, {P_MAKEUP, 0.54f}, {P_MIX, 1.f}, {-1, 0}}},
+     {{P_VCA_AUTO, 0.f}, {P_THRESHOLD, 0.58f}, {P_RATIO, 1.f},
+      {P_KNEE, 0.45f}, {P_ATTACK, 0.40f}, {P_RELEASE, 0.55f},
+      {P_MAKEUP, 0.54f}, {P_MIX, 1.f}, {-1, 0}}},
 
     // --- Easy ---------------------------------------------------------------
     {"Easy Squish Drums", "Drums", 9,

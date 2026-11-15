@@ -21,8 +21,8 @@
         foaf:homepage <https://github.com/tylorismusic-commits/comp-suite> ;
     ] ;
     doap:homepage <https://github.com/tylorismusic-commits/comp-suite> ;
-    lv2:majorVersion 0 ;
-    lv2:minorVersion 9 ;
+    lv2:majorVersion 1 ;
+    lv2:minorVersion 0 ;
     lv2:microVersion 0 ;
     lv2:binary <comp_suite.so> ;
     rdfs:seeAlso <manifest.ttl> ;
@@ -420,22 +420,36 @@
         pg:group <https://github.com/tylorismusic-commits/comp-suite#compressor> ;
     ] ,
     [
-        a lv2:AudioPort , lv2:InputPort ;
+        a lv2:InputPort , lv2:ControlPort ;
         lv2:index 34 ;
+        lv2:symbol "oversample" ;
+        lv2:name "Oversampling" ;
+        lv2:default 0 ;
+        lv2:minimum 0 ;
+        lv2:maximum 2 ;
+        lv2:integer true ;
+        lv2:scalePoint [ rdf:value 0 ; rdfs:label "Off" ] ,
+            [ rdf:value 1 ; rdfs:label "2x" ] ,
+            [ rdf:value 2 ; rdfs:label "4x" ] ;
+        pg:group <https://github.com/tylorismusic-commits/comp-suite#oversampling> ;
+    ] ,
+    [
+        a lv2:AudioPort , lv2:InputPort ;
+        lv2:index 35 ;
         lv2:symbol "sc_in_l" ;
         lv2:name "Sidechain Left" ;
         lv2:portProperty lv2:isSideChain ;
     ] ,
     [
         a lv2:AudioPort , lv2:InputPort ;
-        lv2:index 35 ;
+        lv2:index 36 ;
         lv2:symbol "sc_in_r" ;
         lv2:name "Sidechain Right" ;
         lv2:portProperty lv2:isSideChain ;
     ] ,
     [
         a lv2:OutputPort , lv2:ControlPort ;
-        lv2:index 36 ;
+        lv2:index 37 ;
         lv2:symbol "gr_meter" ;
         lv2:name "Gain Reduction" ;
         lv2:default 0 ;
@@ -447,7 +461,7 @@
     ] ,
     [
         a lv2:OutputPort , lv2:ControlPort ;
-        lv2:index 37 ;
+        lv2:index 38 ;
         lv2:symbol "out_peak_l" ;
         lv2:name "Output Peak Left" ;
         lv2:default 0 ;
@@ -459,7 +473,7 @@
     ] ,
     [
         a lv2:OutputPort , lv2:ControlPort ;
-        lv2:index 38 ;
+        lv2:index 39 ;
         lv2:symbol "out_peak_r" ;
         lv2:name "Output Peak Right" ;
         lv2:default 0 ;
@@ -471,7 +485,7 @@
     ] ,
     [
         a lv2:OutputPort , lv2:ControlPort ;
-        lv2:index 39 ;
+        lv2:index 40 ;
         lv2:symbol "in_peak_l" ;
         lv2:name "Input Peak Left" ;
         lv2:default 0 ;
@@ -483,7 +497,7 @@
     ] ,
     [
         a lv2:OutputPort , lv2:ControlPort ;
-        lv2:index 40 ;
+        lv2:index 41 ;
         lv2:symbol "in_peak_r" ;
         lv2:name "Input Peak Right" ;
         lv2:default 0 ;
@@ -495,7 +509,7 @@
     ] ,
     [
         a lv2:OutputPort , lv2:ControlPort ;
-        lv2:index 41 ;
+        lv2:index 42 ;
         lv2:symbol "out_vu" ;
         lv2:name "Output VU" ;
         lv2:default 0 ;
@@ -504,6 +518,42 @@
         units:unit units:db ;
         lv2:portProperty pprops:notOnGUI ;
         pg:group <https://github.com/tylorismusic-commits/comp-suite#meter> ;
+    ] ,
+    [
+        a lv2:OutputPort , lv2:ControlPort ;
+        lv2:index 43 ;
+        lv2:symbol "sc_peak" ;
+        lv2:name "Sidechain Peak" ;
+        lv2:default 0 ;
+        lv2:minimum -120 ;
+        lv2:maximum 24 ;
+        units:unit units:db ;
+        lv2:portProperty pprops:notOnGUI ;
+        pg:group <https://github.com/tylorismusic-commits/comp-suite#meter> ;
+    ] ,
+    [
+        a lv2:OutputPort , lv2:ControlPort ;
+        lv2:index 44 ;
+        lv2:symbol "sc_active" ;
+        lv2:name "Sidechain Active" ;
+        lv2:default 0 ;
+        lv2:minimum 0 ;
+        lv2:maximum 1 ;
+        lv2:integer true ;
+        lv2:portProperty pprops:notOnGUI ;
+        pg:group <https://github.com/tylorismusic-commits/comp-suite#meter> ;
+    ] ,
+    [
+        a lv2:OutputPort , lv2:ControlPort ;
+        lv2:index 45 ;
+        lv2:symbol "latency" ;
+        lv2:name "Latency" ;
+        lv2:default 0 ;
+        lv2:minimum 0 ;
+        lv2:maximum 100000 ;
+        lv2:designation lv2:latency ;
+        lv2:portProperty pprops:notOnGUI ;
+        pg:group <https://github.com/tylorismusic-commits/comp-suite#latency> ;
     ] .
 
 
@@ -516,3 +566,7 @@
 <https://github.com/tylorismusic-commits/comp-suite#meter> a pg:Group ; lv2:name "Meter" .
 
 <https://github.com/tylorismusic-commits/comp-suite#limiter> a pg:Group ; lv2:name "Limiter" .
+
+<https://github.com/tylorismusic-commits/comp-suite#oversampling> a pg:Group ; lv2:name "Oversampling" .
+
+<https://github.com/tylorismusic-commits/comp-suite#latency> a pg:Group ; lv2:name "Latency" .

@@ -51,6 +51,7 @@ struct Controls {
   float easyMode = 0.0f;           // Easy: 0 Squish, 1 Lift
   float easyChar = 0.0f;           // Easy: 0 Normal, 1 Extreme
   float satType = 1.0f;            // Easy: 0 Soft, 1 Tape, 2 Hard
+  float oversample = 0.0f;         // 0 Off, 1 2x, 2 4x
 };
 
 // Metering published by the engine, in dB or normalised units.
@@ -64,6 +65,10 @@ struct Meters {
   float outPeakRDb = -120.0f;
   float inPeakLDb = -120.0f;
   float inPeakRDb = -120.0f;
+  // Detector source, for the transfer display: the side-chain input when the
+  // host routed one and External is selected.
+  float scPeakDb = -120.0f;
+  bool scActive = false;
 };
 
 } // namespace comp

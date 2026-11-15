@@ -57,6 +57,7 @@ constexpr MeterPort kMeters[] = {
     {"in_peak_l", "Input Peak Left"},
     {"in_peak_r", "Input Peak Right"},
     {"out_vu", "Output VU"},
+    {"sc_peak", "Sidechain Peak"},
 };
 
 constexpr int kAudioPorts = 4;
@@ -241,6 +242,43 @@ std::string buildPluginTtl() {
                               true));
   }
 
+  {
+    // Whether the detector is actually fed from the external side-chain.
+    std::ostringstream p;
+    p << "    [\n";
+    p << "        a lv2:OutputPort , lv2:ControlPort ;\n";
+    p << "        lv2:index " << index++ << " ;\n";
+    p << "        lv2:symbol \"sc_active\" ;\n";
+    p << "        lv2:name \"Sidechain Active\" ;\n";
+    p << "        lv2:default 0 ;\n";
+    p << "        lv2:minimum 0 ;\n";
+    p << "        lv2:maximum 1 ;\n";
+    p << "        lv2:integer true ;\n";
+    p << "        lv2:portProperty pprops:notOnGUI ;\n";
+    p << "        pg:group <" << groupUri("Meter") << "> ;\n";
+    p << "    ]";
+    ports.push_back(p.str());
+  }
+
+  {
+    // Latency in samples, for host delay compensation.  It changes with the
+    // oversampling mode, so hosts must read it every cycle.
+    std::ostringstream p;
+    p << "    [\n";
+    p << "        a lv2:OutputPort , lv2:ControlPort ;\n";
+    p << "        lv2:index " << index++ << " ;\n";
+    p << "        lv2:symbol \"latency\" ;\n";
+    p << "        lv2:name \"Latency\" ;\n";
+    p << "        lv2:default 0 ;\n";
+    p << "        lv2:minimum 0 ;\n";
+    p << "        lv2:maximum 100000 ;\n";
+    p << "        lv2:designation lv2:latency ;\n";
+    p << "        lv2:portProperty pprops:notOnGUI ;\n";
+    p << "        pg:group <" << groupUri("Latency") << "> ;\n";
+    p << "    ]";
+    ports.push_back(p.str());
+  }
+
   for (size_t i = 0; i < ports.size(); ++i) {
     out << ports[i];
     out << (i + 1 == ports.size() ? " .\n" : " ,\n");
@@ -262,6 +300,7 @@ std::string buildPluginTtl() {
     addGroup(comp::kParamSpecs[id].module);
   }
   addGroup("Meter");
+  addGroup("Latency");
   out << "\n" << groups.str();
   return out.str();
 }

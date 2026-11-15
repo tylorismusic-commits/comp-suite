@@ -65,6 +65,20 @@ float rmsTail(const std::vector<float>& x, float seconds) {
   return static_cast<float>(std::sqrt(sum / tail));
 }
 
+// Magnitude of one frequency bin under a Hann window, for alias checks.
+float toneMagnitude(const std::vector<float>& x, double hz, double sr) {
+  const int n = static_cast<int>(x.size());
+  double re = 0.0;
+  double im = 0.0;
+  for (int i = 0; i < n; ++i) {
+    const double w = 0.5 - 0.5 * std::cos(2.0 * 3.141592653589793 * i / (n - 1));
+    const double ph = 2.0 * 3.141592653589793 * hz * i / sr;
+    re += w * x[i] * std::cos(ph);
+    im -= w * x[i] * std::sin(ph);
+  }
+  return static_cast<float>(std::hypot(re, im) / n);
+}
+
 bool allFinite(const Render& r) {
   for (size_t i = 0; i < r.left.size(); ++i) {
     if (!std::isfinite(r.left[i]) || !std::isfinite(r.right[i])) {
@@ -478,12 +492,15 @@ int main() {
   }
 
   // VCA presets must reset the auto-release switch, otherwise selecting one
-  // leaves the release knob doing nothing.
+  // leaves the release knob doing nothing.  Presets are partial by design, so
+  // every preset for a model with a mode switch must set it explicitly instead
+  // of inheriting whatever the previous preset left behind.
   {
-    bool ok = true;
+    bool autoOk = true;
     for (int i = 0; i < kPresetCount; ++i) {
       const Preset& preset = kPresets[i];
-      if (preset.model != static_cast<int>(Model::Vca)) {
+      if (preset.model != static_cast<int>(Model::Vca) &&
+          preset.model != static_cast<int>(Model::Red)) {
         continue;
       }
       bool resets = false;
@@ -493,12 +510,33 @@ int main() {
         }
       }
       if (!resets) {
-        std::printf("  VCA preset '%s' does not reset auto release\n",
+        std::printf("  preset '%s' does not reset auto release\n",
                     preset.name);
-        ok = false;
+        autoOk = false;
       }
     }
-    check(ok, "VCA presets reset auto release");
+    check(autoOk, "VCA and Red presets reset auto release");
+
+    // The 3A has no ratio control, but its DSP still reads the Limit/Compress
+    // switch, so a preceding 2A Limit preset must not leak into it.
+    bool ratioOk = true;
+    for (int i = 0; i < kPresetCount; ++i) {
+      const Preset& preset = kPresets[i];
+      if (preset.model != static_cast<int>(Model::Opto3A)) {
+        continue;
+      }
+      bool resets = false;
+      for (const PresetValue& v : preset.values) {
+        if (v.param == static_cast<int>(P_RATIO) && v.value < 0.5f) {
+          resets = true;
+        }
+      }
+      if (!resets) {
+        std::printf("  3A preset '%s' does not set Compress\n", preset.name);
+        ratioOk = false;
+      }
+    }
+    check(ratioOk, "3A presets set their fixed Compress mode");
   }
 
   // Clean's distortion should shade, not squash: the shaped modes must stay
@@ -775,6 +813,124 @@ int main() {
                   "Easy side-chain HPF changes the detector (%.1f vs %.1f dB)",
                   autoHz, high);
     check(high < autoHz - 0.2f, label);
+  }
+
+  // The side-chain meter follows the detector source, not the programme.
+  {
+    Engine engine;
+    engine.prepare(kSr);
+    Controls c = baseControls(Model::Vca);
+    c.externalSidechain = true;
+    engine.setControls(c);
+    Meters meters;
+    std::vector<float> l(256), r(256), sl(256), sr(256);
+    for (int i = 0; i < 256; ++i) {
+      l[i] = r[i] = 0.05f;   // quiet programme
+      sl[i] = sr[i] = 0.5f;  // loud side-chain
+    }
+    engine.process(l.data(), r.data(), 256, meters, sl.data(), sr.data());
+    char label[128];
+    std::snprintf(label, sizeof(label),
+                  "sidechain meter is active at %.1f dB (programme %.1f dB)",
+                  meters.scPeakDb, meters.inPeakDb);
+    check(meters.scActive && std::fabs(meters.scPeakDb - gainToDb(0.5f)) < 0.1f,
+          label);
+
+    // With External selected but no side-chain routed, detection falls back
+    // to the programme and the meter says so.
+    Meters fallback;
+    engine.process(l.data(), r.data(), 256, fallback, nullptr, nullptr);
+    check(!fallback.scActive, "sidechain meter is inactive without a routed SC");
+  }
+
+  // Oversampling modes: zero delay when off, exact reported latency when on,
+  // and unity gain for a quiet sine in every mode.
+  for (int mode = 0; mode < 3; ++mode) {
+    const int expectedLatency = mode == 0 ? 0 : (mode == 1 ? 30 : 45);
+    Engine engine;
+    engine.prepare(kSr);
+    Controls c = baseControls(Model::Clean);
+    c.threshold = 1.0f;
+    c.input = 0.5f;
+    c.output = 0.5f;
+    c.oversample = static_cast<float>(mode);
+    engine.setControls(c);
+    char label[96];
+    std::snprintf(label, sizeof(label),
+                  "oversampling mode %d reports latency %d", mode,
+                  expectedLatency);
+    check(engine.latencySamples() == expectedLatency, label);
+
+    Meters meters;
+    std::vector<float> l(1024), r(1024);
+    std::fill(l.begin(), l.end(), 0.0f);
+    std::fill(r.begin(), r.end(), 0.0f);
+    l[64] = r[64] = 1.0f;
+    engine.process(l.data(), r.data(), 1024, meters);
+    int arg = 0;
+    float peak = 0.0f;
+    for (int i = 0; i < 1024; ++i) {
+      if (std::fabs(l[i]) > peak) {
+        peak = std::fabs(l[i]);
+        arg = i;
+      }
+    }
+    std::snprintf(label, sizeof(label),
+                  "oversampling mode %d delay is %d samples", mode,
+                  arg - 64);
+    check(arg - 64 == expectedLatency, label);
+
+    // A -30 dBFS tone must come through at the same level.
+    Engine gain;
+    gain.prepare(kSr);
+    gain.setControls(c);
+    const Render pass = renderSine(gain, c, 1000.0f, -30.0f, 0.5f);
+    const float expected = dbToGain(-30.0f) / std::sqrt(2.0f);
+    std::snprintf(label, sizeof(label),
+                  "oversampling mode %d is unity (%.2f dB)", mode,
+                  gainToDb(rmsTail(pass.left, 0.1f)) - gainToDb(expected));
+    check(std::fabs(rmsTail(pass.left, 0.1f) - expected) < 0.002f, label);
+  }
+
+  // Oversampling must actually remove aliasing.  A 10 kHz tone through the
+  // Clean model's hard clip puts its third harmonic at 30 kHz, which folds to
+  // 18 kHz at 48 kHz.  2x and 4x should bury that bin.
+  {
+    const auto aliasLevel = [](int mode) {
+      Engine engine;
+      engine.prepare(kSr);
+      Controls c = baseControls(Model::Clean);
+      c.threshold = 1.0f;   // no compression, just the clip stage
+      c.input = 0.5f;
+      c.output = 0.5f;
+      c.distortion = 1.0f;  // CLIP
+      c.oversample = static_cast<float>(mode);
+      engine.setControls(c);
+      const int n = 48000;
+      std::vector<float> l(n), r(n);
+      Meters meters;
+      for (int i = 0; i < n; ++i) {
+        l[i] = r[i] = 0.95f * std::sin(2.0f * kPi * 10000.0f * i / kSr);
+      }
+      for (int start = 0; start < n; start += 256) {
+        engine.process(l.data() + start, r.data() + start,
+                       std::min(256, n - start), meters);
+      }
+      const std::vector<float> tail(l.end() - 24000, l.end());
+      const float f = toneMagnitude(tail, 10000.0, kSr);
+      const float a = toneMagnitude(tail, 18000.0, kSr);
+      return gainToDb(a / std::max(f, 1e-9f));
+    };
+    const float off = aliasLevel(0);
+    const float two = aliasLevel(1);
+    const float four = aliasLevel(2);
+    char label[160];
+    std::snprintf(label, sizeof(label),
+                  "2x kills the 18 kHz alias (%.1f -> %.1f dB)", off, two);
+    check(two < off - 25.0f, label);
+    std::snprintf(label, sizeof(label),
+                  "4x kills the 18 kHz alias (%.1f -> %.1f dB)", off, four);
+    check(four < off - 25.0f, label);
   }
 
   // A non-finite or absurd input sample must not poison the model state.

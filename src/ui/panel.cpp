@@ -690,6 +690,16 @@ void Panel::layout(const Shared& shared, const PanelState& state) {
     widget.label = label;
     widgets_.push_back(widget);
   };
+  {
+    Widget c{};
+    c.kind = Kind::Cycle;
+    c.param = P_OVERSAMPLE;
+    c.x = 644;
+    c.y = 20;
+    c.w = 84;
+    c.h = 24;
+    widgets_.push_back(c);
+  }
   pill(P_AUTO_MAKEUP, 736, 20, 84, 24, "AUTO MAKEUP");
   pill(P_TRUE_PEAK, 828, 20, 84, 24, "TRUE PEAK");
   pill(P_SC_SOURCE, 920, 20, 84, 24, "EXT SC");
@@ -807,6 +817,12 @@ bool Panel::pointerDown(Shared& shared, PanelState& state, double x, double y,
         shared.set(w.param, shared.get(w.param) > 0.5 ? 0.0 : 1.0);
         state.presetDirty = true;
         return true;
+      case Kind::Cycle: {
+        const int v = static_cast<int>(shared.get(w.param) + 0.5);
+        shared.set(w.param, static_cast<double>((v + 1) % 3));
+        state.presetDirty = true;
+        return true;
+      }
     }
   }
   return false;
@@ -1293,8 +1309,14 @@ void Panel::drawMeter(cairo_t* cr, const Shared& shared, const PanelState& state
     }
     cairo_stroke(cr);
 
-    // Live operating point.
-    const double inDb = shared.inPeakDb.load(std::memory_order_relaxed);
+    // Live operating point.  When the detector is fed from the external
+    // side-chain, the curve's input axis is that source, not the programme.
+    const bool scDetector =
+        shared.get(P_SC_SOURCE) > 0.5 &&
+        shared.scActive.load(std::memory_order_relaxed);
+    const double inDb =
+        scDetector ? shared.scPeakDb.load(std::memory_order_relaxed)
+                   : shared.inPeakDb.load(std::memory_order_relaxed);
     const double outDb = inDb - shared.grDb.load(std::memory_order_relaxed);
     if (inDb > lo && inDb <= hi) {
       cairo_arc(cr, px(inDb), py(std::clamp(outDb, lo, hi)), 3.5, 0, 2 * kPi);
@@ -1314,8 +1336,8 @@ void Panel::drawMeter(cairo_t* cr, const Shared& shared, const PanelState& state
 
     text(cr, "TRANSFER", fx + 30, fy + fh - 10, 12, 0, skin.meterScale.r,
          skin.meterScale.g, skin.meterScale.b);
-    text(cr, "IN", fx + fw - 12, fy + fh - 10, 10, 2, skin.meterScale.r,
-         skin.meterScale.g, skin.meterScale.b);
+    text(cr, scDetector ? "SC" : "IN", fx + fw - 12, fy + fh - 10, 10, 2,
+         skin.meterScale.r, skin.meterScale.g, skin.meterScale.b);
     text(cr, "OUT", fx + 8, fy + 16, 10, 0, skin.meterScale.r, skin.meterScale.g,
          skin.meterScale.b);
     return;
@@ -1587,6 +1609,15 @@ void Panel::drawWidget(cairo_t* cr, const Widget& w, const Shared& shared,
     }
     case Kind::Pill: {
       drawPill(cr, w, shared.get(w.param) > 0.5, model);
+      break;
+    }
+    case Kind::Cycle: {
+      static const char* const kOsNames[] = {"OS OFF", "OS 2X", "OS 4X"};
+      const int v = std::clamp(static_cast<int>(shared.get(w.param) + 0.5),
+                               0, 2);
+      Widget copy = w;
+      copy.label = kOsNames[v];
+      drawPill(cr, copy, v != 0, model);
       break;
     }
   }

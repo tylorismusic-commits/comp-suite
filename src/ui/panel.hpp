@@ -94,6 +94,7 @@ private:
     Power,
     PageTab,
     Pill,
+    Cycle,
   };
 
   struct Widget {
