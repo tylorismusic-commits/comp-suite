@@ -220,6 +220,70 @@ int main() {
     check(allFinite(r) && peak < 8.0f && r.peakGr > 3.0f, label);
   }
 
+  // The shared ratio ladder has to survive the feedback loop, otherwise the
+  // same control position means something different on the 76 than on the
+  // VCA and Xpress.
+  {
+    const auto ratioAt = [](float step) {
+      const auto grAt = [&](float dbfs) {
+        Engine engine;
+        engine.prepare(kSr);
+        Controls c = baseControls(Model::Blue76);
+        c.input = 0.6f;
+        c.ratio = step;
+        return renderSine(engine, c, 500.0f, dbfs, 6.0f).peakGr;
+      };
+      const float slope = (grAt(0.0f) - grAt(-6.0f)) / 6.0f;
+      return 1.0f / (1.0f - slope);
+    };
+    const float four = ratioAt(3.0f);  // 4:1
+    const float eight = ratioAt(5.0f); // 8:1
+    char label[160];
+    std::snprintf(label, sizeof(label),
+                  "76 feedback ladder lands on 4:1 and 8:1 (%.1f:1, %.1f:1)",
+                  four, eight);
+    check(std::fabs(four - 4.0f) < 0.8f && std::fabs(eight - 8.0f) < 1.5f,
+          label);
+  }
+
+  // A feedback loop at high ratio must settle, not hunt.  Measure the spread
+  // of gain reduction once the tone has been running for five seconds.
+  {
+    Engine engine;
+    engine.prepare(kSr);
+    Controls c = baseControls(Model::Blue76);
+    c.input = 0.7f;
+    c.ratio = 7.0f;  // 20:1
+    c.release = 0.5f;
+    engine.setControls(c);
+    Meters meters;
+    std::vector<float> l(256), r(256);
+    float lo = 0.0f;
+    float hi = 0.0f;
+    bool started = false;
+    const int blocks = static_cast<int>(8.0f * kSr / 256);
+    for (int b = 0; b < blocks; ++b) {
+      for (int i = 0; i < 256; ++i) {
+        const float t = static_cast<float>(b * 256 + i) / kSr;
+        l[i] = r[i] = 0.5f * std::sin(2.0f * kPi * 500.0f * t);
+      }
+      engine.process(l.data(), r.data(), 256, meters);
+      if (b > blocks - static_cast<int>(2.0f * kSr / 256)) {
+        if (!started) {
+          lo = hi = meters.grDb;
+          started = true;
+        }
+        lo = std::min(lo, meters.grDb);
+        hi = std::max(hi, meters.grDb);
+      }
+    }
+    char label[128];
+    std::snprintf(label, sizeof(label),
+                  "76 at 20:1 settles without hunting (%.2f dB spread)",
+                  hi - lo);
+    check(hi - lo < 0.35f, label);
+  }
+
   // Peak reduction must increase reduction monotonically, and the control
   // must be usable across its travel rather than slamming at one end.
   {

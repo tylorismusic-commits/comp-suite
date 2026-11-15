@@ -106,19 +106,35 @@ public:
     const float inR = right * inputGain;
 
     // The 1176 is a feedback compressor: the side-chain taps the output of
-    // the gain cell, not the input.  The detector therefore sees the already
-    // attenuated signal, which is where the unit's soft knee and its recovery
-    // shape come from.  The one-sample delay is the implicit loop.
+    // the gain cell, not the input.  The digital loop is closed on the gain
+    // rather than on the previous output sample: the detector sees the current
+    // input scaled by the gain that was just applied.  A one-sample delay on
+    // the *output* made the loop ring at high ratios (a slow wobble on
+    // sustained tones); on the gain it does not, because the gain is already
+    // smoothed.
     const float detL =
-        topology_ == Topology::Feedback ? kFeedbackLoopGain * lastOutL_ : inL;
+        topology_ == Topology::Feedback ? kFeedbackDetectorScale * inL *
+                                              appliedGain_
+                                        : inL;
     const float detR =
-        topology_ == Topology::Feedback ? kFeedbackLoopGain * lastOutR_ : inR;
+        topology_ == Topology::Feedback ? kFeedbackDetectorScale * inR *
+                                              appliedGain_
+                                        : inR;
     const float peak = std::max(std::fabs(detL), std::fabs(detR));
+    // The 1176's release is program-dependent: the more the FET is pulling
+    // down, the longer it takes to let go.  That damping is also what keeps a
+    // digital feedback loop from hunting at high ratios.
+    float releaseCoeff = releaseCoeff_;
+    if (topology_ == Topology::Feedback) {
+      const float hunt = clampf(grPrev_ / 20.0f, 0.0f, 1.0f);
+      releaseCoeff =
+          timeCoeff(releaseMs_ * (1.0f + 4.0f * hunt), sr_);
+    }
     const bool blackDeep = variant_ == Variant::Black && grPrev_ > 6.0f;
     if (peak > env_) {
       env_ = attackCoeff_ * env_ + (1.0f - attackCoeff_) * peak;
     } else {
-      const float rc = blackDeep ? releaseDeepCoeff_ : releaseCoeff_;
+      const float rc = blackDeep ? releaseDeepCoeff_ : releaseCoeff;
       env_ = rc * env_ + (1.0f - rc) * peak;
     }
 
@@ -132,8 +148,16 @@ public:
     // ratio buttons barely changed the sound.
     const float allPush = variant_ == Variant::Blue ? 8.0f : 5.0f;
     const float effRatio = allButtons_ ? ratio_ + allPush * push : ratio_;
+    // A feedback loop multiplies the static curve by 1/(1 + slope), so the
+    // static slope has to be ratio - 1 to land on the intended ratio.  Using
+    // 1 - 1/ratio here (as a feed-forward model would) collapses the whole
+    // ladder into ~2:1.
+    const float slope =
+        topology_ == Topology::Feedback
+            ? (effRatio - 1.0f)
+            : (1.0f - 1.0f / std::max(effRatio, 1.0f));
     const float grDb =
-        gainReductionDb(gainToDb(env_), kThresholdDb, effRatio, kneeDb);
+        gainReductionDbSlope(gainToDb(env_), kThresholdDb, slope, kneeDb);
     grPrev_ = grDb;
     const float targetGain = dbToGain(-grDb);
     const float gain = gainSmooth_.next(targetGain);
@@ -147,10 +171,15 @@ public:
     const float fetDrive =
         2.2f + 3.2f * grNorm + ratioDrive + (allButtons_ ? allDrive : 0.0f);
 
-    lastOutL_ = processChannel(inL * gain, 0, fetDrive, drive);
-    lastOutR_ = processChannel(inR * gain, 1, fetDrive, drive);
-    left = lastOutL_ * outputGain_;
-    right = lastOutR_ * outputGain_;
+    // Tap the gain-cell output, before the FET colour stage.  Tapping after
+    // the saturation created a pathological loop: more reduction lowered the
+    // detected level, which lowered the reduction, and the ratio ladder
+    // inverted.
+    const float cellL = inL * gain;
+    const float cellR = inR * gain;
+    appliedGain_ = gain;
+    left = processChannel(cellL, 0, fetDrive, drive) * outputGain_;
+    right = processChannel(cellR, 1, fetDrive, drive) * outputGain_;
     return std::max(grDb, 0.0f);
   }
 
@@ -163,8 +192,7 @@ public:
     }
     env_ = 0.0f;
     grPrev_ = 0.0f;
-    lastOutL_ = 0.0f;
-    lastOutR_ = 0.0f;
+    appliedGain_ = 1.0f;
     gainSmooth_.reset(1.0f);
   }
 
@@ -197,13 +225,12 @@ private:
   float outputGain_ = 1.0f;
   float env_ = 0.0f;
   float grPrev_ = 0.0f;
-  float lastOutL_ = 0.0f;
-  float lastOutR_ = 0.0f;
+  float appliedGain_ = 1.0f;
   Topology topology_ = Topology::Feedback;
-  // A feedback detector sees the attenuated output, so at the same knob
-  // position it would reduce far less than a feed-forward one.  This restores
-  // the operating point without changing what the ratio buttons mean.
-  static constexpr float kFeedbackLoopGain = 4.0f;
+  // Detector attenuation.  In feedback the loop multiplies the static curve,
+  // so the tap is scaled down to place the effective threshold: this puts it
+  // at -12 dBFS for the fixed -18 dBFS static threshold.
+  static constexpr float kFeedbackDetectorScale = 1.0f;
   OnePoleLP lpOut_[2];
   OnePoleLP dcLp_[2];
   Smoothed inputSmooth_;

@@ -41,12 +41,20 @@ Measured in `comp_dsp_test`:
   changes the knee and the recovery shape, and it is the main reason a real
   1176 sounds "thick" rather than "grabby". The VCA model stays feed-forward,
   because the bus compressor it follows genuinely is.
-- A **loop-gain compensation** (×4 on the FET, ×3 on the optical) keeps the
-  control positions meaningful. Without it, a feedback detector sees the
-  attenuated output and reduces far less at the same setting.
+- **The static slope had to change.** A feedback loop multiplies the static
+  curve by `1/(1 + slope)`, so the gain computer uses `ratio - 1` rather than
+  `1 - 1/ratio`. Using the feed-forward slope collapsed the whole 76 ladder to
+  about 2:1 and made the four ratio buttons indistinguishable.
+- **The detector taps the gain cell before the colour stage.** Tapping after
+  the saturation created a self-limiting loop: more reduction lowered the
+  detected level, which lowered the reduction, and the ladder inverted.
+- **Release lengthens with gain reduction.** The 1176's release is
+  program-dependent in practice, and that damping is also what stops a digital
+  feedback loop from hunting at high ratios. Without it, 20:1 on a sustained
+  tone wobbled by ~1 dB at 1 Hz.
 - No topology switch: it is a property of the model, not a user choice.
-- Tested stable at maximum input, ALL ratio and fastest attack on a 40 Hz
-  sine.
+- Measured: the 76 ladder lands on 4:1 and 8:1 exactly, and 20:1 settles with
+  0.2 dB spread. Maximum input, ALL ratio and fastest attack stay bounded.
 
 ### Limiter
 

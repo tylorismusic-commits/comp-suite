@@ -196,11 +196,11 @@ inline float ratioFromStep(int step) noexcept {
   return kRatios[std::min(std::max(step, 0), 8)];
 }
 
-// Static gain computer.  Returns gain reduction in dB (>= 0) for a level in
-// dB, with a quadratic soft knee centred on the threshold.
-inline float gainReductionDb(float levelDb, float thresholdDb, float ratio,
-                             float kneeDb) noexcept {
-  const float slope = 1.0f - 1.0f / std::max(ratio, 1.0f);
+// Static gain computer with an explicit slope (dB of reduction per dB over
+// threshold).  Feed-forward models pass 1 - 1/ratio; feedback models need
+// ratio - 1, because the loop multiplies the static curve by 1/(1 + slope).
+inline float gainReductionDbSlope(float levelDb, float thresholdDb,
+                                  float slope, float kneeDb) noexcept {
   const float over = levelDb - thresholdDb;
   if (kneeDb <= 0.0f || over > 0.5f * kneeDb) {
     return std::max(slope * over, 0.0f);
@@ -210,6 +210,14 @@ inline float gainReductionDb(float levelDb, float thresholdDb, float ratio,
   }
   const float t = over + 0.5f * kneeDb;
   return std::max(slope * t * t / (2.0f * kneeDb), 0.0f);
+}
+
+// Static gain computer.  Returns gain reduction in dB (>= 0) for a level in
+// dB, with a quadratic soft knee centred on the threshold.
+inline float gainReductionDb(float levelDb, float thresholdDb, float ratio,
+                             float kneeDb) noexcept {
+  const float slope = 1.0f - 1.0f / std::max(ratio, 1.0f);
+  return gainReductionDbSlope(levelDb, thresholdDb, slope, kneeDb);
 }
 
 } // namespace comp
