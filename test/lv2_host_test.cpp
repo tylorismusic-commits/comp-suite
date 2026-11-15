@@ -53,6 +53,29 @@ int main(int argc, char** argv) {
   const uint32_t nPorts = lilv_plugin_get_num_ports(plugin);
   check(nPorts == 23, "23 ports declared");
 
+  // Every control port's default must sit inside its declared range.
+  {
+    std::vector<float> mins(nPorts), maxs(nPorts), defs(nPorts);
+    lilv_plugin_get_port_ranges_float(plugin, mins.data(), maxs.data(),
+                                      defs.data());
+    LilvNode* audioPort =
+        lilv_new_uri(world, "http://lv2plug.in/ns/lv2core#AudioPort");
+    bool rangesOk = true;
+    for (uint32_t i = 0; i < nPorts; ++i) {
+      const LilvPort* port = lilv_plugin_get_port_by_index(plugin, i);
+      if (lilv_port_is_a(plugin, port, audioPort)) {
+        continue;  // audio ports carry no control range
+      }
+      if (!(mins[i] <= maxs[i]) || defs[i] < mins[i] || defs[i] > maxs[i]) {
+        std::printf("  port %u range broken: min %g max %g default %g\n", i,
+                    mins[i], maxs[i], defs[i]);
+        rangesOk = false;
+      }
+    }
+    lilv_node_free(audioPort);
+    check(rangesOk, "port ranges and defaults are consistent");
+  }
+
   std::vector<float> values(nPorts, 0.0f);
   lilv_plugin_get_port_ranges_float(plugin, nullptr,
                                     values.data() + 0, nullptr);

@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Fixed: presets reset the model to 76Blue (unused preset slots zero-filled
+  and parameter 0 is Model).
+- Fixed: host parameter events could undo a UI change in the same block.
+- Fixed: LV2 meter ports declared an inverted range (0 to -120 dB).
+- Fixed: NaN or infinite parameter values from a host are ignored, and huge
+  values clamp to the declared range.
+- Mono or partially connected host buffers no longer crash; the left channel
+  is mirrored.
 - Preset browser in the header: 31 factory presets grouped by use, each tagged
   with its model, with prev/next arrows and a scrollable list.
 - LV2 metadata now carries `doap:name`, so hosts show "Comp Suite" rather than

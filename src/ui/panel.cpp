@@ -621,7 +621,15 @@ void Panel::pointerUp() {
 bool Panel::wheel(Shared& shared, PanelState& state, double x, double y, double dy) {
   if (state.presetOpen && x >= kPresetX && x <= kPresetX + kPresetW &&
       y >= kListY && y <= kListY + kListVisible * kListRow + 10) {
-    const int maxScroll = 20;
+    int rows = kPresetCount;
+    const char* last = nullptr;
+    for (int i : presetOrder()) {
+      if (!last || std::strcmp(last, kPresets[i].category) != 0) {
+        last = kPresets[i].category;
+        ++rows;
+      }
+    }
+    const int maxScroll = std::max(0, rows - static_cast<int>(kListVisible));
     state.presetScroll = std::min(maxScroll,
                                   std::max(0, state.presetScroll - (int)dy));
     return true;
@@ -835,6 +843,9 @@ bool Panel::handlePresetClick(Shared& shared, PanelState& state, double x,
     }
     if (x > kPresetX + 36 && x < kPresetX + kPresetW - 36) {
       state.presetOpen = state.presetOpen ? 0 : 1;
+      if (state.presetOpen) {
+        state.presetScroll = 0;  // always open at the top of the list
+      }
       return true;
     }
   }

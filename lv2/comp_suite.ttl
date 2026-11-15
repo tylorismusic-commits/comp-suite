@@ -220,9 +220,9 @@
         lv2:index 19 ;
         lv2:symbol "gr_meter" ;
         lv2:name "Gain Reduction" ;
-        lv2:default 24 ;
-        lv2:minimum 0 ;
-        lv2:maximum -120 ;
+        lv2:default 0 ;
+        lv2:minimum -120 ;
+        lv2:maximum 24 ;
         lv2:designation units:db ;
         pg:group <https://github.com/tylorismusic-commits/comp-suite#meter> ;
     ] ,
@@ -231,9 +231,9 @@
         lv2:index 20 ;
         lv2:symbol "out_peak" ;
         lv2:name "Output Peak" ;
-        lv2:default 24 ;
-        lv2:minimum 0 ;
-        lv2:maximum -120 ;
+        lv2:default 0 ;
+        lv2:minimum -120 ;
+        lv2:maximum 24 ;
         lv2:designation units:db ;
         pg:group <https://github.com/tylorismusic-commits/comp-suite#meter> ;
     ] ,
@@ -242,9 +242,9 @@
         lv2:index 21 ;
         lv2:symbol "in_peak" ;
         lv2:name "Input Peak" ;
-        lv2:default 24 ;
-        lv2:minimum 0 ;
-        lv2:maximum -120 ;
+        lv2:default 0 ;
+        lv2:minimum -120 ;
+        lv2:maximum 24 ;
         lv2:designation units:db ;
         pg:group <https://github.com/tylorismusic-commits/comp-suite#meter> ;
     ] ,
@@ -253,9 +253,9 @@
         lv2:index 22 ;
         lv2:symbol "out_vu" ;
         lv2:name "Output VU" ;
-        lv2:default 24 ;
-        lv2:minimum 0 ;
-        lv2:maximum -120 ;
+        lv2:default 0 ;
+        lv2:minimum -120 ;
+        lv2:maximum 24 ;
         lv2:designation units:db ;
         pg:group <https://github.com/tylorismusic-commits/comp-suite#meter> ;
     ] .

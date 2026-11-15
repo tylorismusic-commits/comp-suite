@@ -298,6 +298,22 @@ int main() {
     check(everyPresetOk, "factory presets render finite audio");
   }
 
+  // Parameters from a host must never poison the engine.
+  {
+    Shared sh;
+    sh.set(P_INPUT, 0.5);
+    sh.set(P_INPUT, std::nan(""));
+    check(sh.get(P_INPUT) == 0.5, "NaN parameter is ignored");
+    sh.setFromHost(P_INPUT, std::nan(""));
+    check(sh.get(P_INPUT) == 0.5, "NaN from host is ignored");
+    sh.set(P_INPUT, 1e30);
+    check(sh.get(P_INPUT) == 1.0, "huge parameter clamps to range");
+    sh.set(P_RATIO, 5.4);
+    check(sh.get(P_RATIO) == 5.0, "stepped parameter rounds");
+    sh.set(P_MODEL, -7.0);
+    check(sh.get(P_MODEL) == 0.0, "negative parameter clamps");
+  }
+
   std::printf("%d failure(s)\n", gFailures);
   return gFailures == 0 ? 0 : 1;
 }

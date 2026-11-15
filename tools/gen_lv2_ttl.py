@@ -96,7 +96,8 @@ def main():
                           p[7], p[8]))
         index += 1
     for o in OUTPUTS:
-        ports.append(port(index, o[0], o[1], 0, -120, 24, "control", o[2],
+        # minimum, maximum, default - meters are dB and can be negative.
+        ports.append(port(index, o[0], o[1], -120, 24, 0, "control", o[2],
                           "db", [], True))
         index += 1
     ports[-1] = ports[-1].rstrip(" ,")

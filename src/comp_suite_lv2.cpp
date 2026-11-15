@@ -98,6 +98,13 @@ void run(LV2_Handle handle, uint32_t frames) {
   if (!p->audioInL || !p->audioOutL) {
     return;
   }
+  // Mono or partially connected hosts: mirror the left channel.
+  if (!p->audioInR) {
+    p->audioInR = p->audioInL;
+  }
+  if (!p->audioOutR) {
+    p->audioOutR = p->audioOutL;
+  }
 
   // Pull host parameter values in, then configure the engine.  Only values
   // that actually changed are applied, so a port the host has not refreshed

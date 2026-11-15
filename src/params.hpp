@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <cmath>
 #include <cstdint>
 
 #include "dsp/controls.hpp"
@@ -80,6 +81,9 @@ public:
 
   // Clamps to the parameter range and marks the value for the host.
   void set(uint32_t p, double v) noexcept {
+    if (!std::isfinite(v)) {
+      return;  // a host (or a bad automation curve) sent NaN/inf
+    }
     const ParamSpec& s = kParamSpecs[p];
     v = std::min(std::max(v, s.min), s.max);
     if (s.stepped) {
@@ -91,6 +95,9 @@ public:
 
   // Stores a value that came from the host, without marking it dirty.
   void setFromHost(uint32_t p, double v) noexcept {
+    if (!std::isfinite(v)) {
+      return;
+    }
     const ParamSpec& s = kParamSpecs[p];
     v = std::min(std::max(v, s.min), s.max);
     values_[p].store(v, std::memory_order_relaxed);

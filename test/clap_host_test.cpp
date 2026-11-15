@@ -385,6 +385,34 @@ int main(int argc, char** argv) {
       std::printf("  2A gain %.2f -> %.2f\n", gainBefore, value(7));
       check(value(7) > gainBefore + 0.05, "dragging 2A GAIN moves it");
 
+      // Mono buffers must not crash: the plugin mirrors the left channel.
+      {
+        std::vector<float> mono(kFrames);
+        float* one[2] = {mono.data(), nullptr};
+        clap_audio_buffer_t monoBuf{};
+        monoBuf.data32 = one;
+        monoBuf.channel_count = 1;
+        clap_process_t monoProc{};
+        monoProc.frames_count = kFrames;
+        monoProc.audio_inputs = &monoBuf;
+        monoProc.audio_outputs = &monoBuf;
+        monoProc.audio_inputs_count = 1;
+        monoProc.audio_outputs_count = 1;
+        monoProc.in_events = nullptr;
+        monoProc.out_events = nullptr;
+        for (uint32_t i = 0; i < kFrames; ++i) {
+          mono[i] = 0.3f * std::sin(0.05f * static_cast<float>(i));
+        }
+        plugin->process(plugin, &monoProc);
+        bool ok = true;
+        for (uint32_t i = 0; i < kFrames; ++i) {
+          if (!std::isfinite(mono[i])) {
+            ok = false;
+          }
+        }
+        check(ok, "mono buffers process without crashing");
+      }
+
       gui->hide(plugin);
       gui->destroy(plugin);
       XDestroyWindow(dpy, parent);

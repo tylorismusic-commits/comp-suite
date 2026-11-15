@@ -838,10 +838,16 @@ clap_process_status pluginProcess(const clap_plugin_t* p, const clap_process_t* 
   if (proc->audio_inputs_count == 0 || proc->audio_outputs_count == 0) {
     return CLAP_PROCESS_CONTINUE;
   }
-  float* left = proc->audio_outputs[0].data32[0];
-  float* right = proc->audio_outputs[0].data32[1];
-  const float* inL = proc->audio_inputs[0].data32[0];
-  const float* inR = proc->audio_inputs[0].data32[1];
+  // Be tolerant of mono or partially connected buffers.
+  const clap_audio_buffer_t& inBuf = proc->audio_inputs[0];
+  const clap_audio_buffer_t& outBuf = proc->audio_outputs[0];
+  if (!outBuf.data32 || !inBuf.data32 || !outBuf.data32[0] || !inBuf.data32[0]) {
+    return CLAP_PROCESS_CONTINUE;
+  }
+  float* left = outBuf.data32[0];
+  float* right = outBuf.channel_count > 1 && outBuf.data32[1] ? outBuf.data32[1] : left;
+  const float* inL = inBuf.data32[0];
+  const float* inR = inBuf.channel_count > 1 && inBuf.data32[1] ? inBuf.data32[1] : inL;
   if (left != inL) {
     std::memcpy(left, inL, frames * sizeof(float));
   }
