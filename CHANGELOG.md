@@ -17,7 +17,9 @@
   - Measured on a 10 kHz tone through the Clean clip: the 18 kHz alias falls
     from −50.6 dB to −97.6 dB at 2× and −91.3 dB at 4×.
   - Switching the mode changes latency; CLAP hosts are asked for a restart and
-    LV2 hosts re-read the latency port. Treat it as a setup control rather than
+    LV2 hosts re-read the latency port. The plugin keeps its old latency until
+    the host reactivates it, as CLAP requires, and only notifies the host when
+    the number actually changes. Treat it as a setup control rather than
     something to automate during playback.
 - The header control cycles **OS OFF → OS 2X → OS 4X → OS OFF**.
 

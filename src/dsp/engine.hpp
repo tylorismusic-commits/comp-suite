@@ -44,9 +44,15 @@ public:
     configureRate(factorForMode(controls_.oversample));
   }
 
+  // CLAP requires the plugin to keep its old latency until the host has
+  // reactivated it.  In that mode a new oversampling setting is stored but the
+  // engine keeps running at the old rate; prepare() applies it during
+  // activation.  LV2 has no activate/restart cycle, so it applies immediately.
+  void setDeferOversample(bool defer) noexcept { deferOversample_ = defer; }
+
   void setControls(const Controls& c) noexcept {
     const int requested = factorForMode(c.oversample);
-    if (requested != factor_) {
+    if (!deferOversample_ && requested != factor_) {
       // A rate change rebuilds every model and clears the converters.  The
       // switch is a setup action, not an automatable performance gesture.
       configureRate(requested);
@@ -362,6 +368,7 @@ private:
   float baseRate_ = 48000.0f;
   float osRate_ = 48000.0f;
   int factor_ = 1;
+  bool deferOversample_ = false;
   Controls controls_;
   bool primed_ = false;
   int active_ = -1;

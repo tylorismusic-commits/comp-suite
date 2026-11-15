@@ -279,25 +279,40 @@ int main(int argc, char** argv) {
     events.inputs.push_back(paramEvent(comp::P_OVERSAMPLE, 1.0));
     plugin->process(plugin, &osProc);
     events.inputs.clear();
-    check(latency && latency->get(plugin) == 30,
-          "2x oversampling reports 30 samples");
+    check(latency && latency->get(plugin) == 0,
+          "old latency is kept until the host reactivates");
     plugin->on_main_thread(plugin);
     check(gRestarts > restartsBefore,
           "oversampling change requests a host restart");
 
+    // The host honours the restart.
+    plugin->deactivate(plugin);
+    plugin->activate(plugin, 48000.0, kFrames, kFrames);
+    check(latency && latency->get(plugin) == 30,
+          "2x oversampling reports 30 samples after reactivation");
+  const int changesAfter2x = gLatencyChanges;
+  plugin->deactivate(plugin);
+  plugin->activate(plugin, 48000.0, kFrames, kFrames);
+  check(gLatencyChanges == changesAfter2x,
+        "reactivation with the same latency does not notify again");
+
     events.inputs.push_back(paramEvent(comp::P_OVERSAMPLE, 2.0));
     plugin->process(plugin, &osProc);
     events.inputs.clear();
-    check(latency && latency->get(plugin) == 45,
-          "4x oversampling reports 45 samples");
     plugin->on_main_thread(plugin);
+    plugin->deactivate(plugin);
+    plugin->activate(plugin, 48000.0, kFrames, kFrames);
+    check(latency && latency->get(plugin) == 45,
+          "4x oversampling reports 45 samples after reactivation");
 
     events.inputs.push_back(paramEvent(comp::P_OVERSAMPLE, 0.0));
     plugin->process(plugin, &osProc);
     events.inputs.clear();
-    check(latency && latency->get(plugin) == 0,
-          "oversampling off reports zero again");
     plugin->on_main_thread(plugin);
+    plugin->deactivate(plugin);
+    plugin->activate(plugin, 48000.0, kFrames, kFrames);
+    check(latency && latency->get(plugin) == 0,
+          "oversampling off reports zero after reactivation");
   }
     // Put ALL back so the state round-trip below still has its reference.
     // The first call clears the dirty flag, the second accepts the event.

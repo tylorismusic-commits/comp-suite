@@ -336,6 +336,7 @@ struct Plugin {
   // main-thread callback.
   std::atomic<int> infoModel{-1};
   std::atomic<int> reportedOversample{-1};
+  std::atomic<uint32_t> reportedLatency{0xffffffffu};
   std::atomic<bool> rescanQueued{false};
   std::atomic<bool> active{false};
 };
@@ -1028,11 +1029,17 @@ bool pluginActivate(const clap_plugin_t* p, double sampleRate, uint32_t,
   s->reportedOversample.store(
       static_cast<int>(s->shared.get(P_OVERSAMPLE) + 0.5),
       std::memory_order_relaxed);
-  if (s->host && s->host->get_extension) {
-    const auto* latency = static_cast<const clap_host_latency_t*>(
-        s->host->get_extension(s->host, CLAP_EXT_LATENCY));
-    if (latency && latency->changed) {
-      latency->changed(s->host);
+  // REAPER only picks up a new latency when the plugin calls changed(), so do
+  // that here (being-activated is the one legal moment) - but only when the
+  // value actually changed, so a host that reacts by restarting cannot loop.
+  const uint32_t latencyNow = s->engine.latencySamples();
+  if (latencyNow != s->reportedLatency.exchange(latencyNow)) {
+    if (s->host && s->host->get_extension) {
+      const auto* latency = static_cast<const clap_host_latency_t*>(
+          s->host->get_extension(s->host, CLAP_EXT_LATENCY));
+      if (latency && latency->changed) {
+        latency->changed(s->host);
+      }
     }
   }
   return true;
@@ -1173,19 +1180,12 @@ void pluginOnMainThread(const clap_plugin_t* p) {
       params->rescan(s->host, CLAP_PARAM_RESCAN_INFO);
     }
   }
-  if (latencyChanged) {
-    if (s->active.load(std::memory_order_relaxed)) {
-      // CLAP only allows the latency to change while the plugin is being
-      // activated; ask the host to restart so it re-queries it.
-      if (s->host->request_restart) {
-        s->host->request_restart(s->host);
-      }
-    } else {
-      const auto* latency = static_cast<const clap_host_latency_t*>(
-          s->host->get_extension(s->host, CLAP_EXT_LATENCY));
-      if (latency && latency->changed) {
-        latency->changed(s->host);
-      }
+  if (latencyChanged && s->active.load(std::memory_order_relaxed)) {
+    // CLAP only allows the latency to change while the plugin is being
+    // activated; ask the host to restart.  The new latency is reported from
+    // pluginActivate(), after the engine has actually switched rates.
+    if (s->host->request_restart) {
+      s->host->request_restart(s->host);
     }
   }
 }
@@ -1206,6 +1206,9 @@ Plugin* createPlugin(const clap_host_t* host) {
   s->plugin.get_extension = pluginGetExtension;
   s->plugin.on_main_thread = pluginOnMainThread;
   s->engine.prepare(48000.0f);
+  // Latency may only change while the plugin is being activated, so the
+  // oversampling switch is applied on the host's restart, not mid-block.
+  s->engine.setDeferOversample(true);
   s->editor.requestFlush = [s] {
     if (s->host && s->host->request_process) {
       s->host->request_process(s->host);
