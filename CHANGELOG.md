@@ -64,15 +64,24 @@ Measured in `comp_dsp_test`:
   / −3 / 0 over a linear −24..0 dB mapping, so the knob read −6 where the
   threshold was actually −12. They now read −24 / −18 / −12 / −6 / 0.
 
+### Presets
+
+All 33 factory presets were retuned **by measurement, not by ear**. The
+feedback pass changed how input level maps to reduction, so the old values no
+longer meant what they did.
+
+- `tools/retune_presets` binary-searches each preset's drive control (input for
+  76/Xpress, peak reduction or threshold for the optical and VCA models).
+- The targets were each preset's gain reduction measured on the **v0.2.0**
+  release, so the intent of every preset — gentle, glue, slam — is preserved
+  rather than flattened onto one number.
+- Worst deviation from the intended reduction after retuning: 0.03 dB.
+
 ### Known
 
-- The 31 factory presets have not been retuned. This matters more now than
-  before P1: feedback changes how input level maps to gain reduction, so a
-  preset's level and amount will not match what it used to do. Retuning is the
-  next step of this release.
-- CPU for the optical models is ~2% of one core at 48 kHz stereo, up from
+- CPU for the optical models is ~2.3% of one core at 48 kHz stereo, up from
   ~0.6%, because the side-chain runs six filters and several transcendentals
-  per sample. Optimisation is deferred to the 0.4.0 feature pass.
+  per sample. The FET models are ~1.7%. Optimisation is deferred to 0.4.0.
 
 ## 0.2.0
 

@@ -35,7 +35,7 @@
     pset:bank <https://github.com/tylorismusic-commits/comp-suite#bank_vocals> ;
     lv2:port
     [ lv2:symbol "model" ; pset:value 0 ] ,
-    [ lv2:symbol "input" ; pset:value 0.62 ] ,
+    [ lv2:symbol "input" ; pset:value 0.619 ] ,
     [ lv2:symbol "ratio" ; pset:value 3 ] ,
     [ lv2:symbol "attack" ; pset:value 0.35 ] ,
     [ lv2:symbol "release" ; pset:value 0.45 ] ,
@@ -50,7 +50,7 @@
     pset:bank <https://github.com/tylorismusic-commits/comp-suite#bank_vocals> ;
     lv2:port
     [ lv2:symbol "model" ; pset:value 0 ] ,
-    [ lv2:symbol "input" ; pset:value 0.72 ] ,
+    [ lv2:symbol "input" ; pset:value 0.706 ] ,
     [ lv2:symbol "ratio" ; pset:value 8 ] ,
     [ lv2:symbol "attack" ; pset:value 0.5 ] ,
     [ lv2:symbol "release" ; pset:value 0.4 ] ,
@@ -80,7 +80,7 @@
     pset:bank <https://github.com/tylorismusic-commits/comp-suite#bank_drums> ;
     lv2:port
     [ lv2:symbol "model" ; pset:value 0 ] ,
-    [ lv2:symbol "input" ; pset:value 0.55 ] ,
+    [ lv2:symbol "input" ; pset:value 0.546 ] ,
     [ lv2:symbol "ratio" ; pset:value 5 ] ,
     [ lv2:symbol "attack" ; pset:value 0.85 ] ,
     [ lv2:symbol "release" ; pset:value 0.25 ] ,
@@ -95,7 +95,7 @@
     pset:bank <https://github.com/tylorismusic-commits/comp-suite#bank_drums> ;
     lv2:port
     [ lv2:symbol "model" ; pset:value 0 ] ,
-    [ lv2:symbol "input" ; pset:value 0.66 ] ,
+    [ lv2:symbol "input" ; pset:value 0.653 ] ,
     [ lv2:symbol "ratio" ; pset:value 6 ] ,
     [ lv2:symbol "attack" ; pset:value 0.7 ] ,
     [ lv2:symbol "release" ; pset:value 0.3 ] ,
@@ -110,7 +110,7 @@
     pset:bank <https://github.com/tylorismusic-commits/comp-suite#bank_parallel> ;
     lv2:port
     [ lv2:symbol "model" ; pset:value 0 ] ,
-    [ lv2:symbol "input" ; pset:value 0.85 ] ,
+    [ lv2:symbol "input" ; pset:value 0.84 ] ,
     [ lv2:symbol "ratio" ; pset:value 8 ] ,
     [ lv2:symbol "attack" ; pset:value 0.6 ] ,
     [ lv2:symbol "release" ; pset:value 0.3 ] ,
@@ -125,7 +125,7 @@
     pset:bank <https://github.com/tylorismusic-commits/comp-suite#bank_parallel> ;
     lv2:port
     [ lv2:symbol "model" ; pset:value 0 ] ,
-    [ lv2:symbol "input" ; pset:value 0.8 ] ,
+    [ lv2:symbol "input" ; pset:value 0.792 ] ,
     [ lv2:symbol "ratio" ; pset:value 8 ] ,
     [ lv2:symbol "attack" ; pset:value 0.5 ] ,
     [ lv2:symbol "release" ; pset:value 0.25 ] ,
@@ -185,7 +185,7 @@
     pset:bank <https://github.com/tylorismusic-commits/comp-suite#bank_bass> ;
     lv2:port
     [ lv2:symbol "model" ; pset:value 1 ] ,
-    [ lv2:symbol "input" ; pset:value 0.58 ] ,
+    [ lv2:symbol "input" ; pset:value 0.579 ] ,
     [ lv2:symbol "ratio" ; pset:value 4 ] ,
     [ lv2:symbol "attack" ; pset:value 0.6 ] ,
     [ lv2:symbol "release" ; pset:value 0.55 ] ,
@@ -200,7 +200,7 @@
     pset:bank <https://github.com/tylorismusic-commits/comp-suite#bank_drums> ;
     lv2:port
     [ lv2:symbol "model" ; pset:value 1 ] ,
-    [ lv2:symbol "input" ; pset:value 0.55 ] ,
+    [ lv2:symbol "input" ; pset:value 0.548 ] ,
     [ lv2:symbol "ratio" ; pset:value 3 ] ,
     [ lv2:symbol "attack" ; pset:value 0.75 ] ,
     [ lv2:symbol "release" ; pset:value 0.35 ] ,
@@ -215,7 +215,7 @@
     pset:bank <https://github.com/tylorismusic-commits/comp-suite#bank_parallel> ;
     lv2:port
     [ lv2:symbol "model" ; pset:value 1 ] ,
-    [ lv2:symbol "input" ; pset:value 0.78 ] ,
+    [ lv2:symbol "input" ; pset:value 0.77 ] ,
     [ lv2:symbol "ratio" ; pset:value 6 ] ,
     [ lv2:symbol "attack" ; pset:value 0.55 ] ,
     [ lv2:symbol "release" ; pset:value 0.3 ] ,
@@ -230,7 +230,7 @@
     pset:bank <https://github.com/tylorismusic-commits/comp-suite#bank_vocals> ;
     lv2:port
     [ lv2:symbol "model" ; pset:value 2 ] ,
-    [ lv2:symbol "threshold" ; pset:value 0.55 ] ,
+    [ lv2:symbol "threshold" ; pset:value 0.365 ] ,
     [ lv2:symbol "ratio" ; pset:value 0 ] ,
     [ lv2:symbol "makeup" ; pset:value 0.6 ] ,
     [ lv2:symbol "mix" ; pset:value 1 ] .
@@ -243,7 +243,7 @@
     pset:bank <https://github.com/tylorismusic-commits/comp-suite#bank_vocals> ;
     lv2:port
     [ lv2:symbol "model" ; pset:value 2 ] ,
-    [ lv2:symbol "threshold" ; pset:value 0.62 ] ,
+    [ lv2:symbol "threshold" ; pset:value 0.737 ] ,
     [ lv2:symbol "ratio" ; pset:value 8 ] ,
     [ lv2:symbol "makeup" ; pset:value 0.55 ] ,
     [ lv2:symbol "mix" ; pset:value 1 ] .
@@ -256,7 +256,7 @@
     pset:bank <https://github.com/tylorismusic-commits/comp-suite#bank_bass> ;
     lv2:port
     [ lv2:symbol "model" ; pset:value 2 ] ,
-    [ lv2:symbol "threshold" ; pset:value 0.66 ] ,
+    [ lv2:symbol "threshold" ; pset:value 0.475 ] ,
     [ lv2:symbol "ratio" ; pset:value 0 ] ,
     [ lv2:symbol "makeup" ; pset:value 0.65 ] ,
     [ lv2:symbol "mix" ; pset:value 1 ] .
@@ -269,7 +269,7 @@
     pset:bank <https://github.com/tylorismusic-commits/comp-suite#bank_guitars> ;
     lv2:port
     [ lv2:symbol "model" ; pset:value 2 ] ,
-    [ lv2:symbol "threshold" ; pset:value 0.5 ] ,
+    [ lv2:symbol "threshold" ; pset:value 0.315 ] ,
     [ lv2:symbol "ratio" ; pset:value 0 ] ,
     [ lv2:symbol "makeup" ; pset:value 0.55 ] ,
     [ lv2:symbol "mix" ; pset:value 1 ] .
@@ -282,7 +282,7 @@
     pset:bank <https://github.com/tylorismusic-commits/comp-suite#bank_parallel> ;
     lv2:port
     [ lv2:symbol "model" ; pset:value 2 ] ,
-    [ lv2:symbol "threshold" ; pset:value 0.7 ] ,
+    [ lv2:symbol "threshold" ; pset:value 0.517 ] ,
     [ lv2:symbol "ratio" ; pset:value 0 ] ,
     [ lv2:symbol "makeup" ; pset:value 0.58 ] ,
     [ lv2:symbol "mix" ; pset:value 0.45 ] .
@@ -295,7 +295,7 @@
     pset:bank <https://github.com/tylorismusic-commits/comp-suite#bank_vocals> ;
     lv2:port
     [ lv2:symbol "model" ; pset:value 3 ] ,
-    [ lv2:symbol "threshold" ; pset:value 0.52 ] ,
+    [ lv2:symbol "threshold" ; pset:value 0.308 ] ,
     [ lv2:symbol "makeup" ; pset:value 0.6 ] ,
     [ lv2:symbol "mix" ; pset:value 1 ] .
 
@@ -307,7 +307,7 @@
     pset:bank <https://github.com/tylorismusic-commits/comp-suite#bank_drums> ;
     lv2:port
     [ lv2:symbol "model" ; pset:value 3 ] ,
-    [ lv2:symbol "threshold" ; pset:value 0.62 ] ,
+    [ lv2:symbol "threshold" ; pset:value 0.419 ] ,
     [ lv2:symbol "makeup" ; pset:value 0.55 ] ,
     [ lv2:symbol "mix" ; pset:value 0.8 ] .
 
@@ -319,7 +319,7 @@
     pset:bank <https://github.com/tylorismusic-commits/comp-suite#bank_bass> ;
     lv2:port
     [ lv2:symbol "model" ; pset:value 3 ] ,
-    [ lv2:symbol "threshold" ; pset:value 0.58 ] ,
+    [ lv2:symbol "threshold" ; pset:value 0.375 ] ,
     [ lv2:symbol "makeup" ; pset:value 0.63 ] ,
     [ lv2:symbol "mix" ; pset:value 1 ] .
 
@@ -331,7 +331,7 @@
     pset:bank <https://github.com/tylorismusic-commits/comp-suite#bank_guitars> ;
     lv2:port
     [ lv2:symbol "model" ; pset:value 3 ] ,
-    [ lv2:symbol "threshold" ; pset:value 0.55 ] ,
+    [ lv2:symbol "threshold" ; pset:value 0.342 ] ,
     [ lv2:symbol "makeup" ; pset:value 0.56 ] ,
     [ lv2:symbol "mix" ; pset:value 0.9 ] .
 

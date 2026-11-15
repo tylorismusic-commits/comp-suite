@@ -123,6 +123,12 @@ target_compile_features(comp_ttl_gen PRIVATE cxx_std_17)
 add_test(NAME comp_ttl
   COMMAND comp_ttl_gen --check --root "${CMAKE_SOURCE_DIR}")
 
+# Measures the factory presets and suggests drive values that hit their
+# category's target gain reduction.  Development aid, not shipped.
+add_executable(comp_retune_presets tools/retune_presets.cpp)
+target_include_directories(comp_retune_presets PRIVATE "${CMAKE_SOURCE_DIR}/src")
+target_compile_features(comp_retune_presets PRIVATE cxx_std_17)
+
 # ---------------------------------------------------------------------------
 # LV2 build: same DSP and panel as the CLAP, exposed as an LV2 plugin + X11 UI.
 # ---------------------------------------------------------------------------
