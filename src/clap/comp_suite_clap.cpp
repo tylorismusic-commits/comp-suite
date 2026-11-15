@@ -447,7 +447,7 @@ bool paramsValueToText(const clap_plugin_t* p, clap_id id, double value,
       } else if (model == 5) {
         std::snprintf(out, size, "%.1f dB", -30.0 + 40.0 * value);
       } else if (model == 6) {
-        std::snprintf(out, size, "%.1f dB", -60.0 + 60.0 * value);
+        std::snprintf(out, size, "%.1f dB", -40.0 + 40.0 * value);
       } else if (model == 7) {
         std::snprintf(out, size, "%.1f dB", -40.0 + 40.0 * value);
       } else {
@@ -456,7 +456,9 @@ bool paramsValueToText(const clap_plugin_t* p, clap_id id, double value,
       return true;
     case P_RATIO: {
       const int step = ratioStepFrom(static_cast<float>(value));
-      if (model == 2) {
+      if (model == 7 && ratioFromStep(step) > 10.9) {
+        std::snprintf(out, size, "Limit");
+      } else if (model == 2) {
         std::snprintf(out, size, "%s", step >= 4 ? "Limit" : "Compress");
       } else if (model <= 1 && step >= 8) {
         std::snprintf(out, size, "ALL");
@@ -509,13 +511,19 @@ bool paramsValueToText(const clap_plugin_t* p, clap_id id, double value,
       return true;
     }
     case P_MAKEUP:
-      std::snprintf(out, size, "%+.1f dB", (value - 0.5) * 20.0);
+      if (model == 7) {
+        std::snprintf(out, size, "%+.1f dB", -12.0 + 24.0 * value);
+      } else {
+        std::snprintf(out, size, "%+.1f dB", (value - 0.5) * 20.0);
+      }
       return true;
     case P_OUTPUT:
       if (model == 2) {
         std::snprintf(out, size, "%s", value > 0.5 ? "+10" : "+4");
       } else if (model <= 1) {
         std::snprintf(out, size, "%.1f dB", value * 24.0);
+      } else if (model == 6) {
+        std::snprintf(out, size, "%+.1f dB", -30.0 + 60.0 * value);
       } else {
         std::snprintf(out, size, "%+.1f dB", -12.0 + 24.0 * value);
       }
@@ -526,6 +534,8 @@ bool paramsValueToText(const clap_plugin_t* p, clap_id id, double value,
     case P_SC_HPF:
       if (value < 0.01) {
         std::snprintf(out, size, "Off");
+      } else if (model == 7) {
+        std::snprintf(out, size, "%.0f Hz", 40.0 + 220.0 * value);
       } else {
         std::snprintf(out, size, "%.0f Hz", 20.0 * std::pow(20.0, value));
       }

@@ -526,7 +526,7 @@
     lv2:port
     [ lv2:symbol "model" ; pset:value 5 ] ,
     [ lv2:symbol "input" ; pset:value 0.5 ] ,
-    [ lv2:symbol "threshold" ; pset:value 0.641 ] ,
+    [ lv2:symbol "threshold" ; pset:value 0.461 ] ,
     [ lv2:symbol "ratio" ; pset:value 3 ] ,
     [ lv2:symbol "knee" ; pset:value 0.5 ] ,
     [ lv2:symbol "attack" ; pset:value 0.35 ] ,
@@ -543,7 +543,7 @@
     lv2:port
     [ lv2:symbol "model" ; pset:value 5 ] ,
     [ lv2:symbol "input" ; pset:value 0.5 ] ,
-    [ lv2:symbol "threshold" ; pset:value 0.672 ] ,
+    [ lv2:symbol "threshold" ; pset:value 0.508 ] ,
     [ lv2:symbol "ratio" ; pset:value 4 ] ,
     [ lv2:symbol "knee" ; pset:value 0.35 ] ,
     [ lv2:symbol "attack" ; pset:value 0.2 ] ,
@@ -560,7 +560,7 @@
     lv2:port
     [ lv2:symbol "model" ; pset:value 5 ] ,
     [ lv2:symbol "input" ; pset:value 0.5 ] ,
-    [ lv2:symbol "threshold" ; pset:value 0.677 ] ,
+    [ lv2:symbol "threshold" ; pset:value 0.516 ] ,
     [ lv2:symbol "ratio" ; pset:value 2 ] ,
     [ lv2:symbol "knee" ; pset:value 0.6 ] ,
     [ lv2:symbol "attack" ; pset:value 0.55 ] ,
@@ -578,7 +578,7 @@
     lv2:port
     [ lv2:symbol "model" ; pset:value 5 ] ,
     [ lv2:symbol "input" ; pset:value 0.5 ] ,
-    [ lv2:symbol "threshold" ; pset:value 0.663 ] ,
+    [ lv2:symbol "threshold" ; pset:value 0.494 ] ,
     [ lv2:symbol "ratio" ; pset:value 3 ] ,
     [ lv2:symbol "knee" ; pset:value 0.45 ] ,
     [ lv2:symbol "attack" ; pset:value 0.45 ] ,
@@ -595,7 +595,7 @@
     lv2:port
     [ lv2:symbol "model" ; pset:value 5 ] ,
     [ lv2:symbol "input" ; pset:value 0.5 ] ,
-    [ lv2:symbol "threshold" ; pset:value 0.574 ] ,
+    [ lv2:symbol "threshold" ; pset:value 0.581 ] ,
     [ lv2:symbol "ratio" ; pset:value 5 ] ,
     [ lv2:symbol "knee" ; pset:value 0.4 ] ,
     [ lv2:symbol "attack" ; pset:value 0.25 ] ,
@@ -630,7 +630,7 @@
     lv2:port
     [ lv2:symbol "model" ; pset:value 5 ] ,
     [ lv2:symbol "input" ; pset:value 0.5 ] ,
-    [ lv2:symbol "threshold" ; pset:value 0.574 ] ,
+    [ lv2:symbol "threshold" ; pset:value 0.579 ] ,
     [ lv2:symbol "ratio" ; pset:value 2 ] ,
     [ lv2:symbol "knee" ; pset:value 0.7 ] ,
     [ lv2:symbol "attack" ; pset:value 0.55 ] ,
@@ -647,7 +647,7 @@
     lv2:port
     [ lv2:symbol "model" ; pset:value 5 ] ,
     [ lv2:symbol "input" ; pset:value 0.5 ] ,
-    [ lv2:symbol "threshold" ; pset:value 0.568 ] ,
+    [ lv2:symbol "threshold" ; pset:value 0.574 ] ,
     [ lv2:symbol "ratio" ; pset:value 4 ] ,
     [ lv2:symbol "knee" ; pset:value 0.5 ] ,
     [ lv2:symbol "attack" ; pset:value 0.35 ] ,

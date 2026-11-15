@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.6.2 — 2026-11-15
+
+### Changed
+
+- **Clean now uses the same -40..0 dB threshold range as the VCA and Molot.**
+  At identical knob positions it was compressing roughly twice as much as the
+  others because its threshold sat 10 dB lower. Measured at -6 dBFS with
+  threshold/ratio/attack/release at 0.5: Clean 10.6 dB became 5.6 dB, against
+  Molot 5.5 and VCA 7.0. Clean's presets were re-solved for the new range.
+
+### Fixed
+
+- Host value text for Clean's Output (-30..+60 dB) and Molot's Make-up
+  (+/-12 dB) and side-chain filter (40..260 Hz) reported the wrong ranges.
+- Molot's ratio readout now says "Limit" above 10.9:1, where the transfer
+  function switches to limiter mode.
+
 ## 0.6.1 — 2026-11-15
 
 ### Fixed

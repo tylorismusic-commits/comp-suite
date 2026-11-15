@@ -39,7 +39,9 @@ public:
   void setControls(const Controls& c) noexcept {
     controls_ = c;
     inputSmooth_.setTarget(dbToGain(-30.0f + 60.0f * clampf(c.input, 0.0f, 1.0f)));
-    thresholdDb_ = -60.0f + 60.0f * clampf(c.threshold, 0.0f, 1.0f);
+    // Same -40..0 dB range as the VCA and Molot, so one knob position
+    // means one threshold across the models that have a threshold.
+    thresholdDb_ = -40.0f + 40.0f * clampf(c.threshold, 0.0f, 1.0f);
     ratio_ = ratioFromStep(ratioStepFrom(c.ratio));
     // Knee runs 0..18 dB, as a fraction of the control's travel.
     kneeDb_ = 18.0f * clampf(c.knee, 0.0f, 1.0f);
