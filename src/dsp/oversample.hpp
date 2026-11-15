@@ -27,14 +27,18 @@ public:
   // factor must be 1, 2 or 4.
   void prepare(int factor) noexcept {
     stages_ = factor >= 4 ? 2 : (factor == 2 ? 1 : 0);
-    for (auto& s : stage_) {
-      s.reset();
+    for (auto& st : stage_) {
+      for (auto& ch : st) {
+        ch.reset();
+      }
     }
   }
 
   void reset() noexcept {
-    for (auto& s : stage_) {
-      s.reset();
+    for (auto& st : stage_) {
+      for (auto& ch : st) {
+        ch.reset();
+      }
     }
   }
 
@@ -60,14 +64,14 @@ public:
       return;
     }
     if (stages_ == 1) {
-      stage_[0].up(inL, n, outL);
-      stage_[0].up(inR, n, outR);
+      stage_[0][0].up(inL, n, outL);
+      stage_[0][1].up(inR, n, outR);
       return;
     }
-    stage_[0].up(inL, n, midL_);
-    stage_[0].up(inR, n, midR_);
-    stage_[1].up(midL_, 2 * n, outL);
-    stage_[1].up(midR_, 2 * n, outR);
+    stage_[0][0].up(inL, n, midL_);
+    stage_[0][1].up(inR, n, midR_);
+    stage_[1][0].up(midL_, 2 * n, outL);
+    stage_[1][1].up(midR_, 2 * n, outR);
   }
 
   // Downsamples n * factor() frames into n base-rate frames.
@@ -84,15 +88,15 @@ public:
       return;
     }
     if (stages_ == 1) {
-      stage_[0].down(inL, n, outL);
-      stage_[0].down(inR, n, outR);
+      stage_[0][0].down(inL, n, outL);
+      stage_[0][1].down(inR, n, outR);
       return;
     }
     // The first decimation halves 4n -> 2n; the second halves 2n -> n.
-    stage_[1].down(inL, 2 * n, midL_);
-    stage_[1].down(inR, 2 * n, midR_);
-    stage_[0].down(midL_, n, outL);
-    stage_[0].down(midR_, n, outR);
+    stage_[1][0].down(inL, 2 * n, midL_);
+    stage_[1][1].down(inR, 2 * n, midR_);
+    stage_[0][0].down(midL_, n, outL);
+    stage_[0][1].down(midR_, n, outR);
   }
 
 private:
@@ -176,7 +180,9 @@ private:
     }
   };
 
-  Stage stage_[2];
+  // [cascade stage][channel].  Sharing one filter state across channels made
+  // the right channel start from the left channel's history, which is a buzz.
+  Stage stage_[2][2];
   int stages_ = 0;
   float midL_[2 * kMaxBaseFrames] = {};
   float midR_[2 * kMaxBaseFrames] = {};

@@ -25,6 +25,12 @@
 
 ### Fixed
 
+- **The oversampling filters shared their state between left and right.** Left
+  was processed first and the right channel inherited its history, so 2× and
+  4× produced a ringing buzz that was louder on the right — on every model,
+  in both formats, even with no compression or distortion. Each channel now
+  has its own filter state, with a regression test that feeds a left-only and
+  a right-only signal and requires the other side to stay at −300 dB.
 - **Red presets now switch Auto Release off explicitly**, as the VCA presets
   already did. Presets are partial by design, so a preceding preset could leave
   Auto Release on and make the release knob appear dead.

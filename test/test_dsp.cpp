@@ -933,6 +933,64 @@ int main() {
     check(four < off - 25.0f, label);
   }
 
+  // The oversampler must keep left and right completely separate.  Sharing
+  // filter history made the right channel inherit the left channel's tail:
+  // a buzz, louder on the right.
+  for (int mode = 1; mode < 3; ++mode) {
+    Engine engine;
+    engine.prepare(kSr);
+    Controls c = baseControls(Model::Clean);
+    c.threshold = 1.0f;  // no compression
+    c.input = 0.5f;
+    c.output = 0.5f;
+    c.oversample = static_cast<float>(mode);
+    engine.setControls(c);
+
+    const int n = 4096;
+    std::vector<float> l(n), r(n);
+    Meters meters;
+    for (int i = 0; i < n; ++i) {
+      l[i] = 0.2f * std::sin(2.0f * kPi * 1000.0f * i / kSr);
+      r[i] = 0.0f;
+    }
+    for (int start = 0; start < n; start += 256) {
+      engine.process(l.data() + start, r.data() + start,
+                     std::min(256, n - start), meters);
+    }
+    double leftPower = 0.0;
+    double rightPower = 0.0;
+    for (int i = n / 2; i < n; ++i) {
+      leftPower += static_cast<double>(l[i]) * l[i];
+      rightPower += static_cast<double>(r[i]) * r[i];
+    }
+    char label[128];
+    std::snprintf(label, sizeof(label),
+                  "oversampling mode %d keeps L and R separate (R %.1f dB)",
+                  mode, 10.0 * std::log10((rightPower + 1e-30) /
+                                          (leftPower + 1e-30)));
+    check(leftPower > 1.0 && rightPower < 1.0e-10, label);
+
+    // A right-only signal must not leak into the left either.
+    for (int i = 0; i < n; ++i) {
+      l[i] = 0.0f;
+      r[i] = 0.2f * std::sin(2.0f * kPi * 1000.0f * i / kSr);
+    }
+    for (int start = 0; start < n; start += 256) {
+      engine.process(l.data() + start, r.data() + start,
+                     std::min(256, n - start), meters);
+    }
+    double l2 = 0.0;
+    double r2 = 0.0;
+    for (int i = n / 2; i < n; ++i) {
+      l2 += static_cast<double>(l[i]) * l[i];
+      r2 += static_cast<double>(r[i]) * r[i];
+    }
+    std::snprintf(label, sizeof(label),
+                  "oversampling mode %d keeps R out of L (L %.1f dB)", mode,
+                  10.0 * std::log10((l2 + 1e-30) / (r2 + 1e-30)));
+    check(r2 > 1.0 && l2 < 1.0e-10, label);
+  }
+
   // A non-finite or absurd input sample must not poison the model state.
   for (int m = 0; m < static_cast<int>(Model::Count); ++m) {
     Engine engine;
