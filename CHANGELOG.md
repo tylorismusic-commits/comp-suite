@@ -14,6 +14,11 @@
     **Saturation** with Soft / Tape / Hard flavours.
   - Normal/Extreme intensity, link control, parallel mix.
 - Four Easy presets: Squish Drums, Lift Drums, Room Glue, Parallel Squish.
+- Easy sits directly after Clean in the tab order, so a new user meets it before
+  the model-specific units.
+- Scale legends on Drum Type, Saturation Type and Molot's Stereo Mode; any
+  continuous unlabelled knob now shows a **-** and **+** at the ends of its
+  travel.
 
 ### Notes
 

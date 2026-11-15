@@ -107,6 +107,7 @@ private:
     double h = 0.0;
     double r = 0.0;       // knob radius
     int steps = 0;        // 0 = use the parameter's range; else N positions
+    double scaleRadius = 1.44;  // legend ring, as a multiple of the radius
     const char* label = "";
     std::vector<const char*> scale;
     bool labelBelow = false;

@@ -194,6 +194,11 @@ const char* const kScaleRatio[] = {"1.5", "2", "3", "4", "6", "8", "12", "20", "
 const char* const kScaleRatioNoAll[] = {"1.5", "2", "3", "4", "6", "8", "12", "20"};
 // The Red only has six ratios; the shared ladder snaps to the nearest.
 const char* const kScaleRatioRed[] = {"1.5", "2", "3", "5", "7", "10"};
+const char* const kScaleDrumType[] = {"Toms", "Kick", "Snare",
+                                      "Room", "OH",   "Par"};
+const char* const kScaleSatType[] = {"Soft", "Tape", "Hard"};
+const char* const kScaleStereo[] = {"Mono", "Dual", "M",
+                                    "S",    "M/S",  "St"};
 const char* const kScaleMakeupVca[] = {"-10", "-5", "0", "+5", "+10"};
 const char* const kScaleAttackVca[] = {"0.1", "0.4", "1.7", "7", "30"};
 const char* const kScaleReleaseVca[] = {"0.1", "0.2", "0.3", "0.6", "1.2"};
@@ -412,7 +417,7 @@ void Panel::layout(const Shared& shared, const PanelState& state) {
   static const char* kTabNames[10] = {"76Blue", "76Black", "2A",    "3A",
                                       "Xpress", "VCA",     "Clean", "Molot",
                                       "Red",    "Easy"};
-  static const int kTabOrder[10] = {6, 0, 1, 2, 3, 4, 5, 7, 8, 9};
+  static const int kTabOrder[10] = {6, 9, 0, 1, 2, 3, 4, 5, 7, 8};
   const int tabCount = static_cast<int>(comp::Model::Count);
   const double tabW = (980.0 - (tabCount - 1) * 8.0) / tabCount;
   for (int i = 0; i < tabCount; ++i) {
@@ -454,7 +459,7 @@ void Panel::layout(const Shared& shared, const PanelState& state) {
 
   auto knob = [&](uint32_t param, double x, double y, double r, const char* label,
                   std::vector<const char*> scale, bool below = false,
-                  int steps = 0) {
+                  int steps = 0, double scaleRadius = 1.44) {
     Widget k{};
     k.kind = Kind::Knob;
     k.param = param;
@@ -462,6 +467,7 @@ void Panel::layout(const Shared& shared, const PanelState& state) {
     k.y = y;
     k.r = r;
     k.steps = steps;
+    k.scaleRadius = scaleRadius;
     k.label = label;
     k.scale = std::move(scale);
     k.labelBelow = below;
@@ -561,8 +567,9 @@ void Panel::layout(const Shared& shared, const PanelState& state) {
       knob(P_BEEF, 400, 424, 30, "BEEF", {});
       knob(P_AIR, 560, 424, 30, "AIR", {});
       knob(P_SAT_DRIVE, 700, 424, 30, "SATURATION", {});
-      knob(P_DRUM_TYPE, 852, 420, 24, "DRUM TYPE", {});
-      knob(P_SAT_TYPE, 620, 552, 26, "SAT TYPE", {});
+      knob(P_DRUM_TYPE, 800, 420, 24, "DRUM TYPE", sc(kScaleDrumType), false,
+           0, 1.56);
+      knob(P_SAT_TYPE, 620, 552, 26, "SAT TYPE", sc(kScaleSatType));
       knob(P_INPUT, 120, 520, 26, "INPUT", sc(kScaleOutputGeneric), true);
       knob(P_MIX, 796, 508, 25, "MIX", sc(kScaleMix), true);
       knob(P_OUTPUT, 912, 500, 27, "OUTPUT", sc(kScaleOutputGeneric));
@@ -603,7 +610,7 @@ void Panel::layout(const Shared& shared, const PanelState& state) {
       } else {
         toggle(P_DISTORTION, 830, 380, 1.0, "SAT", "OFF");
         toggle(P_ATTACK_MODE, 888, 380, 1.0, "SIGMA", "ALPHA");
-        knob(P_STEREO_MODE, 888, 530, 22, "STEREO", {});
+        knob(P_STEREO_MODE, 888, 530, 22, "STEREO", sc(kScaleStereo));
       }
       break;
     }
@@ -1576,13 +1583,26 @@ void Panel::drawKnob(cairo_t* cr, const Widget& w, double value, int model) cons
     cairo_stroke(cr);
   }
 
+  // Continuous controls with no scale get direction marks.
+  const ParamSpec& paramSpec = kParamSpecs[w.param];
+  if (w.scale.empty() && !paramSpec.stepped) {
+    const double a0 = knobAngle(0.0);
+    const double a1 = knobAngle(1.0);
+    text(cr, "-", cx + std::cos(a0) * (r * 1.44),
+         cy + std::sin(a0) * (r * 1.44) + 4, 12, 1, skin.legendDim.r,
+         skin.legendDim.g, skin.legendDim.b);
+    text(cr, "+", cx + std::cos(a1) * (r * 1.44),
+         cy + std::sin(a1) * (r * 1.44) + 4, 12, 1, skin.legendDim.r,
+         skin.legendDim.g, skin.legendDim.b);
+  }
+
   // Scale legends.
   const size_t n = w.scale.size();
   for (size_t i = 0; i < n; ++i) {
     const double f = n > 1 ? static_cast<double>(i) / (n - 1) : 0.0;
     const double a = knobAngle(f);
-    const double lx = cx + std::cos(a) * (r * 1.44);
-    const double ly = cy + std::sin(a) * (r * 1.44);
+    const double lx = cx + std::cos(a) * (r * w.scaleRadius);
+    const double ly = cy + std::sin(a) * (r * w.scaleRadius);
     text(cr, w.scale[i], lx, ly + 4, 10.5, 1, skin.legend.r, skin.legend.g,
          skin.legend.b);
   }
