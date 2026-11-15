@@ -33,15 +33,15 @@ struct Render {
 };
 
 Render renderSine(Engine& engine, const Controls& c, float freq, float dbfs,
-                  float seconds) {
+                  float seconds, float sampleRate = kSr) {
   engine.setControls(c);
-  const int n = static_cast<int>(seconds * kSr);
+  const int n = static_cast<int>(seconds * sampleRate);
   Render r;
   r.left.resize(n);
   r.right.resize(n);
   const float amp = dbToGain(dbfs);
   for (int i = 0; i < n; ++i) {
-    const float s = amp * std::sin(2.0f * kPi * freq * i / kSr);
+    const float s = amp * std::sin(2.0f * kPi * freq * i / sampleRate);
     r.left[i] = s;
     r.right[i] = s;
   }
@@ -282,6 +282,36 @@ int main() {
                   "76 at 20:1 settles without hunting (%.2f dB spread)",
                   hi - lo);
     check(hi - lo < 0.35f, label);
+  }
+
+  // Sample-rate independence: the side-chain filters and the envelope have to
+  // behave at every rate hosts use, not just 48 kHz.
+  for (float sr : {44100.0f, 48000.0f, 96000.0f, 192000.0f}) {
+    bool ok = true;
+    float worst = 0.0f;
+    for (int m = 0; m < static_cast<int>(Model::Count); ++m) {
+      Engine engine;
+      engine.prepare(sr);
+      Controls c = baseControls(static_cast<Model>(m));
+      if (m == 2 || m == 3) {
+        c.threshold = 0.7f;
+      }
+      if (m == 5) {
+        c.threshold = 0.25f;
+      }
+      const Render r = renderSine(engine, c, 440.0f, -6.0f, 0.5f, sr);
+      if (!allFinite(r)) {
+        ok = false;
+      }
+      for (float v : r.left) {
+        worst = std::max(worst, std::fabs(v));
+      }
+    }
+    char label[128];
+    std::snprintf(label, sizeof(label),
+                  "all models finite and bounded at %.0f Hz (peak %.2f)", sr,
+                  worst);
+    check(ok && worst < 8.0f, label);
   }
 
   // Peak reduction must increase reduction monotonically, and the control
