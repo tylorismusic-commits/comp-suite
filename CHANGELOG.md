@@ -4,6 +4,12 @@
 
 ### Added
 
+- **Level-matched models.** Every model now carries an output calibration trim,
+  measured at noon settings on both broadband and bass-heavy material, so
+  flipping tabs no longer jumps the monitoring level. The 76s are the
+  reference; Clean and Molot were about 12 dB hot and are now in line. The
+  trim sits after the model's colour and limiter, so it changes level only,
+  never dynamics.
 - **Oversampling: Off / 2× / 4×**, selected from an **OS** control in the
   header. Off is the default and stays zero-latency.
   - 2× adds **30 samples** of latency, 4× adds **45 samples** at the host rate;

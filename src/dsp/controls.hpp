@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #pragma once
 
+#include <cstddef>
+
 namespace comp {
 
 // Model selector, in the order shown on the style tabs.
@@ -17,6 +19,26 @@ enum class Model : int {
   Red = 8,      // British Class-A VCA, compression then limiting
   Easy = 9,     // drum-focused character compressor
   Count = 10
+};
+
+// Output calibration so the models sit at roughly the same level when the
+// controls are in the same place.  Measured on broadband programme material at
+// noon settings (input/output/makeup 0.5, attack/release 0.5, 4:1), anchored to
+// the 76s, and averaged against a 100 Hz tone so bass-heavy and broadband
+// sources are both within about 2 dB.  The output knob is a trim around this
+// calibrated level; it does not change the model's dynamics.
+inline constexpr float kModelTrimDb[static_cast<std::size_t>(
+    Model::Count)] = {
+    0.0f,   // Blue76: reference
+    0.0f,   // Black76
+    -7.5f,  // Opto2A
+    -7.5f,  // Opto3A
+    -6.5f,  // Xpress
+    -8.0f,  // Vca
+    -12.0f, // Clean
+    -12.0f, // Molot
+    -7.5f,  // Red
+    -7.5f,  // Easy
 };
 
 // Every control is normalised to 0..1.  Each model maps the shared slots to

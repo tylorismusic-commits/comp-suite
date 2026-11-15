@@ -204,19 +204,21 @@ private:
 
   float processModel(int index, float& l, float& r,
                      const SidechainFrame& sc) noexcept {
+    float gr = 0.0f;
     switch (static_cast<Model>(index)) {
-      case Model::Blue76: return blue_.process(l, r, sc);
-      case Model::Black76: return black_.process(l, r, sc);
-      case Model::Opto2A: return la2a_.process(l, r, sc);
-      case Model::Opto3A: return la3a_.process(l, r, sc);
-      case Model::Xpress: return xpress_.process(l, r, sc);
-      case Model::Vca: return vca_.process(l, r, sc);
-      case Model::Clean: return clean_.process(l, r, sc);
-      case Model::Molot: return molot_.process(l, r, sc);
-      case Model::Red: return red_.process(l, r, sc);
-      case Model::Easy: return easy_.process(l, r, sc);
+      case Model::Blue76: gr = blue_.process(l, r, sc); break;
+      case Model::Black76: gr = black_.process(l, r, sc); break;
+      case Model::Opto2A: gr = la2a_.process(l, r, sc); break;
+      case Model::Opto3A: gr = la3a_.process(l, r, sc); break;
+      case Model::Xpress: gr = xpress_.process(l, r, sc); break;
+      case Model::Vca: gr = vca_.process(l, r, sc); break;
+      case Model::Clean: gr = clean_.process(l, r, sc); break;
+      case Model::Molot: gr = molot_.process(l, r, sc); break;
+      case Model::Red: gr = red_.process(l, r, sc); break;
+      case Model::Easy: gr = easy_.process(l, r, sc); break;
       default: return 0.0f;
     }
+    return gr;
   }
 
   // The per-sample path.  `frames` are at the internal (possibly oversampled)
@@ -273,18 +275,18 @@ private:
       // Enable is applied before mix, so a bypassed engine is exactly the
       // dry signal whatever the mix setting is.
       const float wetMix = on * mix;
-      float outL = dryL + wetMix * (wetL - dryL);
-      float outR = dryR + wetMix * (wetR - dryR);
 
+      // The limiter and Clean's colour work on the untrimmed model output, so
+      // the calibration trim changes level only, never how they behave.
       if (controls_.limiterOn && on > 0.001f &&
           active_ != static_cast<int>(Model::Red)) {
         // Output limiter: stereo-linked peak limiter with a hard safety
         // ceiling, matching the limiter section in the reference layout.
-        const float samplePeak = std::max(std::fabs(outL), std::fabs(outR));
+        const float samplePeak = std::max(std::fabs(wetL), std::fabs(wetR));
         float peakNow = samplePeak;
         if (controls_.truePeak) {
           const float tp =
-              std::max(truePeakL_.process(outL), truePeakR_.process(outR));
+              std::max(truePeakL_.process(wetL), truePeakR_.process(wetR));
           peakNow = std::max(peakNow, tp);
         }
         const float thresh =
@@ -301,23 +303,33 @@ private:
           limiterGain_ = limiterRelease_ * limiterGain_ +
                          (1.0f - limiterRelease_) * target;
         }
-        float yL = outL * limiterGain_;
-        float yR = outR * limiterGain_;
+        float yL = wetL * limiterGain_;
+        float yR = wetR * limiterGain_;
         if (std::fabs(yL) > thresh) {
           yL = std::copysign(thresh * std::tanh(std::fabs(yL) / thresh), yL);
         }
         if (std::fabs(yR) > thresh) {
           yR = std::copysign(thresh * std::tanh(std::fabs(yR) / thresh), yR);
         }
-        outL = yL;
-        outR = yR;
+        wetL = yL;
+        wetR = yR;
       }
 
       // The Clean model's colour sits after the limiter, right before the
       // output, and only while the plugin is active.
       if (active_ == static_cast<int>(Model::Clean) && controls_.enabled) {
-        clean_.postColour(outL, outR);
+        clean_.postColour(wetL, wetR);
       }
+
+      // Model level calibration: applied to the wet path only, after all
+      // nonlinear stages, so every model lands at the same output level at
+      // noon without changing its dynamics or colour.
+      const float trim = dbToGain(kModelTrimDb[active_]);
+      wetL *= trim;
+      wetR *= trim;
+
+      float outL = dryL + wetMix * (wetL - dryL);
+      float outR = dryR + wetMix * (wetR - dryR);
 
       left[i] = std::isfinite(outL) ? outL : 0.0f;
       right[i] = std::isfinite(outR) ? outR : 0.0f;

@@ -33,11 +33,6 @@ public:
     return kRed[std::min(std::max(step, 0), 5)];
   }
 
-  // Level calibration so the model sits at the same output as the others at
-  // the same settings.  Measured 0.7-1.4 dB low on a sine, more on
-  // peaky material because the detector is peak, not RMS.
-  static constexpr float kModelTrimDb = 1.5f;
-
   void prepare(float sampleRate) noexcept {
     sr_ = sampleRate > 0.0f ? sampleRate : 48000.0f;
     inputSmooth_.setTime(15.0f, sr_);
@@ -136,7 +131,7 @@ public:
 
     const float makeup = makeupSmooth_.next();
     const float output = outputSmooth_.next();
-    const float trim = makeup * output * dbToGain(kModelTrimDb);
+    const float trim = makeup * output;
 
     // Transformer-coupled I/O: a touch of asymmetry and no DC.
     yL = transformerHp_[0].process(shaper_[0].process(yL * trim, 1.05f, 0.03f));

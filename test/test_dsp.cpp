@@ -557,7 +557,8 @@ int main() {
     const float soft = levelAndThd(1.0f / 3.0f);
     const float hard = levelAndThd(2.0f / 3.0f);
     const float clip = levelAndThd(1.0f);
-    const float expected = dbToGain(-6.0f) / std::sqrt(2.0f);
+    const float expected = dbToGain(-6.0f) / std::sqrt(2.0f) *
+                           dbToGain(kModelTrimDb[static_cast<int>(Model::Clean)]);
     char label[160];
     std::snprintf(label, sizeof(label),
                   "Clean colour modes stay subtle (off %.2f, soft %.2f, hard "
@@ -689,7 +690,8 @@ int main() {
     c.limiterOn = true;
     c.limitThreshold = 1.0f; // 0 dBFS ceiling
     const Render r = renderSine(engine, c, 100.0f, -6.0f, 0.5f);
-    const float expected = dbToGain(-6.0f) / std::sqrt(2.0f);
+    const float expected = dbToGain(-6.0f) / std::sqrt(2.0f) *
+                           dbToGain(kModelTrimDb[static_cast<int>(Model::Clean)]);
     char label[96];
     std::snprintf(label, sizeof(label),
                   "limiter is transparent below its ceiling (%.1f dB off)",
@@ -932,7 +934,8 @@ int main() {
     gain.prepare(kSr);
     gain.setControls(c);
     const Render pass = renderSine(gain, c, 1000.0f, -30.0f, 0.5f);
-    const float expected = dbToGain(-30.0f) / std::sqrt(2.0f);
+    const float expected = dbToGain(-30.0f) / std::sqrt(2.0f) *
+                           dbToGain(kModelTrimDb[static_cast<int>(Model::Clean)]);
     std::snprintf(label, sizeof(label),
                   "oversampling mode %d is unity (%.2f dB)", mode,
                   gainToDb(rmsTail(pass.left, 0.1f)) - gainToDb(expected));
@@ -1106,11 +1109,71 @@ int main() {
     const Render r = renderSine(engine, c, 100.0f, testDb, 0.5f);
     const float inRms = dbToGain(testDb) / std::sqrt(2.0f);
     const float outDb = gainToDb(rmsTail(r.left, 0.1f)) - gainToDb(inRms);
-    // The Red is level-calibrated to sit with the other models.
-    const float expectedDb = m == static_cast<int>(Model::Red) ? 1.5f : 0.0f;
+    // Every model is level-calibrated; neutral means "no reduction", not
+    // necessarily unity gain.
+    const float expectedDb = kModelTrimDb[m];
     char label[96];
     std::snprintf(label, sizeof(label), "model %d neutral is unity (%.2f dB)", m, outDb);
     check(std::fabs(outDb - expectedDb) < 0.5f, label);
+  }
+
+  // At noon, every model must land at roughly the same output level, so a
+  // user can flip tabs and choose by sound rather than by loudness.
+  {
+    std::vector<float> level((size_t)Model::Count, 0.0f);
+    for (int m = 0; m < static_cast<int>(Model::Count); ++m) {
+      Shared sh;
+      sh.set(P_MODEL, m);
+      sh.set(P_INPUT, 0.5);
+      sh.set(P_OUTPUT, 0.5);
+      sh.set(P_MAKEUP, 0.5);
+      sh.set(P_ATTACK, 0.5);
+      sh.set(P_RELEASE, 0.5);
+      sh.set(P_RATIO, 3);
+      sh.set(P_THRESHOLD, 0.5);
+      sh.set(P_KNEE, 0.5);
+      sh.set(P_MIX, 1.0);
+      sh.set(P_DISTORTION, 0.0);
+      sh.set(P_SAT_DRIVE, 0.5);
+      sh.set(P_BEEF, 0.0);
+      sh.set(P_AIR, 0.0);
+      Engine engine;
+      engine.prepare(kSr);
+      engine.setControls(controlsFrom(sh));
+      Meters meters;
+      std::vector<float> l(256), r(256);
+      double sum = 0.0;
+      int count = 0;
+      for (int b = 0; b < 160; ++b) {
+        for (int i = 0; i < 256; ++i) {
+          const float t = static_cast<float>(b * 256 + i) / kSr;
+          l[i] = r[i] =
+              0.07f * (std::sin(2.0f * kPi * 100.0f * t) +
+                       std::sin(2.0f * kPi * 1000.0f * t) +
+                       std::sin(2.0f * kPi * 8000.0f * t));
+        }
+        engine.process(l.data(), r.data(), 256, meters);
+        if (b > 80) {
+          for (int i = 0; i < 256; ++i) {
+            sum += static_cast<double>(l[i]) * l[i] +
+                   static_cast<double>(r[i]) * r[i];
+            count += 2;
+          }
+        }
+      }
+      level[m] = static_cast<float>(
+          10.0 * std::log10(sum / count + 1.0e-20));  // power dB
+    }
+    float lo = level[0];
+    float hi = level[0];
+    for (float v : level) {
+      lo = std::min(lo, v);
+      hi = std::max(hi, v);
+    }
+    char label[128];
+    std::snprintf(label, sizeof(label),
+                  "models are level-matched at noon (spread %.1f dB)", hi - lo);
+    check(hi - lo < 3.5f, label);
   }
 
   // Moving the input knob must not produce zipper clicks: the gain is
