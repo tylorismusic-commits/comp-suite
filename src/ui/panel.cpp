@@ -425,7 +425,7 @@ void Panel::layout(const Shared& shared, const PanelState& state) {
   switch (model) {
     case kBlue76:
     case kBlack76: {
-      knob(P_INPUT, 112, 520, 28, "INPUT", sc(kScaleInput76), true);
+      knob(P_INPUT, 120, 520, 28, "INPUT", sc(kScaleInput76), true);
       knob(P_ATTACK, 320, 552, 30, "ATTACK", sc(kScaleStep7));
       knob(P_RELEASE, 480, 552, 30, "RELEASE", sc(kScaleStep7));
       // Ratio bank: 20, 12, 8, 4 and ALL, top to bottom.
@@ -435,7 +435,7 @@ void Panel::layout(const Shared& shared, const PanelState& state) {
       button(P_RATIO, 378, 442, 44, 26, 3.0, "4");
       button(P_RATIO, 378, 472, 44, 26, 8.0, "ALL");
       knob(P_MIX, 796, 508, 25, "MIX", sc(kScaleMix), true);
-      knob(P_OUTPUT, 930, 500, 32, "OUTPUT", sc(kScaleOutput76));
+      knob(P_OUTPUT, 912, 500, 32, "OUTPUT", sc(kScaleOutput76));
       break;
     }
     case kOpto2A: {
@@ -465,16 +465,16 @@ void Panel::layout(const Shared& shared, const PanelState& state) {
       knob(P_ATTACK, 320, 552, 30, "ATTACK", sc(kScaleAttackXp));
       knob(P_RELEASE, 480, 552, 30, "RELEASE", sc(kScaleReleaseXp));
       if (state.rightPage == 0) {
-        knob(P_SC_HPF, 890, 260, 34, "SIDE CHAIN HPF", sc(kScaleHpf));
+        knob(P_SC_HPF, 888, 260, 34, "SIDE CHAIN HPF", sc(kScaleHpf));
       } else {
         // Distortion as four buttons: a stepped knob hid the current mode,
         // and the labels around a knob did not fit.
-        button(P_DISTORTION, 846, 374, 68, 22, 0.0, "OFF");
-        button(P_DISTORTION, 918, 374, 68, 22, 1.0, "DIST 2");
-        button(P_DISTORTION, 846, 400, 68, 22, 2.0, "DIST 3");
-        button(P_DISTORTION, 918, 400, 68, 22, 3.0, "CLIP");
+        button(P_DISTORTION, 826, 374, 60, 22, 0.0, "OFF");
+        button(P_DISTORTION, 890, 374, 60, 22, 1.0, "DIST 2");
+        button(P_DISTORTION, 826, 400, 60, 22, 2.0, "DIST 3");
+        button(P_DISTORTION, 890, 400, 60, 22, 3.0, "CLIP");
         knob(P_MIX, 796, 508, 25, "MIX", sc(kScaleMix), true);
-        knob(P_OUTPUT, 934, 500, 27, "OUTPUT", sc(kScaleOutputGeneric));
+        knob(P_OUTPUT, 912, 500, 27, "OUTPUT", sc(kScaleOutputGeneric));
       }
       break;
     }
@@ -488,7 +488,7 @@ void Panel::layout(const Shared& shared, const PanelState& state) {
       // High enough that both labels stay on the faceplate (it ends at 604).
       toggle(P_VCA_AUTO, 600, 520, 1.0, "AUTO", "MAN");
       if (state.rightPage == 0) {
-        knob(P_SC_HPF, 890, 260, 34, "SIDE CHAIN HPF", sc(kScaleHpf));
+        knob(P_SC_HPF, 888, 260, 34, "SIDE CHAIN HPF", sc(kScaleHpf));
       } else {
         knob(P_MIX, 796, 508, 25, "BLEND", sc(kScaleMix), true);
       }
@@ -522,19 +522,19 @@ void Panel::layout(const Shared& shared, const PanelState& state) {
   if (showLimiter) {
     // Latching: a plain button always writes 1, so it could never be
     // switched back off.
-    pill(P_LIMITER_ON, 845, 172, 90, 22, "LIMITER");
-    knob(P_LIMITER_THRESH, 890, 272, 24, "THRESH", sc(kScaleLimit));
+    pill(P_LIMITER_ON, 843, 172, 90, 22, "LIMITER");
+    knob(P_LIMITER_THRESH, 888, 272, 24, "THRESH", sc(kScaleLimit));
   }
 
   if (hasSideChain(model)) {
     // Narrow and placed in the gap between the LED column (which ends at 770)
     // and the output meter's numbers (which start around 960).
-    const double pageW = 76;
+    const double pageW = 68;
     for (int i = 0; i < 2; ++i) {
       Widget t{};
       t.kind = Kind::PageTab;
       t.value = i;
-      t.x = 776 + i * (pageW + 4);
+      t.x = 818 + i * (pageW + 4);
       t.y = 136;
       t.w = pageW;
       t.h = 24;
@@ -733,7 +733,7 @@ void Panel::draw(cairo_t* cr, const Shared& shared, const PanelState& state) {
   drawLeds(cr, shared);
 
   // Input and output level meters, as in the Logic reference.
-  drawLevelMeter(cr, 28, 150, 16, 352, state.inLevelL, state.inLevelR, -60.0,
+  drawLevelMeter(cr, 20, 150, 16, 352, state.inLevelL, state.inLevelR, -60.0,
                  0.0, model, true);
   drawLevelMeter(cr, 986, 150, 16, 352, state.outLevelL, state.outLevelR,
                  -60.0, 3.0, model, false);
@@ -1238,7 +1238,7 @@ void Panel::drawWidget(cairo_t* cr, const Widget& w, const Shared& shared,
       setRgb(cr, selected ? skin.tabOn : skin.tabOff);
       cairo_fill(cr);
       const Rgb tc = selected ? skin.tabTextOn : skin.tabTextOff;
-      text(cr, w.label, w.x + w.w * 0.5, w.y + w.h * 0.5 + 4, 12, 1, tc.r, tc.g, tc.b);
+      text(cr, w.label, w.x + w.w * 0.5, w.y + w.h * 0.5 + 4, 11, 1, tc.r, tc.g, tc.b);
       break;
     }
     case Kind::MeterSegment: {

@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.4.5 — 2026-11-15
+
+### Changed
+
+- **Right column aligned to one axis (x=888).** The Side Chain / Output tabs,
+  the Limiter button, the Threshold knob and the Xpress distortion buttons had
+  been centred on three different x positions, so the tabs read left-justified
+  and the distortion buttons right-justified. All now share the same centre;
+  the tabs are 68 px wide and the distortion buttons 60 px so the group fits
+  between the gain-reduction LEDs and the output meter's scale.
+- **Input and output knobs moved clear of the stereo meters.** Input moved from
+  x=112 to 120 and the input meter from x=28 to 20, so the knob's scale labels
+  no longer sit against the meter's. Output moved from x=930/934 to 912, clear
+  of the output meter's dB numbers.
+- Side Chain / Output tab labels drop to 11 px so the text has padding inside
+  the narrower tabs.
+
 ## 0.4.4 — 2026-11-15
 
 ### Changed
