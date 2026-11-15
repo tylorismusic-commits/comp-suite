@@ -440,6 +440,67 @@ int main() {
     check(automatic > manual + 0.2f, label);
   }
 
+  // A 20:1 feedback loop must not null the gain on a transient.  The static
+  // slope is 19 dB/dB, so without a ceiling a 6 dB burst asks for >100 dB and
+  // rounds the gain to zero.
+  {
+    Engine engine;
+    engine.prepare(kSr);
+    Controls c = baseControls(Model::Blue76);
+    c.input = 0.85f;
+    c.ratio = 7.0f;  // 20:1
+    engine.setControls(c);
+    Meters meters;
+    std::vector<float> l(256), r(256);
+    float maxGr = 0.0f;
+    float quietest = 1.0f;
+    for (int b = 0; b < 400; ++b) {
+      const bool burst = b >= 200 && b < 205;
+      const float amp = burst ? 0.35f : 0.177f;
+      for (int i = 0; i < 256; ++i) {
+        const float t = static_cast<float>(b * 256 + i) / kSr;
+        l[i] = r[i] = amp * std::sin(2.0f * kPi * 100.0f * t);
+      }
+      engine.process(l.data(), r.data(), 256, meters);
+      maxGr = std::max(maxGr, meters.grDb);
+      if (b >= 200) {
+        for (int i = 0; i < 256; ++i) {
+          quietest = std::min(quietest, std::fabs(l[i]));
+        }
+      }
+    }
+    char label[160];
+    std::snprintf(label, sizeof(label),
+                  "76 transient is bounded, not nulled (max GR %.1f dB)",
+                  maxGr);
+    // A null would show max GR in the 70s and near-zero output.
+    check(maxGr > 20.0f && maxGr < 45.0f, label);
+  }
+
+  // VCA presets must reset the auto-release switch, otherwise selecting one
+  // leaves the release knob doing nothing.
+  {
+    bool ok = true;
+    for (int i = 0; i < kPresetCount; ++i) {
+      const Preset& preset = kPresets[i];
+      if (preset.model != static_cast<int>(Model::Vca)) {
+        continue;
+      }
+      bool resets = false;
+      for (const PresetValue& v : preset.values) {
+        if (v.param == static_cast<int>(P_VCA_AUTO) && v.value < 0.5f) {
+          resets = true;
+        }
+      }
+      if (!resets) {
+        std::printf("  VCA preset '%s' does not reset auto release\n",
+                    preset.name);
+        ok = false;
+      }
+    }
+    check(ok, "VCA presets reset auto release");
+  }
+
   // Peak reduction must increase reduction monotonically, and the control
   // must be usable across its travel rather than slamming at one end.
   {

@@ -499,27 +499,30 @@ void Panel::layout(const Shared& shared, const PanelState& state) {
   // Global output options live in the header's empty right-hand side.  They
   // were in the model rows before and collided with the output knobs, the
   // Xpress distortion buttons and the output meter.
-  auto pill = [&](uint32_t param, double x, const char* label) {
-    Widget w{};
-    w.kind = Kind::Pill;
-    w.param = param;
-    w.x = x;
-    w.y = 20;
-    w.w = 84;
-    w.h = 24;
-    w.value = 1.0;
-    w.label = label;
-    widgets_.push_back(w);
+  auto pill = [&](uint32_t param, double x, double y, double w, double h,
+                  const char* label) {
+    Widget widget{};
+    widget.kind = Kind::Pill;
+    widget.param = param;
+    widget.x = x;
+    widget.y = y;
+    widget.w = w;
+    widget.h = h;
+    widget.value = 1.0;
+    widget.label = label;
+    widgets_.push_back(widget);
   };
-  pill(P_AUTO_MAKEUP, 736, "AUTO MAKEUP");
-  pill(P_TRUE_PEAK, 828, "TRUE PEAK");
-  pill(P_SC_SOURCE, 920, "EXT SC");
+  pill(P_AUTO_MAKEUP, 736, 20, 84, 24, "AUTO MAKEUP");
+  pill(P_TRUE_PEAK, 828, 20, 84, 24, "TRUE PEAK");
+  pill(P_SC_SOURCE, 920, 20, 84, 24, "EXT SC");
 
   // Limiter section, in the right column for every model (the reference
   // layout has one regardless of compressor style).
   const bool showLimiter = !(hasSideChain(model) && state.rightPage == 0);
   if (showLimiter) {
-    button(P_LIMITER_ON, 845, 172, 90, 22, 1.0, "LIMITER");
+    // Latching: a plain button always writes 1, so it could never be
+    // switched back off.
+    pill(P_LIMITER_ON, 845, 172, 90, 22, "LIMITER");
     knob(P_LIMITER_THRESH, 890, 272, 24, "THRESH", sc(kScaleLimit));
   }
 

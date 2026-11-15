@@ -208,17 +208,30 @@ inline float ratioFromStep(int step) noexcept {
 // Static gain computer with an explicit slope (dB of reduction per dB over
 // threshold).  Feed-forward models pass 1 - 1/ratio; feedback models need
 // ratio - 1, because the loop multiplies the static curve by 1/(1 + slope).
+//
+// `maxDb` is a soft ceiling.  A feedback model's slope is large (19 at 20:1),
+// and without a ceiling a 6 dB transient asks for >100 dB of reduction, which
+// rounds the gain to zero: the audio nulls instead of compressing.  Real
+// control laws saturate, so this one does too: linear below 70% of the cap,
+// then asymptotic.
 inline float gainReductionDbSlope(float levelDb, float thresholdDb,
-                                  float slope, float kneeDb) noexcept {
+                                  float slope, float kneeDb,
+                                  float maxDb = 40.0f) noexcept {
   const float over = levelDb - thresholdDb;
+  float gr = 0.0f;
   if (kneeDb <= 0.0f || over > 0.5f * kneeDb) {
-    return std::max(slope * over, 0.0f);
+    gr = std::max(slope * over, 0.0f);
+  } else if (over > -0.5f * kneeDb) {
+    const float t = over + 0.5f * kneeDb;
+    gr = std::max(slope * t * t / (2.0f * kneeDb), 0.0f);
   }
-  if (over <= -0.5f * kneeDb) {
-    return 0.0f;
+
+  const float ceilingStart = 0.7f * maxDb;
+  if (gr > ceilingStart) {
+    const float t = (gr - ceilingStart) / (maxDb - ceilingStart);
+    gr = ceilingStart + (maxDb - ceilingStart) * (t / (1.0f + t));
   }
-  const float t = over + 0.5f * kneeDb;
-  return std::max(slope * t * t / (2.0f * kneeDb), 0.0f);
+  return gr;
 }
 
 // Static gain computer.  Returns gain reduction in dB (>= 0) for a level in

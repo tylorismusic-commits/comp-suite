@@ -1,5 +1,35 @@
 # Changelog
 
+## 0.4.2 — 2026-11-15
+
+### Fixed
+
+- **The 76 nulled the audio on transients.** A feedback model's static slope is
+  `ratio - 1` (19 dB/dB at 20:1), and it was unbounded: a 6 dB burst asked for
+  114 dB of extra reduction, `dbToGain` returned ~1e-6, and the output dropped
+  ~50 dB below its steady level before recovering. Measured on a 32 ms burst:
+  76 dB of reduction, output at -70 dBFS. The gain computer now has a soft
+  ceiling (linear below 28 dB, asymptotic to 40 dB), so the same burst peaks at
+  37.5 dB and the output stays audible. Real control laws saturate; this one
+  now does too.
+- **Release easing.** The program-dependent release multiplier dropped from 4x
+  to 3x now that the ceiling bounds the loop. The 20:1 hunting test still
+  passes at 0.28 dB spread.
+- **Limiter switch could not be turned off.** It was a plain button that always
+  wrote 1.0. It is a latching pill now.
+- **VCA presets left auto release on.** Selecting a preset while Auto Release
+  was engaged left the release knob doing nothing. Every VCA preset now writes
+  auto-release off and link fully on.
+- **Two 76 presets were set past the usable range.** Snare Crack and Drum Smash
+  sat at 9 and 20 dB of standing reduction, so there was no headroom and no
+  breathing. Retuned to 5 and 10 dB; all 33 presets are back within 0.03 dB of
+  their intended reduction.
+
+### Added
+
+- Tests: transient nulling (max reduction bounded), and every VCA preset resets
+  auto release.
+
 ## 0.4.1 — 2026-11-15
 
 ### Fixed

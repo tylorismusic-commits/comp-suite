@@ -132,8 +132,7 @@ public:
     float releaseCoeff = releaseCoeff_;
     if (topology_ == Topology::Feedback) {
       const float hunt = clampf(grPrev_ / 20.0f, 0.0f, 1.0f);
-      releaseCoeff =
-          timeCoeff(releaseMs_ * (1.0f + 4.0f * hunt), sr_);
+      releaseCoeff = timeCoeff(releaseMs_ * (1.0f + 3.0f * hunt), sr_);
     }
     const bool blackDeep = variant_ == Variant::Black && grPrev_ > 6.0f;
     if (peak > env_) {
