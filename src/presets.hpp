@@ -134,6 +134,21 @@ inline constexpr Preset kPresets[] = {
      {{P_VCA_AUTO, 0.f}, {P_VCA_LINK, 1.f}, {P_THRESHOLD, 0.352f}, {P_RATIO, 1.f}, {P_ATTACK, 0.40f},
       {P_RELEASE, 0.60f}, {P_MAKEUP, 0.50f}, {P_MIX, 1.f},
       {P_LIMITER_ON, 1.f}, {-1, 0}}},
+
+    // --- Clean --------------------------------------------------------------
+    {"Clean Vocal Control", "Vocals", 6,
+     {{P_THRESHOLD, 0.55f}, {P_RATIO, 3.f}, {P_KNEE, 0.5f}, {P_ATTACK, 0.35f},
+      {P_RELEASE, 0.50f}, {P_MAKEUP, 0.55f}, {P_MIX, 1.f}, {-1, 0}}},
+    {"Clean Drum Control", "Drums", 6,
+     {{P_THRESHOLD, 0.50f}, {P_RATIO, 4.f}, {P_KNEE, 0.35f}, {P_ATTACK, 0.20f},
+      {P_RELEASE, 0.35f}, {P_MAKEUP, 0.55f}, {P_MIX, 1.f}, {-1, 0}}},
+    {"Clean Mix Glue", "Mix Bus", 6,
+     {{P_THRESHOLD, 0.60f}, {P_RATIO, 2.f}, {P_KNEE, 0.6f}, {P_ATTACK, 0.55f},
+      {P_RELEASE, 0.60f}, {P_MAKEUP, 0.52f}, {P_MIX, 1.f},
+      {P_LIMITER_ON, 1.f}, {-1, 0}}},
+    {"Clean Bass Control", "Bass", 6,
+     {{P_THRESHOLD, 0.58f}, {P_RATIO, 3.f}, {P_KNEE, 0.45f}, {P_ATTACK, 0.45f},
+      {P_RELEASE, 0.55f}, {P_MAKEUP, 0.54f}, {P_MIX, 1.f}, {-1, 0}}},
 };
 
 inline constexpr int kPresetCount =

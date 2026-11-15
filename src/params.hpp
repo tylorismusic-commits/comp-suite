@@ -35,6 +35,7 @@ enum ParamId : uint32_t {
   P_TRUE_PEAK,
   P_VCA_LINK,
   P_VCA_AUTO,
+  P_KNEE,
   P_COUNT
 };
 
@@ -69,7 +70,8 @@ struct ParamSpec {
 };
 
 inline constexpr const char* kModelLabels[] = {"76Blue", "76Black", "2A",
-                                               "3A",     "Xpress",  "VCA"};
+                                               "3A",     "Xpress",  "VCA",
+                                               "Clean"};
 inline constexpr const char* kDistortionLabels[] = {"Off", "Dist 2", "Dist 3",
                                                     "Clip"};
 inline constexpr const char* kMeterLabels[] = {"GR", "+8", "+4", "Graph",
@@ -77,7 +79,7 @@ inline constexpr const char* kMeterLabels[] = {"GR", "+8", "+4", "Graph",
 inline constexpr const char* kScSourceLabels[] = {"Internal", "External"};
 
 inline constexpr ParamSpec kParamSpecs[P_COUNT] = {
-    {"model", "Model", "Compressor", 0.0, 5.0, 0.0, true, false, false, nullptr,
+    {"model", "Model", "Compressor", 0.0, 6.0, 0.0, true, false, false, nullptr,
      labels(kModelLabels)},
     {"power", "Power", "Compressor", 0.0, 1.0, 1.0, true, false, true, nullptr,
      {}},
@@ -116,6 +118,8 @@ inline constexpr ParamSpec kParamSpecs[P_COUNT] = {
      nullptr, {}},
     {"vca_auto", "Auto Release", "Compressor", 0.0, 1.0, 0.0, true, false, true,
      nullptr, {}},
+    {"knee", "Knee", "Compressor", 0.0, 1.0, 0.5, false, false, false, nullptr,
+     {}},
 };
 
 static_assert(sizeof(kParamSpecs) / sizeof(kParamSpecs[0]) == P_COUNT,
@@ -222,6 +226,7 @@ inline Controls controlsFrom(const Shared& s) {
   c.truePeak = s.get(P_TRUE_PEAK) > 0.5;
   c.link = static_cast<float>(s.get(P_VCA_LINK));
   c.vcaAutoRelease = s.get(P_VCA_AUTO) > 0.5;
+  c.knee = static_cast<float>(s.get(P_KNEE));
   return c;
 }
 

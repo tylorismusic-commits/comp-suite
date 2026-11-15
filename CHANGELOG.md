@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.5.0 — 2026-11-15
+
+### Added
+
+- **Clean model** — a transparent digital compressor, styled after a
+  workstation's "Platinum Digital" mode (navy panel, silver knobs, cyan
+  accent, following the reference). Stereo-linked RMS detector, soft-knee gain
+  computer with a continuous Knee control, attack 0.1-200 ms, release 5-5000 ms,
+  and Off/Soft/Hard/Clip distortion as the only optional colour. Off is
+  bit-clean.
+- New `knee` parameter (0-1, mapped to 0-18 dB), shown on the Clean model.
+- Four Clean factory presets: Vocal Control, Drum Control, Mix Glue, Bass
+  Control.
+
+### Infrastructure for more models
+
+- The model tab bar is now sized from the model count rather than hard-coded to
+  six, and the preview tool renders every model in the enum.
+- `P_MODEL` now runs 0-6.
+
 ## 0.4.5 — 2026-11-15
 
 ### Changed

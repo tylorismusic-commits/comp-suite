@@ -38,7 +38,7 @@ struct Skin {
   Rgb screw;
 };
 
-enum Model { kBlue76, kBlack76, kOpto2A, kOpto3A, kXpress, kVca };
+enum Model { kBlue76, kBlack76, kOpto2A, kOpto3A, kXpress, kVca, kClean };
 
 Skin skinFor(int model) {
   switch (model) {
@@ -102,6 +102,22 @@ Skin skinFor(int model) {
               false,
               {0.08, 0.08, 0.08}, {0.95, 0.95, 0.95}, {0.92, 0.92, 0.92}, {0.05, 0.05, 0.05},
               {0.40, 0.40, 0.40}};
+    case kClean:
+      return {"Clean  -  digital compressor",
+              {0.19, 0.25, 0.35}, {0.13, 0.17, 0.25},
+              {0.90, 0.91, 0.89}, {0.62, 0.66, 0.70},
+              {0.11, 0.14, 0.20},
+              {0.26, 0.31, 0.40}, {0.16, 0.24, 0.36}, {0.72, 0.78, 0.86},
+              {0.45, 0.75, 1.0},
+              {0.10, 0.13, 0.18}, {0.73, 0.73, 0.70}, {0.12, 0.12, 0.12},
+              {0.25, 0.25, 0.25},
+              {0.10, 0.13, 0.18}, false,
+              {0.76, 0.78, 0.81}, {0.45, 0.48, 0.53}, {0.14, 0.17, 0.22},
+              {0.08, 0.09, 0.11},
+              false,
+              {0.22, 0.27, 0.34}, {0.32, 0.58, 0.88}, {0.86, 0.89, 0.93},
+              {0.98, 0.99, 1.0},
+              {0.55, 0.58, 0.62}};
     default:
       return {"VCA  -  stereo bus compressor",
               {0.18, 0.20, 0.24}, {0.11, 0.12, 0.15},
@@ -207,7 +223,7 @@ Rgb mix(Rgb a, Rgb b, double t) {
 
 // Models that have a Side Chain page.
 bool hasSideChain(int model) {
-  return model == kXpress || model == kVca;
+  return model == kXpress || model == kVca || model == kClean;
 }
 
 bool isLimiter76(int model) {
@@ -338,9 +354,11 @@ void Panel::layout(const Shared& shared, const PanelState& state) {
     p.r = 14;
     widgets_.push_back(p);
   }
-  static const char* kTabNames[6] = {"76Blue", "76Black", "2A", "3A", "Xpress", "VCA"};
-  const double tabW = (980.0 - 5.0 * 8.0) / 6.0;
-  for (int i = 0; i < 6; ++i) {
+  static const char* kTabNames[7] = {"76Blue", "76Black", "2A",     "3A",
+                                     "Xpress", "VCA",     "Clean"};
+  const int tabCount = static_cast<int>(comp::Model::Count);
+  const double tabW = (980.0 - (tabCount - 1) * 8.0) / tabCount;
+  for (int i = 0; i < tabCount; ++i) {
     Widget t{};
     t.kind = Kind::ModelTab;
     t.param = P_MODEL;
@@ -472,6 +490,26 @@ void Panel::layout(const Shared& shared, const PanelState& state) {
         button(P_DISTORTION, 826, 374, 60, 22, 0.0, "OFF");
         button(P_DISTORTION, 890, 374, 60, 22, 1.0, "DIST 2");
         button(P_DISTORTION, 826, 400, 60, 22, 2.0, "DIST 3");
+        button(P_DISTORTION, 890, 400, 60, 22, 3.0, "CLIP");
+        knob(P_MIX, 796, 508, 25, "MIX", sc(kScaleMix), true);
+        knob(P_OUTPUT, 912, 500, 27, "OUTPUT", sc(kScaleOutputGeneric));
+      }
+      break;
+    }
+    case kClean: {
+      knob(P_THRESHOLD, 240, 424, 34, "THRESHOLD", sc(kScaleThreshold));
+      knob(P_RATIO, 400, 424, 34, "RATIO", sc(kScaleRatioNoAll));
+      knob(P_MAKEUP, 560, 424, 34, "MAKE UP", sc(kScaleMakeupVca));
+      knob(P_KNEE, 700, 424, 26, "KNEE", {});
+      knob(P_ATTACK, 320, 552, 30, "ATTACK", sc(kScaleAttackVca));
+      knob(P_RELEASE, 480, 552, 30, "RELEASE", sc(kScaleReleaseVca));
+      knob(P_INPUT, 120, 520, 26, "INPUT", sc(kScaleOutputGeneric), true);
+      if (state.rightPage == 0) {
+        knob(P_SC_HPF, 888, 260, 34, "SIDE CHAIN HPF", sc(kScaleHpf));
+      } else {
+        button(P_DISTORTION, 826, 374, 60, 22, 0.0, "OFF");
+        button(P_DISTORTION, 890, 374, 60, 22, 1.0, "SOFT");
+        button(P_DISTORTION, 826, 400, 60, 22, 2.0, "HARD");
         button(P_DISTORTION, 890, 400, 60, 22, 3.0, "CLIP");
         knob(P_MIX, 796, 508, 25, "MIX", sc(kScaleMix), true);
         knob(P_OUTPUT, 912, 500, 27, "OUTPUT", sc(kScaleOutputGeneric));

@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <cmath>
 
+#include "clean.hpp"
 #include "common.hpp"
 #include "controls.hpp"
 #include "distressor.hpp"
@@ -28,6 +29,7 @@ public:
     la3a_.prepare(sr_, OptoLeveler::Variant::LA3A);
     xpress_.prepare(sr_);
     vca_.prepare(sr_);
+    clean_.prepare(sr_);
 
     fadeStep_ = 1.0f / std::max(1.0f, 0.02f * sr_);
     mixSmooth_.setTime(10.0f, sr_);
@@ -188,6 +190,7 @@ public:
     la3a_.reset();
     xpress_.reset();
     vca_.reset();
+    clean_.reset();
     vuPower_ = 0.0f;
   }
 
@@ -201,6 +204,7 @@ private:
       case Model::Opto3A: return la3a_.process(l, r, sc);
       case Model::Xpress: return xpress_.process(l, r, sc);
       case Model::Vca: return vca_.process(l, r, sc);
+      case Model::Clean: return clean_.process(l, r, sc);
       default: return 0.0f;
     }
   }
@@ -213,6 +217,7 @@ private:
       case Model::Opto3A: la3a_.setControls(c); break;
       case Model::Xpress: xpress_.setControls(c); break;
       case Model::Vca: vca_.setControls(c); break;
+      case Model::Clean: clean_.setControls(c); break;
       default: break;
     }
   }
@@ -225,6 +230,7 @@ private:
       case Model::Opto3A: la3a_.reset(); break;
       case Model::Xpress: xpress_.reset(); break;
       case Model::Vca: vca_.reset(); break;
+      case Model::Clean: clean_.reset(); break;
       default: break;
     }
   }
@@ -254,6 +260,7 @@ private:
   OptoLeveler la3a_;
   Distressor xpress_;
   BusVca vca_;
+  CleanCompressor clean_;
 };
 
 } // namespace comp

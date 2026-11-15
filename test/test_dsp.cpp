@@ -619,10 +619,12 @@ int main() {
     Engine engine;
     engine.prepare(kSr);
     Controls c = baseControls(static_cast<Model>(m));
-    c.input = 0.6f;  // unity: input 0 is silence
-    c.threshold = m == static_cast<int>(Model::Vca) ? 1.0f
-                  : m == static_cast<int>(Model::Xpress) ? 0.0f
-                  : 0.0f;
+    // Clean's input gain is centred: 0.5 is unity.  The 76s use 0.6.
+    c.input = m == static_cast<int>(Model::Clean) ? 0.5f : 0.6f;
+    c.threshold = (m == static_cast<int>(Model::Vca) ||
+                   m == static_cast<int>(Model::Clean))
+                      ? 1.0f
+                      : m == static_cast<int>(Model::Xpress) ? 0.0f : 0.0f;
     c.makeup = 0.5f;  // unity: the make-up controls are bipolar
     c.output = 0.5f;
     c.ratio = 0.5f;

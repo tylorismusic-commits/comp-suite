@@ -12,7 +12,8 @@ enum class Model : int {
   Opto3A = 3,   // T4-style optical leveler, 3A-style
   Xpress = 4,   // diode-bridge style compressor with distortion modes
   Vca = 5,      // SSL-style stereo bus VCA
-  Count = 6
+  Clean = 6,    // clean digital compressor
+  Count = 7
 };
 
 // Every control is normalised to 0..1.  Each model maps the shared slots to
@@ -37,6 +38,7 @@ struct Controls {
   bool truePeak = false;           // limiter detects inter-sample peaks
   float link = 1.0f;               // VCA stereo link: 0 dual mono, 1 linked
   bool vcaAutoRelease = false;     // VCA two-stage automatic release
+  float knee = 0.5f;               // Clean: 0..1, mapped to 0..18 dB
 };
 
 // Metering published by the engine, in dB or normalised units.
