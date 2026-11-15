@@ -49,6 +49,10 @@ public:
     releaseK_ = settleK(20.0, sr_);
     levelAttackK_ = settleK(0.0, sr_);
     levelReleaseK_ = settleK(20.0, sr_);
+    makeupSmooth_.setTime(20.0f, sr_);
+    makeupSmooth_.reset(1.0f);
+    outputSmooth_.setTime(20.0f, sr_);
+    outputSmooth_.reset(1.0f);
 
     // The 3A cell is the faster of the two: same memory topology, shorter
     // release on every stage.
@@ -66,6 +70,8 @@ public:
 
     reset();
     setControls(controls_);
+    makeupSmooth_.snap();
+    outputSmooth_.snap();
   }
 
   void setControls(const Controls& c) noexcept {
@@ -85,8 +91,9 @@ public:
     logRatioBase_ = std::log10(ratioBase_);
 
     gainScale_ = pr * pr * 14.0 + 1.0;
-    makeupGain_ = dbToGain(20.0f * (clampf(c.makeup, 0.0f, 1.0f) - 0.5f));
-    outputGain_ = c.output > 0.5f ? dbToGain(6.0f) : 1.0f;
+    makeupSmooth_.setTarget(
+        dbToGain(20.0f * (clampf(c.makeup, 0.0f, 1.0f) - 0.5f)));
+    outputSmooth_.setTarget(c.output > 0.5f ? dbToGain(6.0f) : 1.0f);
   }
 
   // Returns gain reduction in dB (>= 0).
@@ -148,9 +155,11 @@ public:
     const double gain = envelope(v5);
     const double deltaGain =
         std::max((1.0 - std::pow(gain * 0.98, 0.1)) * 18.0, 0.0);
+    const float makeup = makeupSmooth_.next();
+    const float outputGain = outputSmooth_.next();
 
-    left = saturateStage(x[0], gain, deltaGain);
-    right = saturateStage(x[1], gain, deltaGain);
+    left = saturateStage(x[0], gain, deltaGain, makeup, outputGain);
+    right = saturateStage(x[1], gain, deltaGain, makeup, outputGain);
 
     return static_cast<float>(-20.0 * std::log10(std::max(gain, 1e-6)));
   }
@@ -183,7 +192,8 @@ private:
                     : x / (1.0 - x * 0.005);
   }
 
-  float saturateStage(double x, double gain, double deltaGain) const noexcept {
+  float saturateStage(double x, double gain, double deltaGain, float makeup,
+                      float outputGain) const noexcept {
     const double satIn = saturate(x);
     const double deltaIn = satIn - x;
     const double y = x * gain * gainScale_;
@@ -191,7 +201,7 @@ private:
     const double deltaOut = satOut - y;
     return static_cast<float>(((deltaOut * 0.5 + deltaIn * 0.5) * deltaGain +
                                x) *
-                              gain * outputGain_ * makeupGain_);
+                              gain * outputGain * makeup);
   }
 
   // Four-stage envelope.  Each stage clamps against the one before it, so a
@@ -275,8 +285,8 @@ private:
   bool isLimit_ = false;
 
   double gainScale_ = 1.0;
-  double makeupGain_ = 1.0;
-  double outputGain_ = 1.0;
+  Smoothed makeupSmooth_;
+  Smoothed outputSmooth_;
 
   float rmsK_ = 0.0f;
   float attackK_ = 1.0f;
