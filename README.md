@@ -8,8 +8,8 @@ A free CLAP and LV2 compressor with six models in one plugin:
 |---------|-------------------------------------|-------------------------------|
 | 76Blue  | 1176-family FET, blue-stripe voicing | FET limiter                  |
 | 76Black | 1176-family FET, black-face voicing  | FET limiter                  |
-| 2A      | LA-2A-family optical leveler        | Photocell, Limit/Compress     |
-| 3A      | LA-3A-family optical leveler        | Photocell, fixed ratio        |
+| 2A      | LA-2A-family optical leveler        | Photocell, side-chain network, Limit/Compress |
+| 3A      | LA-3A-family optical leveler        | Faster photocell, fixed ratio |
 | Xpress  | Distressor-family compressor        | Fixed threshold, ratio steps, distortion modes |
 | VCA     | SSL-style stereo bus compressor     | RMS-detected VCA              |
 

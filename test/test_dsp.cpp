@@ -112,7 +112,120 @@ int main() {
     check(r.peakGr > 0.5f, label);
   }
 
-  // Disabled plugin passes the input through untouched.
+  // The optical side-chain must react differently to bass and midrange.  The
+  // 43 Hz shelf on the compressed side-chain raises the integrated level at
+  // low frequencies, which pulls the second gain stage back: the cell holds
+  // off on bass instead of pumping the whole mix under it.
+  {
+    const auto grAt = [](float freq) {
+      Engine engine;
+      engine.prepare(kSr);
+      Controls c = baseControls(Model::Opto2A);
+      c.threshold = 0.7f;
+      return renderSine(engine, c, freq, -12.0f, 2.0f).peakGr;
+    };
+    const float low = grAt(40.0f);
+    const float mid = grAt(1000.0f);
+    char label[144];
+    std::snprintf(label, sizeof(label),
+                  "2A ducks bass less than mid (40 Hz %.1f dB vs 1 kHz "
+                  "%.1f dB)",
+                  low, mid);
+    check(low < mid - 1.0f, label);
+  }
+
+  // Maximum peak reduction on a hot low sine: the cell must stay bounded.
+  {
+    Engine engine;
+    engine.prepare(kSr);
+    Controls c = baseControls(Model::Opto2A);
+    c.threshold = 1.0f;
+    c.ratio = 8.0f;  // LIMIT
+    c.makeup = 1.0f;
+    const Render r = renderSine(engine, c, 40.0f, 0.0f, 2.0f);
+    float peak = 0.0f;
+    for (float v : r.left) {
+      peak = std::max(peak, std::fabs(v));
+    }
+    char label[128];
+    std::snprintf(label, sizeof(label),
+                  "2A at maximum reduction stays bounded (peak %.2f, GR %.1f "
+                  "dB)",
+                  peak, r.peakGr);
+    check(allFinite(r) && peak < 8.0f && r.peakGr > 3.0f, label);
+  }
+
+  // LA2A and LA3A use different cell memory paths: the 3A releases faster.
+  // Peak reduction is a poor probe for that, so compare the residual
+  // reduction half a second after the signal drops away.
+  {
+    const auto tailGr = [](Model model) {
+      Engine engine;
+      engine.prepare(kSr);
+      Controls c = baseControls(model);
+      c.threshold = 0.7f;
+      engine.setControls(c);
+      Meters meters;
+      std::vector<float> l(256), r(256);
+      const int blocksPerSection = static_cast<int>(kSr / 256);
+      float tail = 0.0f;
+      int tailCount = 0;
+      for (int b = 0; b < blocksPerSection * 2; ++b) {
+        const bool loud = b < blocksPerSection;
+        const float amp = dbToGain(loud ? -6.0f : -50.0f);
+        for (int i = 0; i < 256; ++i) {
+          const float t = static_cast<float>(b * 256 + i) / kSr;
+          l[i] = r[i] = amp * std::sin(2.0f * kPi * 200.0f * t);
+        }
+        engine.process(l.data(), r.data(), 256, meters);
+        if (b > blocksPerSection + blocksPerSection / 2) {
+          tail += meters.grDb;
+          ++tailCount;
+        }
+      }
+      return tail / static_cast<float>(std::max(1, tailCount));
+    };
+    const float a = tailGr(Model::Opto2A);
+    const float b = tailGr(Model::Opto3A);
+    char label[128];
+    std::snprintf(label, sizeof(label),
+                  "3A releases faster than 2A (residual %.2f vs %.2f dB)", b,
+                  a);
+    check(b < a - 0.3f, label);
+  }
+
+  // Peak reduction must increase reduction monotonically, and the control
+  // must be usable across its travel rather than slamming at one end.
+  {
+    float previous = -1.0f;
+    bool monotonic = true;
+    float first = 0.0f;
+    float last = 0.0f;
+    bool firstValue = true;
+    for (float threshold : {0.1f, 0.3f, 0.5f, 0.7f, 0.9f}) {
+      Engine engine;
+      engine.prepare(kSr);
+      Controls c = baseControls(Model::Opto2A);
+      c.threshold = threshold;
+      const float gr = renderSine(engine, c, 500.0f, -10.0f, 2.0f).peakGr;
+      if (gr + 0.05f < previous) {
+        monotonic = false;
+      }
+      previous = gr;
+      if (firstValue) {
+        first = gr;
+        firstValue = false;
+      }
+      last = gr;
+    }
+    char label[144];
+    std::snprintf(label, sizeof(label),
+                  "peak reduction is monotonic and spans the control "
+                  "(%.1f to %.1f dB)",
+                  first, last);
+    check(monotonic && last > first + 8.0f, label);
+  }
+
   {
     Engine engine;
     engine.prepare(kSr);

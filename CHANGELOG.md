@@ -1,5 +1,47 @@
 # Changelog
 
+## Unreleased — 0.3.0
+
+DSP structural pass. No new parameters: the port list and ABI stay frozen at
+0.2.0, so existing sessions and presets still load.
+
+### Optical models (2A / 3A)
+
+Replaced the peak detector plus ratio/knee gain computer with the side-chain
+structure this family actually has:
+
+- **Three-band side-chain shaping** — 10 Hz low shelf (−9 dB), 17 kHz high
+  shelf (−6 dB), 220 Hz dip (−3.25 dB, the R37 trim at its midpoint).
+- **25/75 RMS/peak blend**, stereo linked on the louder channel.
+- **Second gain stage** driven by the compressed side-chain through a 43 Hz
+  +30 dB shelf. This is the low-frequency behaviour: bass raises the
+  integrated level and pulls the cell back rather than pumping the whole mix
+  under it.
+- **Four-stage envelope** where each stage references the one before it, so a
+  fast stage cannot release ahead of a slow one. That mutual reference is the
+  cell's memory.
+- **3A** uses the faster cell path and a shorter release on every stage.
+- The Comp/Limit switch keeps the 1.2 / 1.3 threshold-curve mapping.
+
+New `src/dsp/biquad.hpp`: RBJ low-shelf, high-shelf and peak sections, plus the
+`settleK` one-pole used by the envelope.
+
+Measured in `comp_dsp_test`:
+
+- 40 Hz reduces ~1.4 dB less than 1 kHz at the same input level (the bass
+  behaviour of the reference structure).
+- Peak reduction spans 0.4 dB to 24.7 dB monotonically across the control.
+- 2A and 3A differ in release tail: 1.13 dB vs 0.68 dB residual.
+- Maximum reduction on a hot 40 Hz sine stays bounded.
+
+### Known
+
+- The 31 factory presets have not been retuned for the new optical response
+  yet. That is the next step of this release.
+- CPU for the optical models is ~2% of one core at 48 kHz stereo, up from
+  ~0.6%, because the side-chain runs six filters and several transcendentals
+  per sample. Optimisation is deferred to the 0.4.0 feature pass.
+
 ## 0.2.0
 
 LV2 release. The LV2 build already existed in the source tree but was not
