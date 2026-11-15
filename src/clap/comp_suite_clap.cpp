@@ -438,6 +438,8 @@ bool paramsValueToText(const clap_plugin_t* p, clap_id id, double value,
         std::snprintf(out, size, "%+.1f dB", -30.0 + 60.0 * value);
       } else if (model == 7) {
         std::snprintf(out, size, "%+.1f dB", -12.0 + 24.0 * value);
+      } else if (model == 8) {
+        std::snprintf(out, size, "%+.1f dB", -18.0 + 36.0 * value);
       } else {
         std::snprintf(out, size, "%.0f%%", value * 100.0);
       }
@@ -449,7 +451,7 @@ bool paramsValueToText(const clap_plugin_t* p, clap_id id, double value,
         std::snprintf(out, size, "%.1f dB", -30.0 + 40.0 * value);
       } else if (model == 6) {
         std::snprintf(out, size, "%.1f dB", -40.0 + 40.0 * value);
-      } else if (model == 7) {
+      } else if (model == 7 || model == 8) {
         std::snprintf(out, size, "%.1f dB", -40.0 + 40.0 * value);
       } else {
         std::snprintf(out, size, "%.0f%%", value * 100.0);
@@ -457,7 +459,9 @@ bool paramsValueToText(const clap_plugin_t* p, clap_id id, double value,
       return true;
     case P_RATIO: {
       const int step = ratioStepFrom(static_cast<float>(value));
-      if (model == 7 && ratioFromStep(step) > 10.9) {
+      if (model == 8) {
+        std::snprintf(out, size, "%.1f:1", RedCompressor::ratioForStep(step));
+      } else if (model == 7 && ratioFromStep(step) > 10.9) {
         std::snprintf(out, size, "Limit");
       } else if (model == 2) {
         std::snprintf(out, size, "%s", step >= 4 ? "Limit" : "Compress");
@@ -480,6 +484,8 @@ bool paramsValueToText(const clap_plugin_t* p, clap_id id, double value,
         ms = 0.1 * std::pow(2000.0, value);
       } else if (model == 7) {
         ms = 1.0 + 99.0 * value;
+      } else if (model == 8) {
+        ms = 0.3 * std::pow(300.0, value);
       } else {
         std::snprintf(out, size, "%.0f%%", value * 100.0);
         return true;
@@ -503,6 +509,8 @@ bool paramsValueToText(const clap_plugin_t* p, clap_id id, double value,
         ms = 5.0 * std::pow(1000.0, value);
       } else if (model == 7) {
         ms = 50.0 + 950.0 * value;
+      } else if (model == 8) {
+        ms = 100.0 * std::pow(40.0, value);
       } else {
         std::snprintf(out, size, "%.0f%%", value * 100.0);
         return true;

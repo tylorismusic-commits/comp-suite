@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.8.0 — 2026-11-15
+
+### Added
+
+- **Red model** — British Class-A VCA compressor in the Focusrite Red family,
+  with the red-anodised and cream palette from the hardware reference.
+  - Feed-forward **peak** detection, as on the hardware.
+  - **Compression followed by limiting**: the first stage is the soft-knee
+    compressor; the second is a fast peak limiter acting on the compressed
+    signal. The limiter section's threshold controls it, and the engine's own
+    output limiter is skipped for this model so the two do not stack.
+  - **Its own ratio ladder** (1.5, 2, 3, 5, 7, 10). The shared ladder snaps to
+    the nearest Red value, so switching models cannot land on a ratio the model
+    does not have.
+  - Program-dependent auto release (shared Auto Release switch), knee control,
+    input and output trims, and a subtle transformer colour stage (asymmetric
+    saturation plus a 15 Hz high-pass).
+- Four Red presets: Vocal Control, Drum Punch, Mix Glue, Bass Control.
+- README and screenshots updated for nine models.
+
 ## 0.7.0 — 2026-11-15
 
 ### Added

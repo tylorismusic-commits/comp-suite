@@ -14,7 +14,8 @@ enum class Model : int {
   Vca = 5,      // SSL-style stereo bus VCA
   Clean = 6,    // clean digital compressor
   Molot = 7,    // character compressor with stereo modes and saturation
-  Count = 8
+  Red = 8,      // British Class-A VCA, compression then limiting
+  Count = 9
 };
 
 // Every control is normalised to 0..1.  Each model maps the shared slots to

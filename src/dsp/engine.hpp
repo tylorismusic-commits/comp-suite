@@ -8,6 +8,7 @@
 #include "clean.hpp"
 #include "common.hpp"
 #include "molot.hpp"
+#include "red.hpp"
 #include "controls.hpp"
 #include "distressor.hpp"
 #include "fet.hpp"
@@ -32,6 +33,7 @@ public:
     vca_.prepare(sr_);
     clean_.prepare(sr_);
     molot_.prepare(sr_);
+    red_.prepare(sr_);
 
     fadeStep_ = 1.0f / std::max(1.0f, 0.02f * sr_);
     mixSmooth_.setTime(10.0f, sr_);
@@ -139,7 +141,8 @@ public:
       float outL = dryL + wetMix * (wetL - dryL);
       float outR = dryR + wetMix * (wetR - dryR);
 
-      if (controls_.limiterOn) {
+      if (controls_.limiterOn &&
+          active_ != static_cast<int>(Model::Red)) {
         // Output limiter: stereo-linked peak limiter with a hard safety
         // ceiling, matching the limiter section in the reference layout.
         const float samplePeak = std::max(std::fabs(outL), std::fabs(outR));
@@ -200,6 +203,7 @@ public:
     vca_.reset();
     clean_.reset();
     molot_.reset();
+    red_.reset();
     vuPower_ = 0.0f;
   }
 
@@ -215,6 +219,7 @@ private:
       case Model::Vca: return vca_.process(l, r, sc);
       case Model::Clean: return clean_.process(l, r, sc);
       case Model::Molot: return molot_.process(l, r, sc);
+      case Model::Red: return red_.process(l, r, sc);
       default: return 0.0f;
     }
   }
@@ -229,6 +234,7 @@ private:
       case Model::Vca: vca_.setControls(c); break;
       case Model::Clean: clean_.setControls(c); break;
       case Model::Molot: molot_.setControls(c); break;
+      case Model::Red: red_.setControls(c); break;
       default: break;
     }
   }
@@ -243,6 +249,7 @@ private:
       case Model::Vca: vca_.reset(); break;
       case Model::Clean: clean_.reset(); break;
       case Model::Molot: molot_.reset(); break;
+      case Model::Red: red_.reset(); break;
       default: break;
     }
   }
@@ -274,6 +281,7 @@ private:
   BusVca vca_;
   CleanCompressor clean_;
   MolotCompressor molot_;
+  RedCompressor red_;
 };
 
 } // namespace comp

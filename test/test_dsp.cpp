@@ -686,12 +686,14 @@ int main() {
     Controls c = baseControls(static_cast<Model>(m));
     // Clean's input gain is centred: 0.5 is unity.  The 76s use 0.6.
     c.input = (m == static_cast<int>(Model::Clean) ||
-               m == static_cast<int>(Model::Molot))
+               m == static_cast<int>(Model::Molot) ||
+               m == static_cast<int>(Model::Red))
                   ? 0.5f
                   : 0.6f;
     c.threshold = (m == static_cast<int>(Model::Vca) ||
                    m == static_cast<int>(Model::Clean) ||
-                   m == static_cast<int>(Model::Molot))
+                   m == static_cast<int>(Model::Molot) ||
+                   m == static_cast<int>(Model::Red))
                       ? 1.0f
                       : 0.0f;
     c.makeup = 0.5f;  // unity: the make-up controls are bipolar

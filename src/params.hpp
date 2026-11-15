@@ -74,7 +74,7 @@ struct ParamSpec {
 
 inline constexpr const char* kModelLabels[] = {"76Blue", "76Black", "2A",
                                                "3A",     "Xpress",  "VCA",
-                                               "Clean",  "Molot"};
+                                               "Clean",  "Molot",  "Red"};
 inline constexpr const char* kAttackModeLabels[] = {"Alpha", "Sigma"};
 inline constexpr const char* kStereoModeLabels[] = {
     "Mono", "Dual Mono", "M", "S", "M/S", "Stereo"};
@@ -85,7 +85,7 @@ inline constexpr const char* kMeterLabels[] = {"GR",   "+8", "+4", "Graph",
 inline constexpr const char* kScSourceLabels[] = {"Internal", "External"};
 
 inline constexpr ParamSpec kParamSpecs[P_COUNT] = {
-    {"model", "Model", "Compressor", 0.0, 7.0, 0.0, true, false, false, nullptr,
+    {"model", "Model", "Compressor", 0.0, 8.0, 0.0, true, false, false, nullptr,
      labels(kModelLabels)},
     {"power", "Power", "Compressor", 0.0, 1.0, 1.0, true, false, true, nullptr,
      {}},

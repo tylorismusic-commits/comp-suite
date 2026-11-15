@@ -39,7 +39,7 @@ struct Skin {
 };
 
 enum Model { kBlue76, kBlack76, kOpto2A, kOpto3A, kXpress, kVca, kClean,
-             kMolot };
+             kMolot, kRed };
 
 Skin skinFor(int model) {
   switch (model) {
@@ -103,6 +103,22 @@ Skin skinFor(int model) {
               false,
               {0.08, 0.08, 0.08}, {0.95, 0.95, 0.95}, {0.92, 0.92, 0.92}, {0.05, 0.05, 0.05},
               {0.40, 0.40, 0.40}};
+    case kRed:
+      return {"Red  -  class-A VCA compressor",
+              {0.58, 0.12, 0.11}, {0.46, 0.08, 0.08},
+              {0.94, 0.91, 0.82}, {0.70, 0.62, 0.55},
+              {0.30, 0.06, 0.06},
+              {0.48, 0.13, 0.12}, {0.66, 0.17, 0.14}, {0.82, 0.78, 0.70},
+              {0.98, 0.95, 0.88},
+              {0.18, 0.05, 0.05}, {0.88, 0.85, 0.72}, {0.55, 0.10, 0.08},
+              {0.14, 0.12, 0.10},
+              {0.18, 0.05, 0.05}, false,
+              {0.80, 0.80, 0.78}, {0.48, 0.48, 0.46}, {0.24, 0.07, 0.07},
+              {0.10, 0.08, 0.07},
+              true,
+              {0.36, 0.09, 0.09}, {0.72, 0.18, 0.13}, {0.86, 0.82, 0.74},
+              {0.99, 0.96, 0.90},
+              {0.55, 0.52, 0.48}};
     case kMolot:
       return {"Molot  -  character compressor",
               {0.31, 0.32, 0.20}, {0.24, 0.25, 0.15},
@@ -160,6 +176,9 @@ const char* const kScaleStep7[] = {"1", "2", "3", "4", "5", "6", "7"};
 const char* const kScaleThreshold[] = {"-40", "-30", "-20", "-10", "0"};
 const char* const kScaleRatio[] = {"1.5", "2", "3", "4", "6", "8", "12", "20", "ALL"};
 const char* const kScaleRatioNoAll[] = {"1.5", "2", "3", "4", "6", "8", "12", "20"};
+// The Red only has six ratios; the shared ladder snaps to the nearest.
+const char* const kScaleRatioRed[] = {"1.5", "2", "3", "3", "5",
+                                      "7",   "10", "10", "10"};
 const char* const kScaleMakeupVca[] = {"-10", "-5", "0", "+5", "+10"};
 const char* const kScaleAttackVca[] = {"0.1", "0.4", "1.7", "7", "30"};
 const char* const kScaleReleaseVca[] = {"0.1", "0.2", "0.3", "0.6", "1.2"};
@@ -241,7 +260,7 @@ Rgb mix(Rgb a, Rgb b, double t) {
 // Models that have a Side Chain page.
 bool hasSideChain(int model) {
   return model == kXpress || model == kVca || model == kClean ||
-         model == kMolot;
+         model == kMolot || model == kRed;
 }
 
 bool isLimiter76(int model) {
@@ -375,9 +394,10 @@ void Panel::layout(const Shared& shared, const PanelState& state) {
   // Labels are indexed by model value; display order is separate so the tab
   // strip can lead with Clean without renumbering the model parameter (which
   // would silently repoint every saved session and preset).
-  static const char* kTabNames[8] = {"76Blue", "76Black", "2A",    "3A",
-                                     "Xpress", "VCA",     "Clean", "Molot"};
-  static const int kTabOrder[8] = {6, 0, 1, 2, 3, 4, 5, 7};
+  static const char* kTabNames[9] = {"76Blue", "76Black", "2A",    "3A",
+                                     "Xpress", "VCA",     "Clean", "Molot",
+                                     "Red"};
+  static const int kTabOrder[9] = {6, 0, 1, 2, 3, 4, 5, 7, 8};
   const int tabCount = static_cast<int>(comp::Model::Count);
   const double tabW = (980.0 - (tabCount - 1) * 8.0) / tabCount;
   for (int i = 0; i < tabCount; ++i) {
@@ -519,6 +539,21 @@ void Panel::layout(const Shared& shared, const PanelState& state) {
       }
       break;
     }
+    case kRed: {
+      knob(P_THRESHOLD, 240, 424, 34, "THRESHOLD", sc(kScaleThreshold));
+      knob(P_RATIO, 400, 424, 34, "RATIO", sc(kScaleRatioRed));
+      knob(P_MAKEUP, 560, 424, 34, "MAKE UP", sc(kScaleMakeupVca));
+      knob(P_KNEE, 700, 424, 26, "KNEE", {});
+      knob(P_ATTACK, 320, 552, 30, "ATTACK", sc(kScaleAttackVca));
+      knob(P_RELEASE, 480, 552, 30, "RELEASE", sc(kScaleReleaseVca));
+      knob(P_INPUT, 120, 520, 26, "INPUT GAIN", sc(kScaleOutputGeneric), true);
+      knob(P_OUTPUT, 912, 500, 27, "OUTPUT", sc(kScaleOutputGeneric));
+      toggle(P_VCA_AUTO, 700, 520, 1.0, "AUTO", "MAN");
+      if (state.rightPage == 0) {
+        knob(P_SC_HPF, 888, 260, 34, "SIDE CHAIN HPF", sc(kScaleHpf));
+      }
+      break;
+    }
     case kMolot: {
       knob(P_THRESHOLD, 240, 424, 34, "THRESHOLD", sc(kScaleThreshold));
       knob(P_RATIO, 400, 424, 34, "RATIO", sc(kScaleRatioNoAll));
@@ -598,6 +633,8 @@ void Panel::layout(const Shared& shared, const PanelState& state) {
 
   // Limiter section, in the right column for every model (the reference
   // layout has one regardless of compressor style).
+  // The Red's limiter is part of the model, but it still hides on the
+  // side-chain page so the side-chain HPF has the column to itself.
   const bool showLimiter = !(hasSideChain(model) && state.rightPage == 0);
   if (showLimiter) {
     // Latching: a plain button always writes 1, so it could never be

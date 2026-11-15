@@ -164,6 +164,21 @@ inline constexpr Preset kPresets[] = {
     {"Molot Bass Grip", "Bass", 7,
      {{P_INPUT, 0.5f}, {P_THRESHOLD, 0.574f}, {P_RATIO, 4.f}, {P_KNEE, 0.5f}, {P_ATTACK, 0.35f},
       {P_RELEASE, 0.5f}, {P_MAKEUP, 0.55f}, {P_MIX, 1.f}, {-1, 0}}},
+
+    // --- Red ----------------------------------------------------------------
+    {"Red Vocal Control", "Vocals", 8,
+     {{P_THRESHOLD, 0.55f}, {P_RATIO, 2.f}, {P_KNEE, 0.5f}, {P_ATTACK, 0.35f},
+      {P_RELEASE, 0.50f}, {P_MAKEUP, 0.55f}, {P_MIX, 1.f}, {-1, 0}}},
+    {"Red Drum Punch", "Drums", 8,
+     {{P_THRESHOLD, 0.48f}, {P_RATIO, 3.f}, {P_KNEE, 0.35f}, {P_ATTACK, 0.15f},
+      {P_RELEASE, 0.35f}, {P_MAKEUP, 0.56f}, {P_MIX, 1.f}, {-1, 0}}},
+    {"Red Mix Glue", "Mix Bus", 8,
+     {{P_THRESHOLD, 0.60f}, {P_RATIO, 1.f}, {P_KNEE, 0.6f}, {P_ATTACK, 0.50f},
+      {P_RELEASE, 0.60f}, {P_MAKEUP, 0.53f}, {P_MIX, 1.f},
+      {P_LIMITER_ON, 1.f}, {-1, 0}}},
+    {"Red Bass Control", "Bass", 8,
+     {{P_THRESHOLD, 0.58f}, {P_RATIO, 1.f}, {P_KNEE, 0.45f}, {P_ATTACK, 0.40f},
+      {P_RELEASE, 0.55f}, {P_MAKEUP, 0.54f}, {P_MIX, 1.f}, {-1, 0}}},
 };
 
 inline constexpr int kPresetCount =
