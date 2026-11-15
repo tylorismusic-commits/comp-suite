@@ -253,7 +253,7 @@ bool isLimiter76(int model) {
 int meterModeFor(const Shared& shared, int model) {
   int mode = static_cast<int>(shared.get(P_METER) + 0.5);
   if (!isLimiter76(model)) {
-    if (mode == 3 || mode == 4) {
+    if (mode == 3 || mode == 4 || mode == 5) {
       return mode;
     }
     return 0;
@@ -396,12 +396,12 @@ void Panel::layout(const Shared& shared, const PanelState& state) {
 
   // Meter mode selector, inside the top-left of the meter window.
   {
-    static const char* kSeg76[] = {"GR", "+8", "+4", "GRAPH", "OFF"};
-    static const int kVal76[] = {0, 1, 2, 3, 4};
-    static const char* kSegOther[] = {"GR", "GRAPH", "OFF"};
-    static const int kValOther[] = {0, 3, 4};
+    static const char* kSeg76[] = {"GR", "+8", "+4", "GRAPH", "CURVE", "OFF"};
+    static const int kVal76[] = {0, 1, 2, 3, 5, 4};
+    static const char* kSegOther[] = {"GR", "GRAPH", "CURVE", "OFF"};
+    static const int kValOther[] = {0, 3, 5, 4};
     const bool full = isLimiter76(model);
-    const int count = full ? 5 : 3;
+    const int count = full ? 6 : 4;
     const double segW = full ? 56.0 : 90.0;
     for (int i = 0; i < count; ++i) {
       Widget s{};
@@ -1071,6 +1071,48 @@ void Panel::drawBody(cairo_t* cr, int model) const {
   text(cr, skin.caption, kPanelWidth * 0.5, 629, 16, 1, 0.86, 0.88, 0.90);
 }
 
+
+// Static input/output transfer for the Curve display, using each model's own
+// threshold, ratio and knee.  Illustrative rather than sample-exact.
+double curveTransferDb(int model, double inDb, const Shared& shared) {
+  double threshold = -40.0 + 40.0 * shared.get(P_THRESHOLD);
+  double knee = 18.0 * shared.get(P_KNEE);
+  static const double kRatios[9] = {1.5, 2.0, 3.0, 4.0, 6.0,
+                                    8.0, 12.0, 20.0, 20.0};
+  const int step = std::clamp(
+      static_cast<int>(std::lround(shared.get(P_RATIO))), 0, 8);
+  const double ratio = kRatios[step];
+  double slope = 1.0 - 1.0 / std::max(ratio, 1.0);
+  switch (model) {
+    case kBlue76:
+    case kBlack76:
+      threshold = -18.0;
+      knee = 1.0;
+      slope = ratio - 1.0;  // the 76s detect in the loop
+      break;
+    case kOpto2A:
+    case kOpto3A:
+      threshold = -2.0 - 34.0 * shared.get(P_THRESHOLD);
+      knee = 6.0;
+      break;
+    case kXpress:
+      threshold = -20.0;
+      knee = 2.0;
+      break;
+    default:
+      break;
+  }
+  const double over = inDb - threshold;
+  double gr = 0.0;
+  if (knee <= 0.0 || over > 0.5 * knee) {
+    gr = std::max(slope * over, 0.0);
+  } else if (over > -0.5 * knee) {
+    const double t = over + 0.5 * knee;
+    gr = std::max(slope * t * t / (2.0 * knee), 0.0);
+  }
+  return inDb - gr;
+}
+
 void Panel::drawMeter(cairo_t* cr, const Shared& shared, const PanelState& state,
                       int model) const {
   const Skin skin = skinFor(model);
@@ -1078,6 +1120,82 @@ void Panel::drawMeter(cairo_t* cr, const Shared& shared, const PanelState& state
   const double fx = 182, fy = 172, fw = 546, fh = 160;
 
   roundRect(cr, fx, fy, fw, fh, 3);
+  if (mode == 5) {
+    cairo_pattern_t* pat = cairo_pattern_create_linear(0, fy, 0, fy + fh);
+    cairo_pattern_add_color_stop_rgb(pat, 0.0, skin.meterFace.r,
+                                     skin.meterFace.g, skin.meterFace.b);
+    cairo_pattern_add_color_stop_rgb(pat, 1.0, skin.meterFace.r * 0.8,
+                                     skin.meterFace.g * 0.8,
+                                     skin.meterFace.b * 0.8);
+    cairo_set_source(cr, pat);
+    cairo_fill(cr);
+    cairo_pattern_destroy(pat);
+
+    constexpr double lo = -60.0;
+    constexpr double hi = 0.0;
+    auto px = [&](double db) { return fx + fw * (db - lo) / (hi - lo); };
+    auto py = [&](double db) { return fy + fh * (hi - db) / (hi - lo); };
+
+    cairo_set_line_width(cr, 1.0);
+    setRgb(cr, skin.meterScale, 0.20);
+    for (int d = -48; d <= 0; d += 12) {
+      cairo_move_to(cr, px(d), fy);
+      cairo_line_to(cr, px(d), fy + fh);
+      cairo_stroke(cr);
+      cairo_move_to(cr, fx, py(d));
+      cairo_line_to(cr, fx + fw, py(d));
+      cairo_stroke(cr);
+    }
+
+    // Unity reference.
+    setRgb(cr, skin.meterScale, 0.45);
+    cairo_move_to(cr, px(lo), py(lo));
+    cairo_line_to(cr, px(hi), py(hi));
+    cairo_stroke(cr);
+
+    // Transfer curve.
+    setRgb(cr, skin.meterNeedle, 0.95);
+    cairo_set_line_width(cr, 1.8);
+    bool first = true;
+    for (double x = lo; x <= hi + 1e-6; x += 0.5) {
+      const double y = curveTransferDb(model, x, shared);
+      if (first) {
+        cairo_move_to(cr, px(x), py(std::clamp(y, lo, hi)));
+        first = false;
+      } else {
+        cairo_line_to(cr, px(x), py(std::clamp(y, lo, hi)));
+      }
+    }
+    cairo_stroke(cr);
+
+    // Live operating point.
+    const double inDb = shared.inPeakDb.load(std::memory_order_relaxed);
+    const double outDb = inDb - shared.grDb.load(std::memory_order_relaxed);
+    if (inDb > lo && inDb <= hi) {
+      cairo_arc(cr, px(inDb), py(std::clamp(outDb, lo, hi)), 3.5, 0, 2 * kPi);
+      setRgb(cr, skin.meterNeedle);
+      cairo_fill(cr);
+    }
+
+    // Axis numbers: dB along the bottom (in) and left (out).
+    char tick[8];
+    for (int d = -48; d <= 0; d += 12) {
+      std::snprintf(tick, sizeof(tick), "%d", d);
+      text(cr, tick, px(d), fy + fh - 4, 8, 1, skin.meterScale.r,
+           skin.meterScale.g, skin.meterScale.b);
+      text(cr, tick, fx + 10, py(d) + 3, 8, 0, skin.meterScale.r,
+           skin.meterScale.g, skin.meterScale.b);
+    }
+
+    text(cr, "TRANSFER", fx + 30, fy + fh - 10, 12, 0, skin.meterScale.r,
+         skin.meterScale.g, skin.meterScale.b);
+    text(cr, "IN", fx + fw - 12, fy + fh - 10, 10, 2, skin.meterScale.r,
+         skin.meterScale.g, skin.meterScale.b);
+    text(cr, "OUT", fx + 8, fy + 16, 10, 0, skin.meterScale.r, skin.meterScale.g,
+         skin.meterScale.b);
+    return;
+  }
+
   if (mode == 3) {
     // Graph: gain reduction history, drawn from the top down.
     cairo_pattern_t* pat = cairo_pattern_create_linear(0, fy, 0, fy + fh);

@@ -80,8 +80,8 @@ inline constexpr const char* kStereoModeLabels[] = {
     "Mono", "Dual Mono", "M", "S", "M/S", "Stereo"};
 inline constexpr const char* kDistortionLabels[] = {"Off", "Dist 2", "Dist 3",
                                                     "Clip"};
-inline constexpr const char* kMeterLabels[] = {"GR", "+8", "+4", "Graph",
-                                               "Off"};
+inline constexpr const char* kMeterLabels[] = {"GR",   "+8", "+4", "Graph",
+                                               "Off",  "Curve"};
 inline constexpr const char* kScSourceLabels[] = {"Internal", "External"};
 
 inline constexpr ParamSpec kParamSpecs[P_COUNT] = {
@@ -108,7 +108,7 @@ inline constexpr ParamSpec kParamSpecs[P_COUNT] = {
      nullptr, {}},
     {"distortion", "Distortion", "Output", 0.0, 3.0, 0.0, true, false, false,
      nullptr, labels(kDistortionLabels)},
-    {"meter", "Meter", "Meter", 0.0, 4.0, 0.0, true, true, false, nullptr,
+    {"meter", "Meter", "Meter", 0.0, 5.0, 0.0, true, true, false, nullptr,
      labels(kMeterLabels)},
     {"limiter_on", "Limiter", "Limiter", 0.0, 1.0, 0.0, true, false, true,
      nullptr, {}},

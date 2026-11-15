@@ -399,7 +399,8 @@ bool paramsValue(const clap_plugin_t* p, clap_id id, double* value) {
 namespace {
 
 const char* const kDistortionNames[4] = {"Off", "Dist 2", "Dist 3", "Clip"};
-const char* const kMeterNames[5] = {"GR", "+8", "+4", "Graph", "Off"};
+const char* const kMeterNames[6] = {"GR",   "+8", "+4",
+                                    "Graph", "Off", "Curve"};
 
 int currentModel(const Plugin* s) {
   return static_cast<int>(s->shared.get(P_MODEL) + 0.5);
@@ -546,7 +547,7 @@ bool paramsValueToText(const clap_plugin_t* p, clap_id id, double value,
       return true;
     case P_METER:
       std::snprintf(out, size, "%s", kMeterNames[std::clamp(
-                                         static_cast<int>(value + 0.5), 0, 4)]);
+                                         static_cast<int>(value + 0.5), 0, 5)]);
       return true;
     case P_LIMITER_ON:
       std::snprintf(out, size, "%s", value > 0.5 ? "On" : "Off");

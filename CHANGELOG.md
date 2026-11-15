@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.7.0 — 2026-11-15
+
+### Added
+
+- **Transfer-curve display.** A fifth meter mode draws the compressor's
+  input/output curve with a live operating point, in the style of digital
+  compressor displays. It follows the selected model's threshold, ratio and
+  knee, so it is useful on every model, not only Clean. The meter selector now
+  offers GR / +8 / +4 / Graph / Curve / Off.
+- **README** rewritten around the current eight-model state, with screenshots
+  and per-format download instructions.
+- **Split release assets.** Releases now publish the LV2 and CLAP bundles as
+  their own archives as well as the combined tarball.
+
+### Notes
+
+- `P_METER` now runs 0-5. Sessions saved with an older build still load; the
+  new value only selects the additional display.
+
 ## 0.6.2 — 2026-11-15
 
 ### Changed

@@ -64,6 +64,20 @@ int main(int argc, char** argv) {
     const std::string path = outDir + "/" + kNames[model] + ".png";
     const cairo_status_t st = cairo_surface_write_to_png(surface, path.c_str());
 
+    // Clean with the transfer-curve display.
+    if (model == 6) {
+      shared.set(P_METER, 5);
+      cairo_surface_t* sc = cairo_image_surface_create(
+          CAIRO_FORMAT_ARGB32, size.width, size.height);
+      cairo_t* crc = cairo_create(sc);
+      cairo_scale(crc, drawScale, drawScale);
+      panel.draw(crc, shared, state);
+      cairo_destroy(crc);
+      cairo_surface_write_to_png(sc, (outDir + "/clean_curve.png").c_str());
+      cairo_surface_destroy(sc);
+      shared.set(P_METER, 0);
+    }
+
     // Second pass with the Side Chain page selected.
     if (model == 4 || model == 5) {
       state.rightPage = 0;
