@@ -24,15 +24,28 @@ tricks.
 | **Red** | British Class-A VCA (Focusrite Red family) | True-peak feed-forward, compression then limiting, transformer colour |
 | **Easy** | Drum character compressor | Squish/Lift, drum-type voicing, Beef/Air, Soft/Tape/Hard saturation |
 
-Every model shares one ratio ladder, so the same control position means the
-same ratio when switching tabs. Clean, VCA and Molot also share the same
-−40…0 dB threshold range.
+Most models share one ratio ladder, so the same control position means the
+same ratio when switching tabs. The Red uses its own six-position ladder
+(1.5 / 2 / 3 / 5 / 7 / 10), and Easy's ratio follows its Squish/Lift switch.
+Clean, VCA, Molot, Red and Easy share the −40…0 dB threshold range.
+
+## Easy
+
+![Comp Suite — Easy drum character compressor](docs/easy.png)
+
+Easy is the drum-focused character compressor, and the friendliest place to
+start. It sits directly after Clean in the tab strip. **Squish** is fast and
+aggressive; **Lift** is slower and glues. **Drum Type** re-voices the detector
+and time constants for Toms, Kick, Snare, Room, overheads or Parallel. **Beef**
+lifts the low end into the compressor, **Air** lifts the top after it, and
+**Saturation** adds Soft, Tape or Hard colour. Normal/Extreme sets the
+intensity, and link plus parallel mix behave as on the other models.
 
 ## Features
 
 - **Metering** — stereo L/R input and output meters, gain-reduction meter with
-  LED column, and four display modes: gain reduction, +8/+4 VU, GR history and
-  (new) a live **transfer curve** with the operating point.
+  LED column, and five displays: gain reduction, +8/+4 VU, GR history, a live
+  **transfer curve** with the operating point, and Off.
 - **Detection that matches the hardware** — 76 and 2A/3A detect in the feedback
   loop; the VCA and Clean are feed-forward. A bounded gain computer keeps the
   76 from nulling on transients.
@@ -40,7 +53,7 @@ same ratio when switching tabs. Clean, VCA and Molot also share the same
 - **Auto-makeup** — tracks average reduction and restores the level.
 - **True-peak limiting** — optional four-times oversampled detector.
 - **Molot stereo modes** — Mono, Dual Mono, Mid, Side, M/S and Stereo.
-- **Preset banks** — 41 factory presets, exported as LV2 `pset:Preset` banks.
+- **Preset banks** — 49 factory presets, exported as LV2 `pset:Preset` banks.
 - **Ardour integration** — gain reduction in the mixer strip through the
   Harrison inline-display extension.
 
