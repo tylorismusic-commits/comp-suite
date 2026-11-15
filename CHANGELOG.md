@@ -12,11 +12,13 @@ path, and metadata errors that `lv2lint` flags.
   resources in six banks, so Ardour, REAPER and other hosts list them in their
   own preset menus instead of only inside the plugin's browser.
 - **Resizable UI.** The LV2 editor now uses the host's idle interface instead of
-  a private 33 ms thread. It advertises `PMinSize`/`PMaxSize` X11 size hints,
-  which Ardour and suil use for the host window's minimum and maximum: without
-  a minimum hint the plugin window becomes grow-only, the classic X11
-  embedding trap. Dragging snaps to the same 1/80 steps and 1040:640 aspect as
-  the CLAP editor, and the corrected size is reported back to the host.
+  a private 33 ms thread, and redraws are throttled to ~30 Hz. It advertises
+  `PMinSize`/`PMaxSize` X11 size hints, which Ardour and suil use for the host
+  window's minimum and maximum: without a minimum hint the plugin window
+  becomes grow-only, the classic X11 embedding trap. The host owns the size;
+  the panel is letterboxed into whatever allocation arrives, and configure
+  events never bounce a resize back through the host (doing so re-enters suil's
+  allocation loop and makes Ardour flicker and hang).
 - **Gain reduction in the mixer strip** through the Harrison inline-display
   extension, matching Hearth Channel.
 - **Correct units metadata.** Meter ports use `units:unit units:db`;

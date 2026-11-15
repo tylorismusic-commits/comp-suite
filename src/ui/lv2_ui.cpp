@@ -1,14 +1,15 @@
 // Comp Suite — LV2 UI (X11 + Cairo)
 // SPDX-License-Identifier: GPL-3.0-or-later
 //
-// The UI is driven by the host through the idle interface rather than its own
-// thread: Xlib is not thread-safe, and every X call then happens on the same
-// thread that dispatches the host's port events.
+// The host owns the widget size.  On every allocation we letterbox the
+// 1040x640 panel into whatever we are given and redraw.  We never call
+// XResizeWindow or the host's ui_resize in response to a configure event:
+// suil turns those into another GTK allocation, which arrives back as another
+// configure event, and the window flickers and eventually wedges Ardour.
 //
-// The panel is laid out once at 1040x640 logical units and scaled uniformly.
-// The host resizes the widget (Ardour's resize handle, a tiling WM, ...), we
-// snap to the nearest 1/80 step so the aspect ratio stays exact, and we ask
-// the host for the corrected size through the ui:resize feature.
+// Redraws are throttled to ~30 Hz from the idle interface.  Hosts call idle
+// from a GTK idle handler, which can run thousands of times a second; drawing
+// every call starves the host's main loop.
 
 #include <lv2/core/lv2.h>
 #include <lv2/ui/ui.h>
@@ -17,6 +18,8 @@
 #include <X11/Xutil.h>
 #include <cairo-xlib.h>
 
+#include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstring>
 #include <string>
@@ -30,6 +33,7 @@ namespace {
 constexpr const char* kUiUri =
     "https://github.com/tylorismusic-commits/comp-suite#ui";
 constexpr uint32_t kFirstParam = 4;
+constexpr auto kFrameInterval = std::chrono::milliseconds(33);
 
 struct Ui {
   LV2UI_Write_Function write = nullptr;
@@ -47,17 +51,28 @@ struct Ui {
   cairo_t* cr = nullptr;
   cairo_format_t format = CAIRO_FORMAT_RGB24;
 
-  comp::UiSize size{comp::kPanelWidth, comp::kPanelHeight};
-  // Last size handed to the host, so a ConfigureNotify that already matches
-  // does not bounce back and forth.
-  uint32_t toldWidth = 0;
-  uint32_t toldHeight = 0;
+  uint32_t width = comp::kPanelWidth;
+  uint32_t height = comp::kPanelHeight;
 
-  double scale() const {
-    return static_cast<double>(size.width) / comp::kPanelWidth;
+  bool dirty = true;
+  std::chrono::steady_clock::time_point lastFrame{};
+
+  // Largest uniform scale that fits the panel into the host allocation.
+  double layoutScale() const {
+    const double sx = static_cast<double>(width) / comp::kPanelWidth;
+    const double sy = static_cast<double>(height) / comp::kPanelHeight;
+    return std::min(sx, sy);
   }
 
-  void rebuild() {
+  double offsetX() const {
+    return (static_cast<double>(width) - comp::kPanelWidth * layoutScale()) * 0.5;
+  }
+
+  double offsetY() const {
+    return (static_cast<double>(height) - comp::kPanelHeight * layoutScale()) * 0.5;
+  }
+
+  void rebuildSurfaces() {
     if (cr) {
       cairo_destroy(cr);
       cr = nullptr;
@@ -66,70 +81,67 @@ struct Ui {
       cairo_surface_destroy(backing);
       backing = nullptr;
     }
-    backing = cairo_image_surface_create(
-        format, static_cast<int>(size.width), static_cast<int>(size.height));
+    backing = cairo_image_surface_create(format, static_cast<int>(width),
+                                         static_cast<int>(height));
     cr = cairo_create(backing);
     if (windowSurface) {
-      cairo_xlib_surface_set_size(windowSurface, size.width, size.height);
+      cairo_xlib_surface_set_size(windowSurface, width, height);
     }
   }
 
-  // Snaps a requested physical size to the nearest valid one and applies it.
-  void applySize(uint32_t width, uint32_t height, bool tellHost) {
-    if (width == 0 || height == 0) {
+  // Adopt the size the host gave us.  No XResizeWindow: suil already sized the
+  // window, and a resize from here would re-enter the allocation loop.
+  void configure(uint32_t w, uint32_t h) {
+    if (w == 0 || h == 0 || (w == width && h == height)) {
       return;
     }
-    const comp::UiSize snapped = comp::snapSize(width, height);
-    if (snapped.width == size.width && snapped.height == size.height) {
-      return;
-    }
-    size = snapped;
-    if (win) {
-      XResizeWindow(dpy, win, size.width, size.height);
-    }
-    rebuild();
-    if (tellHost && hostResize && hostResize->ui_resize &&
-        (size.width != toldWidth || size.height != toldHeight)) {
-      toldWidth = size.width;
-      toldHeight = size.height;
-      hostResize->ui_resize(hostResize->handle, static_cast<int>(size.width),
-                            static_cast<int>(size.height));
-    }
+    width = w;
+    height = h;
+    rebuildSurfaces();
+    dirty = true;
   }
 
   void handleEvent(const XEvent& ev) {
-    const double s = scale();
+    const double s = layoutScale();
+    const double ox = offsetX();
+    const double oy = offsetY();
+    auto toLogicalX = [&](int x) { return (x - ox) / s; };
+    auto toLogicalY = [&](int y) { return (y - oy) / s; };
+
     switch (ev.type) {
       case ConfigureNotify:
-        applySize(static_cast<uint32_t>(ev.xconfigure.width),
-                  static_cast<uint32_t>(ev.xconfigure.height), true);
+        configure(static_cast<uint32_t>(ev.xconfigure.width),
+                  static_cast<uint32_t>(ev.xconfigure.height));
         break;
       case Expose:
-        // Hosts that never call idle still need a first paint.
         if (ev.xexpose.count == 0) {
           draw();
         }
         break;
       case ButtonPress: {
         const bool fine = (ev.xbutton.state & ShiftMask) != 0;
-        const double x = ev.xbutton.x / s;
-        const double y = ev.xbutton.y / s;
         if (ev.xbutton.button == Button4) {
-          panel.wheel(shared, state, x, y, 1.0);
+          panel.wheel(shared, state, toLogicalX(ev.xbutton.x),
+                      toLogicalY(ev.xbutton.y), 1.0);
         } else if (ev.xbutton.button == Button5) {
-          panel.wheel(shared, state, x, y, -1.0);
+          panel.wheel(shared, state, toLogicalX(ev.xbutton.x),
+                      toLogicalY(ev.xbutton.y), -1.0);
         } else if (ev.xbutton.button == Button1) {
-          panel.pointerDown(shared, state, x, y, fine);
+          panel.pointerDown(shared, state, toLogicalX(ev.xbutton.x),
+                            toLogicalY(ev.xbutton.y), fine);
         }
+        dirty = true;
         break;
       }
       case ButtonRelease:
         panel.pointerUp();
+        dirty = true;
         break;
       case MotionNotify: {
         const bool fine = (ev.xmotion.state & ShiftMask) != 0;
-        panel.pointerMove(shared, state, ev.xmotion.x / s, ev.xmotion.y / s,
-                          fine);
+        panel.pointerMove(shared, state, toLogicalX(ev.xmotion.x),
+                          toLogicalY(ev.xmotion.y), fine);
+        dirty = true;
         break;
       }
       default:
@@ -138,7 +150,7 @@ struct Ui {
   }
 
   void draw() {
-    if (!cr || !windowSurface) {
+    if (!cr || !windowSurface || width < 8 || height < 8) {
       return;
     }
 
@@ -153,9 +165,15 @@ struct Ui {
       }
     }
 
-    panel.tick(shared, state);
+    // Letterbox: dark surround, panel centred and uniformly scaled.
     cairo_save(cr);
-    cairo_scale(cr, scale(), scale());
+    cairo_set_source_rgb(cr, 0.043, 0.047, 0.051);
+    cairo_paint(cr);
+    cairo_translate(cr, offsetX(), offsetY());
+    cairo_scale(cr, layoutScale(), layoutScale());
+    cairo_rectangle(cr, 0, 0, comp::kPanelWidth, comp::kPanelHeight);
+    cairo_clip(cr);
+    panel.tick(shared, state);
     panel.draw(cr, shared, state);
     cairo_restore(cr);
     cairo_surface_flush(backing);
@@ -175,7 +193,12 @@ struct Ui {
       XNextEvent(dpy, &ev);
       handleEvent(ev);
     }
-    draw();
+    const auto now = std::chrono::steady_clock::now();
+    if (dirty || now - lastFrame >= kFrameInterval) {
+      draw();
+      dirty = false;
+      lastFrame = now;
+    }
     return 0;
   }
 };
@@ -211,7 +234,9 @@ LV2UI_Handle uiInstantiate(const LV2UI_Descriptor*, const char* /*pluginUri*/,
   const int screen = DefaultScreen(ui->dpy);
   const double initialScale =
       scaleHint && *scaleHint > 0.0f ? comp::clampScale(*scaleHint) : 1.0;
-  ui->size = comp::sizeForScale(initialScale);
+  const comp::UiSize initial = comp::sizeForScale(initialScale);
+  ui->width = initial.width;
+  ui->height = initial.height;
 
   const Window parentWindow =
       parent ? static_cast<Window>(reinterpret_cast<uintptr_t>(parent))
@@ -222,16 +247,15 @@ LV2UI_Handle uiInstantiate(const LV2UI_Descriptor*, const char* /*pluginUri*/,
   attrs.event_mask = ExposureMask | ButtonPressMask | ButtonReleaseMask |
                      PointerMotionMask | Button1MotionMask | ButtonMotionMask |
                      KeyPressMask | StructureNotifyMask;
-  ui->win = XCreateWindow(ui->dpy, parentWindow, 0, 0, ui->size.width,
-                          ui->size.height, 0, CopyFromParent, InputOutput,
-                          CopyFromParent, CWBackPixel | CWEventMask, &attrs);
+  ui->win = XCreateWindow(ui->dpy, parentWindow, 0, 0, ui->width, ui->height, 0,
+                          CopyFromParent, InputOutput, CopyFromParent,
+                          CWBackPixel | CWEventMask, &attrs);
   XStoreName(ui->dpy, ui->win, "Comp Suite");
   XMapRaised(ui->dpy, ui->win);
 
-  // suil (and therefore Ardour) takes the host widget's minimum size from
-  // the X11 PMinSize hint.  Without it the minimum becomes the current window
-  // size, which makes the plugin window grow-only.  PMaxSize keeps growth
-  // inside the same 0.5x-2.5x range the editor draws at.
+  // suil derives the host widget's minimum and maximum size from the X11
+  // size hints.  Without PMinSize the minimum becomes the current window size,
+  // so the plugin window could only ever grow.
   {
     const comp::UiSize minSize = comp::sizeForScale(comp::kMinUiScale);
     const comp::UiSize maxSize = comp::sizeForScale(comp::kMaxUiScale);
@@ -250,22 +274,20 @@ LV2UI_Handle uiInstantiate(const LV2UI_Descriptor*, const char* /*pluginUri*/,
   ui->format = DefaultDepth(ui->dpy, screen) == 32 ? CAIRO_FORMAT_ARGB32
                                                    : CAIRO_FORMAT_RGB24;
   ui->windowSurface = cairo_xlib_surface_create(
-      ui->dpy, ui->win, DefaultVisual(ui->dpy, screen), ui->size.width,
-      ui->size.height);
-  ui->rebuild();
+      ui->dpy, ui->win, DefaultVisual(ui->dpy, screen), ui->width, ui->height);
+  ui->rebuildSurfaces();
   XFlush(ui->dpy);
 
   std::string dir = bundlePath ? bundlePath : "";
   ui->panel.loadFont(dir);
 
-  // Tell the host the size we actually want.  Many hosts embed the widget at
-  // whatever size they are given, so this is the first and often only chance.
+  // Ask for the logical size once, so a host that sizes the window from the
+  // widget's preferred size opens us at 1040x640.  After this the host owns
+  // the size and we only follow allocations.
   if (ui->hostResize && ui->hostResize->ui_resize) {
-    ui->toldWidth = ui->size.width;
-    ui->toldHeight = ui->size.height;
     ui->hostResize->ui_resize(ui->hostResize->handle,
-                              static_cast<int>(ui->size.width),
-                              static_cast<int>(ui->size.height));
+                              static_cast<int>(ui->width),
+                              static_cast<int>(ui->height));
   }
 
   *widget = reinterpret_cast<LV2UI_Widget>(static_cast<uintptr_t>(ui->win));
@@ -299,6 +321,7 @@ void uiPortEvent(LV2UI_Handle handle, uint32_t port, uint32_t size,
   const float v = *static_cast<const float*>(buffer);
   if (port >= kFirstParam && port < kFirstParam + comp::P_COUNT) {
     ui->shared.setFromHost(port - kFirstParam, static_cast<double>(v));
+    ui->dirty = true;
     return;
   }
   switch (port) {

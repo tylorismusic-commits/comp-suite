@@ -17,6 +17,8 @@
 #include <cstring>
 #include <string>
 
+#include <chrono>
+
 #include "params.hpp"
 
 namespace {
@@ -155,35 +157,12 @@ int main(int argc, char** argv) {
   }
 
   // ---------------------------------------------------------------------
-  // Resize: the host drags the widget to a size that is not a valid step.
-  // The UI must snap it to 1040:640 and tell the host the corrected size.
+  // The host owns the size.  Adopting it must not bounce a resize back
+  // through the host, or suil re-allocates and the window flickers/loops.
   // ---------------------------------------------------------------------
   if (idle) {
     host.calls = 0;
     XResizeWindow(dpy, window, 1600, 800);
-    XFlush(dpy);
-    for (int i = 0; i < 5; ++i) {
-      idle->idle(handle);
-    }
-    XWindowAttributes attrs{};
-    XGetWindowAttributes(dpy, window, &attrs);
-    char label[128];
-    std::snprintf(label, sizeof(label),
-                  "snapped to an exact 1040:640 size (got %dx%d)", attrs.width,
-                  attrs.height);
-    const bool exactRatio =
-        attrs.width > 0 && attrs.height > 0 &&
-        static_cast<long>(attrs.width) * 640 ==
-            static_cast<long>(attrs.height) * 1040;
-    check(exactRatio, label);
-    check(host.calls > 0 && host.lastWidth == attrs.width &&
-              host.lastHeight == attrs.height,
-          "UI reports the corrected size back to the host");
-  }
-
-  // Shrinking below the minimum must clamp rather than produce a 0-size window.
-  if (idle) {
-    XResizeWindow(dpy, window, 40, 20);
     XSync(dpy, False);
     for (int i = 0; i < 5; ++i) {
       idle->idle(handle);
@@ -192,9 +171,48 @@ int main(int argc, char** argv) {
     XGetWindowAttributes(dpy, window, &attrs);
     char label[128];
     std::snprintf(label, sizeof(label),
-                  "resizing below the minimum clamps to 0.5x (got %dx%d)",
+                  "growing follows the host allocation (got %dx%d)",
                   attrs.width, attrs.height);
-    check(attrs.width >= 520 && attrs.height >= 320, label);
+    check(attrs.width == 1600 && attrs.height == 800, label);
+    check(host.calls == 0, "growing does not call back into the host resize");
+
+    XResizeWindow(dpy, window, 700, 420);
+    XSync(dpy, False);
+    for (int i = 0; i < 5; ++i) {
+      idle->idle(handle);
+    }
+    XGetWindowAttributes(dpy, window, &attrs);
+    std::snprintf(label, sizeof(label),
+                  "shrinking follows the host allocation (got %dx%d)",
+                  attrs.width, attrs.height);
+    check(attrs.width == 700 && attrs.height == 420, label);
+    check(host.calls == 0, "shrinking does not call back into the host resize");
+  }
+
+  // A degenerate allocation must not crash or wedge the idle loop.
+  if (idle) {
+    XResizeWindow(dpy, window, 40, 20);
+    XSync(dpy, False);
+    for (int i = 0; i < 5; ++i) {
+      idle->idle(handle);
+    }
+    check(true, "degenerate allocation is survivable");
+  }
+
+  // The idle caller runs from the host's main loop, so it must be cheap when
+  // nothing changed.  500 calls should be dominated by the 33 ms throttle.
+  if (idle) {
+    const auto start = std::chrono::steady_clock::now();
+    for (int i = 0; i < 500; ++i) {
+      idle->idle(handle);
+    }
+    const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::steady_clock::now() - start);
+    char label[128];
+    std::snprintf(label, sizeof(label),
+                  "500 idle calls stay throttled (%lld ms)",
+                  static_cast<long long>(elapsed.count()));
+    check(elapsed.count() < 500, label);
   }
 
   ui->cleanup(handle);

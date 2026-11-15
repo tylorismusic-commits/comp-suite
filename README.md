@@ -129,8 +129,8 @@ build/comp_ui_preview assets/fonts /tmp/out 1.5
   The same presets are exported as `pset:Preset` banks, so LV2 hosts list them
   in their own preset menus.
 - **Host support:** CLAP and LV2. The LV2 build has preset banks, a resizable
-  X11 UI with the same 0.5×–2.5× range as the CLAP editor, and gain reduction
-  in Ardour's mixer strip.
+  X11 UI (0.5×–2.5×, the host owns the exact size and the panel is letterboxed
+  into it), and gain reduction in Ardour's mixer strip.
 - **Editor:** X11 embedding, resizable from 0.5× to 2.5× (520×320 to
   2600×1600). The window always keeps the 1040:640 aspect ratio: sizes are
   snapped to 1/80 scale steps, which gives an exact ratio at every size.
