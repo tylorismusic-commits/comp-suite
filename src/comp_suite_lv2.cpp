@@ -26,7 +26,11 @@ enum Port : uint32_t {
   PORT_AUDIO_OUT_L = 2,
   PORT_AUDIO_OUT_R = 3,
   PORT_FIRST_PARAM = 4,
-  PORT_GR_METER = PORT_FIRST_PARAM + comp::P_COUNT,
+  // External side-chain inputs.  They sit after the parameters so existing
+  // parameter port indices never move.
+  PORT_SC_IN_L = PORT_FIRST_PARAM + comp::P_COUNT,
+  PORT_SC_IN_R,
+  PORT_GR_METER,
   PORT_OUT_PEAK,
   PORT_IN_PEAK,
   PORT_OUT_VU,
@@ -47,6 +51,8 @@ struct Plugin {
   float* audioInR = nullptr;
   float* audioOutL = nullptr;
   float* audioOutR = nullptr;
+  float* scInL = nullptr;
+  float* scInR = nullptr;
   float* gr = nullptr;
   float* outPeak = nullptr;
   float* inPeak = nullptr;
@@ -83,6 +89,8 @@ void connectPort(LV2_Handle handle, uint32_t port, void* data) {
     case PORT_AUDIO_IN_R: p->audioInR = static_cast<float*>(data); break;
     case PORT_AUDIO_OUT_L: p->audioOutL = static_cast<float*>(data); break;
     case PORT_AUDIO_OUT_R: p->audioOutR = static_cast<float*>(data); break;
+    case PORT_SC_IN_L: p->scInL = static_cast<float*>(data); break;
+    case PORT_SC_IN_R: p->scInR = static_cast<float*>(data); break;
     case PORT_GR_METER: p->gr = static_cast<float*>(data); break;
     case PORT_OUT_PEAK: p->outPeak = static_cast<float*>(data); break;
     case PORT_IN_PEAK: p->inPeak = static_cast<float*>(data); break;
@@ -147,7 +155,7 @@ void run(LV2_Handle handle, uint32_t frames) {
   }
 
   p->engine.process(p->audioOutL, p->audioOutR, static_cast<int>(frames),
-                    p->meters);
+                    p->meters, p->scInL, p->scInR ? p->scInR : p->scInL);
 
   if (p->gr) {
     *p->gr = p->meters.grDb;

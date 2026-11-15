@@ -1,5 +1,51 @@
 # Changelog
 
+## 0.4.0 — 2026-11-14
+
+Feature pass. This release is allowed to add parameters and ports.
+
+### External side-chain
+
+- New stereo side-chain inputs on both formats: CLAP exposes them as a second
+  input port, LV2 as `sc_in_l`/`sc_in_r` after the parameter block.
+- A **Sidechain / Internal-External** switch decides whether detection follows
+  the host routing or the plugin's own input. External side-chain bypasses the
+  feedback loop, as it must.
+- The LV2 side-chain ports carry `lv2:portProperty lv2:isSideChain`.
+
+### Auto-makeup
+
+- Tracks the average gain reduction over 2 s and restores the level, clamped to
+  +24 dB. Applied to the wet signal only, so a parallel blend keeps its dry
+  share. Off by default; the manual Makeup/Gain controls are unchanged.
+
+### True peak
+
+- The output limiter can detect inter-sample peaks with a 4x Catmull-Rom
+  detector (the same one Brick uses). Off by default.
+
+### VCA
+
+- **Link** control: 1 = both channels follow the louder one (bus behaviour),
+  0 = independent detectors (dual mono). Defaults to fully linked.
+- **Auto Release** toggle: two-stage automatic release, roughly 100 ms at
+  shallow reduction rising to about 1 s as it deepens.
+
+### Detectors
+
+- Attack hold added to the FET and VCA detectors: a short peak hold before
+  release stops low-frequency cycles from modulating the gain.
+- The factory presets were re-solved against the v0.2.0 targets after the hold
+  change; worst deviation 0.04 dB.
+
+### Deferred
+
+- **2x oversampled FET gain cell.** ADAA already linearises the static shaper,
+  and the FET's 0.7 ms gain smoothing bounds the modulation bandwidth, so the
+  remaining aliasing is small. Doing it properly means adding latency
+  compensation that changes when models are switched, which deserves its own
+  change rather than a bolt-on at the end of a release.
+
 ## 0.3.0 — 2026-11-14
 
 DSP structural pass. No new parameters: the port list and ABI stay frozen at

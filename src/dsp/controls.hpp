@@ -32,6 +32,11 @@ struct Controls {
   float distortion = 0.0f;  // Xpress: Off / Dist 2 / Dist 3 / Clip
   bool limiterOn = false;   // output limiter, as in the reference suite
   float limitThreshold = 0.5f;
+  bool autoMakeup = false;  // track average reduction and restore the level
+  bool externalSidechain = false;  // detect from the side-chain inputs
+  bool truePeak = false;           // limiter detects inter-sample peaks
+  float link = 1.0f;               // VCA stereo link: 0 dual mono, 1 linked
+  bool vcaAutoRelease = false;     // VCA two-stage automatic release
 };
 
 // Metering published by the engine, in dB or normalised units.

@@ -22,11 +22,15 @@ public:
       f.reset();
     }
     rmsPower_ = 0.0f;
-    env_ = 0.0f;
+    for (int ch = 0; ch < 2; ++ch) {
+      env_[ch] = 0.0f;
+      hold_[ch] = 0;
+    }
     for (auto& sh : shaper_) {
       sh.reset();
     }
     rmsCoeff_ = timeCoeff(10.0f, sr_);
+    holdSamples_ = static_cast<int>(0.002f * sr_);
     setControls(controls_);
   }
 
@@ -41,6 +45,8 @@ public:
     releaseCoeff_ = timeCoeff(releaseMs_, sr_);
     // Bipolar: 0.5 is unity, matching the other models.
     makeupGain_ = dbToGain(20.0f * (clampf(c.makeup, 0.0f, 1.0f) - 0.5f));
+    autoRelease_ = c.vcaAutoRelease;
+    link_ = clampf(c.link, 0.0f, 1.0f);
 
     const float hpf = clampf(c.sidechainHpf, 0.0f, 1.0f);
     sidechainOn_ = hpf > 0.01f;
@@ -53,32 +59,37 @@ public:
   }
 
   // Processes one stereo frame in place.  Returns gain reduction in dB (>= 0).
-  float process(float& left, float& right) noexcept {
-    float detL = left;
-    float detR = right;
+  float process(float& left, float& right,
+                const SidechainFrame& sc = {}) noexcept {
+    float detL = sc.active ? sc.left : left;
+    float detR = sc.active ? sc.right : right;
     if (sidechainOn_) {
-      detL = sidechain_[0].process(left);
-      detR = sidechain_[1].process(right);
+      detL = sidechain_[0].process(detL);
+      detR = sidechain_[1].process(detR);
     }
     // Peak detection, not RMS: with an RMS detector a -18 dBFS tone sits
     // below the default threshold and the ratio control appears dead.
-    const float level = std::max(std::fabs(detL), std::fabs(detR));
+    const float levelL = std::fabs(detL);
+    const float levelR = std::fabs(detR);
+    // Link: 1 = both channels follow the louder one (bus behaviour),
+    // 0 = independent detectors (dual mono).
+    const float loudest = std::max(levelL, levelR);
+    const float targetL = link_ * loudest + (1.0f - link_) * levelL;
+    const float targetR = link_ * loudest + (1.0f - link_) * levelR;
 
-    if (level > env_) {
-      env_ = attackCoeff_ * env_ + (1.0f - attackCoeff_) * level;
-    } else {
-      env_ = releaseCoeff_ * env_ + (1.0f - releaseCoeff_) * level;
-    }
+    float grDb[2];
+    updateDetector(0, targetL);
+    updateDetector(1, targetR);
+    grDb[0] = gainReductionDb(gainToDb(env_[0]), thresholdDb_, ratio_, kKneeDb);
+    grDb[1] = gainReductionDb(gainToDb(env_[1]), thresholdDb_, ratio_, kKneeDb);
 
-    constexpr float kKneeDb = 2.0f;
-    const float grDb =
-        gainReductionDb(gainToDb(env_), thresholdDb_, ratio_, kKneeDb);
-    const float gain = dbToGain(-grDb) * makeupGain_;
+    const float gainL = dbToGain(-grDb[0]) * makeupGain_;
+    const float gainR = dbToGain(-grDb[1]) * makeupGain_;
     // The VCAs and output stage add a little colour; the measured reference
     // bus compressor is not perfectly clean either.
-    left = shaper_[0].process(left * gain, 1.7f, 0.13f);
-    right = shaper_[1].process(right * gain, 1.7f, 0.13f);
-    return std::max(grDb, 0.0f);
+    left = shaper_[0].process(left * gainL, 1.7f, 0.13f);
+    right = shaper_[1].process(right * gainR, 1.7f, 0.13f);
+    return std::max(std::max(grDb[0], grDb[1]), 0.0f);
   }
 
   void reset() noexcept {
@@ -86,13 +97,40 @@ public:
       f.reset();
     }
     rmsPower_ = 0.0f;
-    env_ = 0.0f;
+    for (int ch = 0; ch < 2; ++ch) {
+      env_[ch] = 0.0f;
+      hold_[ch] = 0;
+    }
     for (auto& sh : shaper_) {
       sh.reset();
     }
   }
 
 private:
+  static constexpr float kKneeDb = 2.0f;
+
+  // Attack, then a short hold, then release.  The hold is what stops the
+  // detector releasing between the cycles of low-frequency material, which
+  // otherwise modulates the gain at the signal's own rate.
+  void updateDetector(int ch, float level) noexcept {
+    if (level > env_[ch]) {
+      env_[ch] = attackCoeff_ * env_[ch] + (1.0f - attackCoeff_) * level;
+      hold_[ch] = holdSamples_;
+    } else if (hold_[ch] > 0) {
+      --hold_[ch];
+    } else {
+      float coeff = releaseCoeff_;
+      if (autoRelease_) {
+        // Two-stage automatic release: quick while the reduction is small,
+        // progressively slower as it deepens, as on the bus compressor.
+        const float depth =
+            clampf(-gainToDb(std::max(env_[ch], 1e-6f)) / 20.0f, 0.0f, 1.0f);
+        coeff = timeCoeff(releaseMs_ * (1.0f + 10.0f * depth), sr_);
+      }
+      env_[ch] = coeff * env_[ch] + (1.0f - coeff) * level;
+    }
+  }
+
   float sr_ = 48000.0f;
   Controls controls_;
   float thresholdDb_ = -18.0f;
@@ -104,8 +142,12 @@ private:
   float rmsCoeff_ = 0.0f;
   float makeupGain_ = 1.0f;
   bool sidechainOn_ = false;
+  bool autoRelease_ = false;
+  float link_ = 1.0f;
+  int holdSamples_ = 0;
   float rmsPower_ = 0.0f;
-  float env_ = 0.0f;
+  float env_[2] = {0.0f, 0.0f};
+  int hold_[2] = {0, 0};
   HighPass2 sidechain_[2];
   AsymShaper shaper_[2];
 };

@@ -97,16 +97,20 @@ public:
   }
 
   // Returns gain reduction in dB (>= 0).
-  float process(float& left, float& right) noexcept {
+  float process(float& left, float& right,
+                const SidechainFrame& sc = {}) noexcept {
     const double x[2] = {left, right};
     double levelMax = 0.0;
 
     for (int ch = 0; ch < 2; ++ch) {
       // The cell sits inside the side-chain loop: the detector taps the output
       // of the attenuator, not the input (one-sample implicit feedback).
-      const double detector = topology_ == Topology::Feedback
-                                  ? kFeedbackLoopGain * prevOut_[ch]
-                                  : x[ch];
+      // An external side-chain bypasses the loop entirely.
+      const double detector =
+          sc.active ? (ch == 0 ? sc.left : sc.right)
+                    : (topology_ == Topology::Feedback
+                           ? kFeedbackLoopGain * prevOut_[ch]
+                           : x[ch]);
       const double sc = scDip_[ch].process(
           scHighShelf_[ch].process(scLowShelf_[ch].process(detector)));
       sidechain_[ch] = sc;

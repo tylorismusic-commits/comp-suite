@@ -152,7 +152,7 @@ int main(int argc, char** argv) {
   // Feed a gain-reduction value the way the host would, then idle again.
   if (idle) {
     const float gr = 6.5f;
-    ui->port_event(handle, 4 + comp::P_COUNT, sizeof(float), 0, &gr);
+    ui->port_event(handle, 4 + comp::P_COUNT + 2, sizeof(float), 0, &gr);
     idle->idle(handle);
   }
 

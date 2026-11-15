@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(comp_suite VERSION 0.3.0 LANGUAGES CXX)
+project(comp_suite VERSION 0.4.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -92,7 +92,8 @@ target_compile_features(comp_ui_preview PRIVATE cxx_std_17)
 find_library(XTST_LIBRARY Xtst)
 find_program(XVFB_RUN xvfb-run)
 add_executable(comp_clap_host_test test/clap_host_test.cpp)
-target_include_directories(comp_clap_host_test PRIVATE "${CMAKE_SOURCE_DIR}/third_party/clap/include")
+target_include_directories(comp_clap_host_test PRIVATE
+  "${CMAKE_SOURCE_DIR}/src" "${CMAKE_SOURCE_DIR}/third_party/clap/include")
 target_link_libraries(comp_clap_host_test PRIVATE PkgConfig::X11 ${CMAKE_DL_LIBS})
 if(XTST_LIBRARY)
   target_link_libraries(comp_clap_host_test PRIVATE ${XTST_LIBRARY})

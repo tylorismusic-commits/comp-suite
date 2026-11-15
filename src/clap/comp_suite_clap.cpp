@@ -701,20 +701,38 @@ const clap_plugin_state_t kStateExt = {stateSave, stateLoad};
 
 // --- Audio ports ------------------------------------------------------------
 
-uint32_t audioPortsCount(const clap_plugin_t*, bool) { return 1; }
+uint32_t audioPortsCount(const clap_plugin_t*, bool isInput) {
+  return isInput ? 2 : 1;
+}
 
 bool audioPortsInfo(const clap_plugin_t*, uint32_t index, bool isInput,
                     clap_audio_port_info_t* info) {
-  if (index != 0) {
-    return false;
-  }
   std::memset(info, 0, sizeof(*info));
-  info->id = isInput ? 0 : 1;
-  writeName(info->name, sizeof(info->name), isInput ? "Input" : "Output");
-  info->flags = CLAP_AUDIO_PORT_IS_MAIN;
   info->channel_count = 2;
   info->port_type = CLAP_PORT_STEREO;
   info->in_place_pair = CLAP_INVALID_ID;
+
+  if (isInput) {
+    if (index > 1) {
+      return false;
+    }
+    if (index == 0) {
+      info->id = 0;
+      writeName(info->name, sizeof(info->name), "Input");
+      info->flags = CLAP_AUDIO_PORT_IS_MAIN;
+    } else {
+      info->id = 2;
+      writeName(info->name, sizeof(info->name), "Sidechain");
+      info->flags = 0;
+    }
+    return true;
+  }
+  if (index != 0) {
+    return false;
+  }
+  info->id = 1;
+  writeName(info->name, sizeof(info->name), "Output");
+  info->flags = CLAP_AUDIO_PORT_IS_MAIN;
   return true;
 }
 
@@ -875,7 +893,20 @@ clap_process_status pluginProcess(const clap_plugin_t* p, const clap_process_t* 
     }
   }
   s->engine.setControls(controlsFrom(s->shared));
-  s->engine.process(left, right, static_cast<int>(frames), s->meters);
+
+  // Optional external side-chain: the second input port, if the host routed
+  // anything to it.
+  const float* scL = nullptr;
+  const float* scR = nullptr;
+  if (proc->audio_inputs_count > 1) {
+    const clap_audio_buffer_t& scBuf = proc->audio_inputs[1];
+    if (scBuf.data32 && scBuf.data32[0]) {
+      scL = scBuf.data32[0];
+      scR = scBuf.channel_count > 1 && scBuf.data32[1] ? scBuf.data32[1] : scL;
+    }
+  }
+  s->engine.process(left, right, static_cast<int>(frames), s->meters, scL,
+                    scR);
 
   s->grForHost.store(s->meters.grDb, std::memory_order_relaxed);
   s->shared.grDb.store(s->meters.grDb, std::memory_order_relaxed);

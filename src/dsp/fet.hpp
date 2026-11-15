@@ -63,6 +63,8 @@ public:
     }
     env_ = 0.0f;
     grPrev_ = 0.0f;
+    hold_ = 0;
+    holdSamples_ = static_cast<int>(0.0015f * sr_);
     setControls(controls_);
   }
 
@@ -99,7 +101,8 @@ public:
   }
 
   // Processes one stereo frame in place.  Returns gain reduction in dB (>= 0).
-  float process(float& left, float& right) noexcept {
+  float process(float& left, float& right,
+                const SidechainFrame& sc = {}) noexcept {
     const float inputGain = inputSmooth_.next();
     const float drive = driveSmooth_.next();
     const float inL = left * inputGain;
@@ -113,13 +116,15 @@ public:
     // sustained tones); on the gain it does not, because the gain is already
     // smoothed.
     const float detL =
-        topology_ == Topology::Feedback ? kFeedbackDetectorScale * inL *
-                                              appliedGain_
-                                        : inL;
+        sc.active ? sc.left
+                  : (topology_ == Topology::Feedback
+                         ? kFeedbackDetectorScale * inL * appliedGain_
+                         : inL);
     const float detR =
-        topology_ == Topology::Feedback ? kFeedbackDetectorScale * inR *
-                                              appliedGain_
-                                        : inR;
+        sc.active ? sc.right
+                  : (topology_ == Topology::Feedback
+                         ? kFeedbackDetectorScale * inR * appliedGain_
+                         : inR);
     const float peak = std::max(std::fabs(detL), std::fabs(detR));
     // The 1176's release is program-dependent: the more the FET is pulling
     // down, the longer it takes to let go.  That damping is also what keeps a
@@ -133,6 +138,9 @@ public:
     const bool blackDeep = variant_ == Variant::Black && grPrev_ > 6.0f;
     if (peak > env_) {
       env_ = attackCoeff_ * env_ + (1.0f - attackCoeff_) * peak;
+      hold_ = holdSamples_;
+    } else if (hold_ > 0) {
+      --hold_;  // hold before release, so LF cycles do not modulate the gain
     } else {
       const float rc = blackDeep ? releaseDeepCoeff_ : releaseCoeff;
       env_ = rc * env_ + (1.0f - rc) * peak;
@@ -192,6 +200,7 @@ public:
     }
     env_ = 0.0f;
     grPrev_ = 0.0f;
+    hold_ = 0;
     appliedGain_ = 1.0f;
     gainSmooth_.reset(1.0f);
   }
@@ -225,6 +234,8 @@ private:
   float outputGain_ = 1.0f;
   float env_ = 0.0f;
   float grPrev_ = 0.0f;
+  int hold_ = 0;
+  int holdSamples_ = 0;
   float appliedGain_ = 1.0f;
   Topology topology_ = Topology::Feedback;
   // Detector attenuation.  In feedback the loop multiplies the static curve,

@@ -324,11 +324,13 @@ void uiPortEvent(LV2UI_Handle handle, uint32_t port, uint32_t size,
     ui->dirty = true;
     return;
   }
+  // The meter ports follow the parameter block and the side-chain audio pair.
+  constexpr uint32_t kMeterBase = kFirstParam + comp::P_COUNT + 2;
   switch (port) {
-    case kFirstParam + comp::P_COUNT: ui->shared.grDb.store(v); break;
-    case kFirstParam + comp::P_COUNT + 1: ui->shared.outPeakDb.store(v); break;
-    case kFirstParam + comp::P_COUNT + 2: ui->shared.inPeakDb.store(v); break;
-    case kFirstParam + comp::P_COUNT + 3: ui->shared.outVuDb.store(v); break;
+    case kMeterBase: ui->shared.grDb.store(v); break;
+    case kMeterBase + 1: ui->shared.outPeakDb.store(v); break;
+    case kMeterBase + 2: ui->shared.inPeakDb.store(v); break;
+    case kMeterBase + 3: ui->shared.outVuDb.store(v); break;
     default: break;
   }
 }

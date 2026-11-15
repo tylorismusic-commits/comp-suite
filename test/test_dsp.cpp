@@ -314,6 +314,130 @@ int main() {
     check(ok && worst < 8.0f, label);
   }
 
+  // External side-chain: a loud side-chain must reduce a quiet main signal.
+  {
+    Engine engine;
+    engine.prepare(kSr);
+    Controls c = baseControls(Model::Blue76);
+    c.externalSidechain = true;
+    engine.setControls(c);
+    Meters meters;
+    std::vector<float> l(256, 0.0f), r(256, 0.0f), sc(256, 0.0f);
+    float peakGr = 0.0f;
+    for (int b = 0; b < 200; ++b) {
+      for (int i = 0; i < 256; ++i) {
+        const float t = static_cast<float>(b * 256 + i) / kSr;
+        sc[i] = 0.5f * std::sin(2.0f * kPi * 200.0f * t);
+        l[i] = r[i] = 0.0f;  // main input silent
+      }
+      engine.process(l.data(), r.data(), 256, meters, sc.data(), sc.data());
+      peakGr = std::max(peakGr, meters.grDb);
+    }
+    char label[128];
+    std::snprintf(label, sizeof(label),
+                  "external side-chain reduces a silent signal (GR %.1f dB)",
+                  peakGr);
+    check(peakGr > 3.0f, label);
+  }
+
+  // Auto-makeup restores the level as reduction deepens.
+  {
+    const auto outLevel = [](bool autoMakeup) {
+      Engine engine;
+      engine.prepare(kSr);
+      Controls c = baseControls(Model::Blue76);
+      c.input = 0.85f;
+      c.autoMakeup = autoMakeup;
+      return rmsTail(renderSine(engine, c, 500.0f, -12.0f, 4.0f).left, 2.0f);
+    };
+    const float manual = outLevel(false);
+    const float automatic = outLevel(true);
+    char label[144];
+    std::snprintf(label, sizeof(label),
+                  "auto-makeup restores level (%.1f dB louder)",
+                  gainToDb(automatic) - gainToDb(manual));
+    check(gainToDb(automatic) - gainToDb(manual) > 2.0f, label);
+  }
+
+  // VCA link: with a loud left and quiet right, a linked detector applies the
+  // same reduction to both; dual mono leaves the quiet channel alone.
+  {
+    const auto rightLevel = [](float link) {
+      Engine engine;
+      engine.prepare(kSr);
+      Controls c = baseControls(Model::Vca);
+      c.threshold = 0.35f;
+      c.link = link;
+      engine.setControls(c);
+      Meters meters;
+      std::vector<float> l(256), r(256);
+      double sum = 0.0;
+      long n = 0;
+      for (int b = 0; b < 600; ++b) {
+        for (int i = 0; i < 256; ++i) {
+          const float t = static_cast<float>(b * 256 + i) / kSr;
+          l[i] = 0.9f * std::sin(2.0f * kPi * 120.0f * t);
+          r[i] = 0.02f * std::sin(2.0f * kPi * 900.0f * t);
+        }
+        engine.process(l.data(), r.data(), 256, meters);
+        if (b > 400) {
+          for (int i = 0; i < 256; ++i) {
+            sum += static_cast<double>(r[i]) * r[i];
+            ++n;
+          }
+        }
+      }
+      return 10.0 * std::log10(std::max(sum / n, 1e-20));
+    };
+    const float linked = rightLevel(1.0f);
+    const float dual = rightLevel(0.0f);
+    char label[144];
+    std::snprintf(label, sizeof(label),
+                  "VCA link ducks the quiet channel (linked %.1f vs dual %.1f "
+                  "dBFS)",
+                  linked, dual);
+    check(dual > linked + 2.0f, label);
+  }
+
+  // VCA auto release: more reduction should produce a longer tail than the
+  // manual release at the same setting.
+  {
+    const auto residual = [](bool autoRelease) {
+      Engine engine;
+      engine.prepare(kSr);
+      Controls c = baseControls(Model::Vca);
+      c.threshold = 0.35f;
+      c.release = 0.2f;  // fast manual release
+      c.vcaAutoRelease = autoRelease;
+      engine.setControls(c);
+      Meters meters;
+      std::vector<float> l(256), r(256);
+      float tail = 0.0f;
+      const int loudBlocks = static_cast<int>(1.5f * kSr / 256);
+      const int quietBlocks = static_cast<int>(2.0f * kSr / 256);
+      for (int b = 0; b < loudBlocks + quietBlocks; ++b) {
+        const bool loud = b < loudBlocks;
+        const float amp = loud ? 0.7f : 0.01f;
+        for (int i = 0; i < 256; ++i) {
+          const float t = static_cast<float>(b * 256 + i) / kSr;
+          l[i] = r[i] = amp * std::sin(2.0f * kPi * 300.0f * t);
+        }
+        engine.process(l.data(), r.data(), 256, meters);
+        if (b > loudBlocks + quietBlocks / 2) {
+          tail = std::max(tail, meters.grDb);
+        }
+      }
+      return tail;
+    };
+    const float manual = residual(false);
+    const float automatic = residual(true);
+    char label[144];
+    std::snprintf(label, sizeof(label),
+                  "VCA auto release holds longer (%.2f vs %.2f dB)", automatic,
+                  manual);
+    check(automatic > manual + 0.2f, label);
+  }
+
   // Peak reduction must increase reduction monotonically, and the control
   // must be usable across its travel rather than slamming at one end.
   {

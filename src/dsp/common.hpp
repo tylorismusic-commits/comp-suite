@@ -15,6 +15,15 @@ namespace comp {
 // model is genuinely feed-forward, as the bus compressor it follows is.
 enum class Topology { FeedForward, Feedback };
 
+// Per-sample external side-chain input.  `active` is false when the host has
+// not routed anything to the side-chain ports, in which case models detect
+// from their own input.
+struct SidechainFrame {
+  float left = 0.0f;
+  float right = 0.0f;
+  bool active = false;
+};
+
 constexpr float kPi = 3.14159265358979323846f;
 
 inline float clampf(float x, float lo, float hi) noexcept {

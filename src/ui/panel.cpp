@@ -484,6 +484,8 @@ void Panel::layout(const Shared& shared, const PanelState& state) {
       knob(P_MAKEUP, 560, 424, 34, "MAKE UP", sc(kScaleMakeupVca));
       knob(P_ATTACK, 320, 552, 30, "ATTACK", sc(kScaleAttackVca));
       knob(P_RELEASE, 480, 552, 30, "RELEASE", sc(kScaleReleaseVca));
+      knob(P_VCA_LINK, 700, 424, 28, "LINK", {});
+      toggle(P_VCA_AUTO, 600, 546, 1.0, "AUTO", "MAN");
       if (state.rightPage == 0) {
         knob(P_SC_HPF, 890, 260, 34, "SIDE CHAIN HPF", sc(kScaleHpf));
       } else {
@@ -492,6 +494,11 @@ void Panel::layout(const Shared& shared, const PanelState& state) {
       break;
     }
   }
+
+  // Output options, available on every model.
+  toggle(P_AUTO_MAKEUP, 770, 400, 1.0, "AUTO", "MAN");
+  toggle(P_TRUE_PEAK, 840, 400, 1.0, "TRUE", "PEAK");
+  toggle(P_SC_SOURCE, 910, 400, 1.0, "EXT", "INT");
 
   // Limiter section, in the right column for every model (the reference
   // layout has one regardless of compressor style).

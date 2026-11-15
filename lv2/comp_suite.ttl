@@ -22,7 +22,7 @@
     ] ;
     doap:homepage <https://github.com/tylorismusic-commits/comp-suite> ;
     lv2:majorVersion 0 ;
-    lv2:minorVersion 3 ;
+    lv2:minorVersion 4 ;
     lv2:microVersion 0 ;
     lv2:binary <comp_suite.so> ;
     rdfs:seeAlso <manifest.ttl> ;
@@ -228,8 +228,82 @@
         pg:group <https://github.com/tylorismusic-commits/comp-suite#limiter> ;
     ] ,
     [
-        a lv2:OutputPort , lv2:ControlPort ;
+        a lv2:InputPort , lv2:ControlPort ;
         lv2:index 19 ;
+        lv2:symbol "auto_makeup" ;
+        lv2:name "Auto Makeup" ;
+        lv2:default 0 ;
+        lv2:minimum 0 ;
+        lv2:maximum 1 ;
+        lv2:integer true ;
+        lv2:toggled true ;
+        pg:group <https://github.com/tylorismusic-commits/comp-suite#output> ;
+    ] ,
+    [
+        a lv2:InputPort , lv2:ControlPort ;
+        lv2:index 20 ;
+        lv2:symbol "sc_source" ;
+        lv2:name "Sidechain" ;
+        lv2:default 0 ;
+        lv2:minimum 0 ;
+        lv2:maximum 1 ;
+        lv2:integer true ;
+        lv2:toggled true ;
+        lv2:scalePoint [ rdf:value 0 ; rdfs:label "Internal" ] ,
+            [ rdf:value 1 ; rdfs:label "External" ] ;
+        pg:group <https://github.com/tylorismusic-commits/comp-suite#sidechain> ;
+    ] ,
+    [
+        a lv2:InputPort , lv2:ControlPort ;
+        lv2:index 21 ;
+        lv2:symbol "true_peak" ;
+        lv2:name "True Peak" ;
+        lv2:default 0 ;
+        lv2:minimum 0 ;
+        lv2:maximum 1 ;
+        lv2:integer true ;
+        lv2:toggled true ;
+        pg:group <https://github.com/tylorismusic-commits/comp-suite#limiter> ;
+    ] ,
+    [
+        a lv2:InputPort , lv2:ControlPort ;
+        lv2:index 22 ;
+        lv2:symbol "vca_link" ;
+        lv2:name "Link" ;
+        lv2:default 1 ;
+        lv2:minimum 0 ;
+        lv2:maximum 1 ;
+        pg:group <https://github.com/tylorismusic-commits/comp-suite#compressor> ;
+    ] ,
+    [
+        a lv2:InputPort , lv2:ControlPort ;
+        lv2:index 23 ;
+        lv2:symbol "vca_auto" ;
+        lv2:name "Auto Release" ;
+        lv2:default 0 ;
+        lv2:minimum 0 ;
+        lv2:maximum 1 ;
+        lv2:integer true ;
+        lv2:toggled true ;
+        pg:group <https://github.com/tylorismusic-commits/comp-suite#compressor> ;
+    ] ,
+    [
+        a lv2:AudioPort , lv2:InputPort ;
+        lv2:index 24 ;
+        lv2:symbol "sc_in_l" ;
+        lv2:name "Sidechain Left" ;
+        lv2:portProperty lv2:isSideChain ;
+    ] ,
+    [
+        a lv2:AudioPort , lv2:InputPort ;
+        lv2:index 25 ;
+        lv2:symbol "sc_in_r" ;
+        lv2:name "Sidechain Right" ;
+        lv2:portProperty lv2:isSideChain ;
+    ] ,
+    [
+        a lv2:OutputPort , lv2:ControlPort ;
+        lv2:index 26 ;
         lv2:symbol "gr_meter" ;
         lv2:name "Gain Reduction" ;
         lv2:default 0 ;
@@ -241,7 +315,7 @@
     ] ,
     [
         a lv2:OutputPort , lv2:ControlPort ;
-        lv2:index 20 ;
+        lv2:index 27 ;
         lv2:symbol "out_peak" ;
         lv2:name "Output Peak" ;
         lv2:default 0 ;
@@ -253,7 +327,7 @@
     ] ,
     [
         a lv2:OutputPort , lv2:ControlPort ;
-        lv2:index 21 ;
+        lv2:index 28 ;
         lv2:symbol "in_peak" ;
         lv2:name "Input Peak" ;
         lv2:default 0 ;
@@ -265,7 +339,7 @@
     ] ,
     [
         a lv2:OutputPort , lv2:ControlPort ;
-        lv2:index 22 ;
+        lv2:index 29 ;
         lv2:symbol "out_vu" ;
         lv2:name "Output VU" ;
         lv2:default 0 ;

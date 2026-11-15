@@ -10,6 +10,7 @@
 #include "distressor.hpp"
 #include "fet.hpp"
 #include "optical.hpp"
+#include "truepeak.hpp"
 #include "vca.hpp"
 
 namespace comp {
@@ -35,6 +36,10 @@ public:
     enableSmooth_.reset(1.0f);
     vuCoeff_ = timeCoeff(300.0f, sr_);
     vuPower_ = 0.0f;
+    autoMakeupCoeff_ = timeCoeff(2000.0f, sr_);
+    autoMakeupDb_ = 0.0f;
+    truePeakL_.reset();
+    truePeakR_.reset();
     limiterGain_ = 1.0f;
     limiterEnv_ = 0.0f;
     limiterAttack_ = timeCoeff(0.5f, sr_);
@@ -74,9 +79,13 @@ public:
     }
   }
 
-  // Processes `frames` stereo frames in place.  Meters receive the peak
-  // and averaged output levels for the frame block.
-  void process(float* left, float* right, int frames, Meters& meters) noexcept {
+  // Processes `frames` stereo frames in place.  `scLeft`/`scRight` are the
+  // external side-chain inputs, or null when the host has not supplied them.
+  // Meters receive the peak and averaged output levels for the frame block.
+  void process(float* left, float* right, int frames, Meters& meters,
+               const float* scLeft = nullptr,
+               const float* scRight = nullptr) noexcept {
+    const bool scReady = controls_.externalSidechain && scLeft && scRight;
     float peak = 0.0f;
     float grMax = 0.0f;
     float inPeak = 0.0f;
@@ -85,17 +94,33 @@ public:
       const float dryR = right[i];
       float wetL = dryL;
       float wetR = dryR;
-      float gr = processModel(active_, wetL, wetR);
+      SidechainFrame sc;
+      if (scReady) {
+        sc.left = scLeft[i];
+        sc.right = scRight[i];
+        sc.active = true;
+      }
+      float gr = processModel(active_, wetL, wetR, sc);
 
       if (fade_ < 1.0f) {
         float oldL = dryL;
         float oldR = dryR;
-        const float oldGr = processModel(previous_, oldL, oldR);
+        const float oldGr = processModel(previous_, oldL, oldR, sc);
         const float f = fade_;
         wetL = oldL * (1.0f - f) + wetL * f;
         wetR = oldR * (1.0f - f) + wetR * f;
         gr = std::max(gr * f, oldGr * (1.0f - f));
         fade_ = std::min(1.0f, fade_ + fadeStep_);
+      }
+
+      // Auto-makeup tracks the average reduction and restores the level.  It
+      // is applied to the wet signal only, so a parallel blend keeps its dry
+      // share untouched.
+      if (controls_.autoMakeup) {
+        autoMakeupDb_ += (gr - autoMakeupDb_) * autoMakeupCoeff_;
+        const float makeup = dbToGain(std::min(autoMakeupDb_, 24.0f));
+        wetL *= makeup;
+        wetR *= makeup;
       }
 
       const float mix = mixSmooth_.next();
@@ -109,11 +134,17 @@ public:
       if (controls_.limiterOn) {
         // Output limiter: stereo-linked peak limiter with a hard safety
         // ceiling, matching the limiter section in the reference layout.
-        const float peak = std::max(std::fabs(outL), std::fabs(outR));
+        const float samplePeak = std::max(std::fabs(outL), std::fabs(outR));
+        float peakNow = samplePeak;
+        if (controls_.truePeak) {
+          const float tp =
+              std::max(truePeakL_.process(outL), truePeakR_.process(outR));
+          peakNow = std::max(peakNow, tp);
+        }
         const float thresh = dbToGain(-24.0f + 24.0f * clampf(controls_.limitThreshold, 0.0f, 1.0f));
         float target = 1.0f;
-        if (peak > thresh) {
-          target = thresh / peak;
+        if (peakNow > thresh) {
+          target = thresh / peakNow;
         }
         if (target < limiterGain_) {
           limiterGain_ = limiterAttack_ * limiterGain_ + (1.0f - limiterAttack_) * target;
@@ -149,14 +180,15 @@ public:
   }
 
 private:
-  float processModel(int index, float& l, float& r) noexcept {
+  float processModel(int index, float& l, float& r,
+                     const SidechainFrame& sc) noexcept {
     switch (static_cast<Model>(index)) {
-      case Model::Blue76: return blue_.process(l, r);
-      case Model::Black76: return black_.process(l, r);
-      case Model::Opto2A: return la2a_.process(l, r);
-      case Model::Opto3A: return la3a_.process(l, r);
-      case Model::Xpress: return xpress_.process(l, r);
-      case Model::Vca: return vca_.process(l, r);
+      case Model::Blue76: return blue_.process(l, r, sc);
+      case Model::Black76: return black_.process(l, r, sc);
+      case Model::Opto2A: return la2a_.process(l, r, sc);
+      case Model::Opto3A: return la3a_.process(l, r, sc);
+      case Model::Xpress: return xpress_.process(l, r, sc);
+      case Model::Vca: return vca_.process(l, r, sc);
       default: return 0.0f;
     }
   }
@@ -194,6 +226,10 @@ private:
   float fadeStep_ = 0.001f;
   float vuCoeff_ = 0.0f;
   float vuPower_ = 0.0f;
+  float autoMakeupCoeff_ = 0.0f;
+  float autoMakeupDb_ = 0.0f;
+  TruePeakDetector truePeakL_;
+  TruePeakDetector truePeakR_;
   float limiterGain_ = 1.0f;
   float limiterEnv_ = 0.0f;
   float limiterAttack_ = 0.0f;

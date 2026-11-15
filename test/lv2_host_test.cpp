@@ -63,7 +63,7 @@ int main(int argc, char** argv) {
   check(lilv_uis_size(uis) == 1, "one X11 UI declared");
 
   const uint32_t nPorts = lilv_plugin_get_num_ports(plugin);
-  const uint32_t expected = 4 + comp::P_COUNT + 4;
+  const uint32_t expected = 4 + comp::P_COUNT + 2 + 4;
   char portCountLabel[96];
   std::snprintf(portCountLabel, sizeof(portCountLabel),
                 "%u ports declared (%u expected: 4 audio + %u params + 4 "
@@ -249,7 +249,7 @@ int main(int argc, char** argv) {
   check(finite, "LV2 processing stays finite");
   check(peak > 0.01f && peak < 2.0f, "LV2 output has a sane level");
 
-  const float gr = values[4 + comp::P_COUNT];
+  const float gr = values[4 + comp::P_COUNT + 2];
   check(gr >= 0.0f, "gain reduction meter port reports");
 
   lilv_instance_free(inst);

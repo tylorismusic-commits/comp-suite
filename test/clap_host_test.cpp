@@ -4,6 +4,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include <clap/all.h>
+
+#include "params.hpp"
 #include <dlfcn.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
@@ -133,7 +135,8 @@ int main(int argc, char** argv) {
       plugin->get_extension(plugin, CLAP_EXT_GUI));
   auto* meter = static_cast<const clap_plugin_gain_adjustment_metering_t*>(
       plugin->get_extension(plugin, CLAP_EXT_GAIN_ADJUSTMENT_METERING));
-  check(params && params->count(plugin) == 15, "15 parameters exposed");
+  check(params && params->count(plugin) == comp::P_COUNT,
+        "parameter count matches the table");
   check(state != nullptr, "state extension present");
   check(gui != nullptr, "gui extension present");
   check(meter != nullptr, "gain-adjustment metering present");

@@ -65,7 +65,8 @@ public:
   }
 
   // Processes one stereo frame in place.  Returns gain reduction in dB (>= 0).
-  float process(float& left, float& right) noexcept {
+  float process(float& left, float& right,
+                const SidechainFrame& sc = {}) noexcept {
     const float inputGain = inputSmooth_.next();
     float inL = left * inputGain;
     float inR = right * inputGain;
@@ -74,11 +75,11 @@ public:
     const float inPeak = std::max(std::fabs(inL), std::fabs(inR));
     const float amount = clampf((gainToDb(inPeak) + 45.0f) / 35.0f, 0.0f, 1.0f);
 
-    float detL = inL;
-    float detR = inR;
+    float detL = sc.active ? sc.left : inL;
+    float detR = sc.active ? sc.right : inR;
     if (sidechainOn_) {
-      detL = sidechain_[0].process(inL);
-      detR = sidechain_[1].process(inR);
+      detL = sidechain_[0].process(detL);
+      detR = sidechain_[1].process(detR);
     }
     const float peak = std::max(std::fabs(detL), std::fabs(detR));
     if (peak > env_) {

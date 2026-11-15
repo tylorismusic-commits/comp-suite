@@ -30,6 +30,11 @@ enum ParamId : uint32_t {
   P_METER,
   P_LIMITER_ON,
   P_LIMITER_THRESH,
+  P_AUTO_MAKEUP,
+  P_SC_SOURCE,
+  P_TRUE_PEAK,
+  P_VCA_LINK,
+  P_VCA_AUTO,
   P_COUNT
 };
 
@@ -69,6 +74,7 @@ inline constexpr const char* kDistortionLabels[] = {"Off", "Dist 2", "Dist 3",
                                                     "Clip"};
 inline constexpr const char* kMeterLabels[] = {"GR", "+8", "+4", "Graph",
                                                "Off"};
+inline constexpr const char* kScSourceLabels[] = {"Internal", "External"};
 
 inline constexpr ParamSpec kParamSpecs[P_COUNT] = {
     {"model", "Model", "Compressor", 0.0, 5.0, 0.0, true, false, false, nullptr,
@@ -100,6 +106,16 @@ inline constexpr ParamSpec kParamSpecs[P_COUNT] = {
      nullptr, {}},
     {"limiter_threshold", "Limiter Threshold", "Limiter", 0.0, 1.0, 1.0, false,
      false, false, nullptr, {}},
+    {"auto_makeup", "Auto Makeup", "Output", 0.0, 1.0, 0.0, true, false, true,
+     nullptr, {}},
+    {"sc_source", "Sidechain", "Sidechain", 0.0, 1.0, 0.0, true, false, true,
+     nullptr, labels(kScSourceLabels)},
+    {"true_peak", "True Peak", "Limiter", 0.0, 1.0, 0.0, true, false, true,
+     nullptr, {}},
+    {"vca_link", "Link", "Compressor", 0.0, 1.0, 1.0, false, false, false,
+     nullptr, {}},
+    {"vca_auto", "Auto Release", "Compressor", 0.0, 1.0, 0.0, true, false, true,
+     nullptr, {}},
 };
 
 static_assert(sizeof(kParamSpecs) / sizeof(kParamSpecs[0]) == P_COUNT,
@@ -193,6 +209,11 @@ inline Controls controlsFrom(const Shared& s) {
   c.distortion = static_cast<float>(s.get(P_DISTORTION) / 3.0);
   c.limiterOn = s.get(P_LIMITER_ON) > 0.5;
   c.limitThreshold = static_cast<float>(s.get(P_LIMITER_THRESH));
+  c.autoMakeup = s.get(P_AUTO_MAKEUP) > 0.5;
+  c.externalSidechain = s.get(P_SC_SOURCE) > 0.5;
+  c.truePeak = s.get(P_TRUE_PEAK) > 0.5;
+  c.link = static_cast<float>(s.get(P_VCA_LINK));
+  c.vcaAutoRelease = s.get(P_VCA_AUTO) > 0.5;
   return c;
 }
 

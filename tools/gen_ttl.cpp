@@ -42,7 +42,7 @@ constexpr const char* kHomepage =
 constexpr const char* kPluginBinary = "comp_suite.so";
 constexpr const char* kUiBinary = "comp_suite_ui.so";
 constexpr int kVersionMajor = 0;
-constexpr int kVersionMinor = 3;
+constexpr int kVersionMinor = 4;
 constexpr int kVersionMicro = 0;
 
 // The meter outputs are not parameters: they exist only in the LV2 port list,
@@ -224,6 +224,24 @@ std::string buildPluginTtl() {
   }
 
   int index = kAudioPorts + static_cast<int>(comp::P_COUNT);
+  {
+    // External side-chain inputs, after the parameters so existing parameter
+    // ports keep their indices.
+    const char* const sc[2][2] = {{"sc_in_l", "Sidechain Left"},
+                                  {"sc_in_r", "Sidechain Right"}};
+    for (int i = 0; i < 2; ++i) {
+      std::ostringstream p;
+      p << "    [\n";
+      p << "        a lv2:AudioPort , lv2:InputPort ;\n";
+      p << "        lv2:index " << index++ << " ;\n";
+      p << "        lv2:symbol \"" << sc[i][0] << "\" ;\n";
+      p << "        lv2:name \"" << sc[i][1] << "\" ;\n";
+      p << "        lv2:portProperty lv2:isSideChain ;\n";
+      p << "    ]";
+      ports.push_back(p.str());
+    }
+  }
+
   for (const MeterPort& m : kMeters) {
     ports.push_back(portBlock(index++, m.symbol, m.name, -120.0, 24.0, 0.0,
                               false, false, {}, "db", groupUri("Meter").c_str(),
