@@ -1,5 +1,37 @@
 # Changelog
 
+## 0.6.0 — 2026-11-15
+
+### Added
+
+- **Molot model** — a character compressor in the Molot family, with the olive
+  and maroon palette from the reference. Ported from the MIT JSFX reference:
+  diode-shaped attack/release, polynomial soft-knee transfer function, optional
+  saturator, and six stereo modes (Mono, Dual Mono, M, S, M/S, Stereo). The
+  reference's 99-entry `pow()` approximation table is replaced by `pow()`
+  itself.
+- New parameters: **Sat Drive**, **Attack Mode** (Alpha/Sigma) and **Stereo
+  Mode**.
+- Four Molot presets: Drum Smash, Vocal Grit, Mix Bus, Bass Grip.
+
+### Changed
+
+- **Clean is now the first tab**, left of 76Blue, so the transparent model is
+  the default choice. The model parameter is unchanged — the tab strip maps
+  display order to model value, so saved sessions and presets still point at
+  the right model.
+- **Clean's colour stage moved after the output limiter**, immediately before
+  the plugin output, as on the reference. With Off the model is a plain digital
+  compressor; the limiter and the colour no longer interact.
+
+### Fixed
+
+- **Clean's distortion modes were far too heavy.** They were normalised
+  `tanh(kx)/k` with k up to 6, which cost ~10 dB at a full-scale peak, so
+  "Hard" read as heavy compression rather than subtle colour. Drive is now 0.35
+  and 0.75 (0.08 and 0.32 dB at a -6 dBFS peak), and Clip is a soft ceiling at
+  0.85 that is silent below it instead of a hard clip at 0 dBFS.
+
 ## 0.5.0 — 2026-11-15
 
 ### Added

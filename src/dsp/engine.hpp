@@ -7,6 +7,7 @@
 
 #include "clean.hpp"
 #include "common.hpp"
+#include "molot.hpp"
 #include "controls.hpp"
 #include "distressor.hpp"
 #include "fet.hpp"
@@ -30,6 +31,7 @@ public:
     xpress_.prepare(sr_);
     vca_.prepare(sr_);
     clean_.prepare(sr_);
+    molot_.prepare(sr_);
 
     fadeStep_ = 1.0f / std::max(1.0f, 0.02f * sr_);
     mixSmooth_.setTime(10.0f, sr_);
@@ -161,6 +163,12 @@ public:
         outR = std::tanh(outR * limiterGain_);
       }
 
+      // The Clean model's colour sits after the limiter, right before the
+      // output, and only while the plugin is active.
+      if (active_ == static_cast<int>(Model::Clean) && controls_.enabled) {
+        clean_.postColour(outL, outR);
+      }
+
       left[i] = outL;
       right[i] = outR;
       grMax = std::max(grMax, gr);
@@ -191,6 +199,7 @@ public:
     xpress_.reset();
     vca_.reset();
     clean_.reset();
+    molot_.reset();
     vuPower_ = 0.0f;
   }
 
@@ -205,6 +214,7 @@ private:
       case Model::Xpress: return xpress_.process(l, r, sc);
       case Model::Vca: return vca_.process(l, r, sc);
       case Model::Clean: return clean_.process(l, r, sc);
+      case Model::Molot: return molot_.process(l, r, sc);
       default: return 0.0f;
     }
   }
@@ -218,6 +228,7 @@ private:
       case Model::Xpress: xpress_.setControls(c); break;
       case Model::Vca: vca_.setControls(c); break;
       case Model::Clean: clean_.setControls(c); break;
+      case Model::Molot: molot_.setControls(c); break;
       default: break;
     }
   }
@@ -231,6 +242,7 @@ private:
       case Model::Xpress: xpress_.reset(); break;
       case Model::Vca: vca_.reset(); break;
       case Model::Clean: clean_.reset(); break;
+      case Model::Molot: molot_.reset(); break;
       default: break;
     }
   }
@@ -261,6 +273,7 @@ private:
   Distressor xpress_;
   BusVca vca_;
   CleanCompressor clean_;
+  MolotCompressor molot_;
 };
 
 } // namespace comp

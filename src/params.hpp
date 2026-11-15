@@ -36,6 +36,9 @@ enum ParamId : uint32_t {
   P_VCA_LINK,
   P_VCA_AUTO,
   P_KNEE,
+  P_SAT_DRIVE,
+  P_ATTACK_MODE,
+  P_STEREO_MODE,
   P_COUNT
 };
 
@@ -71,7 +74,10 @@ struct ParamSpec {
 
 inline constexpr const char* kModelLabels[] = {"76Blue", "76Black", "2A",
                                                "3A",     "Xpress",  "VCA",
-                                               "Clean"};
+                                               "Clean",  "Molot"};
+inline constexpr const char* kAttackModeLabels[] = {"Alpha", "Sigma"};
+inline constexpr const char* kStereoModeLabels[] = {
+    "Mono", "Dual Mono", "M", "S", "M/S", "Stereo"};
 inline constexpr const char* kDistortionLabels[] = {"Off", "Dist 2", "Dist 3",
                                                     "Clip"};
 inline constexpr const char* kMeterLabels[] = {"GR", "+8", "+4", "Graph",
@@ -79,7 +85,7 @@ inline constexpr const char* kMeterLabels[] = {"GR", "+8", "+4", "Graph",
 inline constexpr const char* kScSourceLabels[] = {"Internal", "External"};
 
 inline constexpr ParamSpec kParamSpecs[P_COUNT] = {
-    {"model", "Model", "Compressor", 0.0, 6.0, 0.0, true, false, false, nullptr,
+    {"model", "Model", "Compressor", 0.0, 7.0, 0.0, true, false, false, nullptr,
      labels(kModelLabels)},
     {"power", "Power", "Compressor", 0.0, 1.0, 1.0, true, false, true, nullptr,
      {}},
@@ -120,6 +126,12 @@ inline constexpr ParamSpec kParamSpecs[P_COUNT] = {
      nullptr, {}},
     {"knee", "Knee", "Compressor", 0.0, 1.0, 0.5, false, false, false, nullptr,
      {}},
+    {"sat_drive", "Sat Drive", "Compressor", 0.0, 1.0, 0.5, false, false, false,
+     nullptr, {}},
+    {"attack_mode", "Attack Mode", "Compressor", 0.0, 1.0, 0.0, true, false,
+     false, nullptr, labels(kAttackModeLabels)},
+    {"stereo_mode", "Stereo Mode", "Compressor", 0.0, 5.0, 5.0, true, false,
+     false, nullptr, labels(kStereoModeLabels)},
 };
 
 static_assert(sizeof(kParamSpecs) / sizeof(kParamSpecs[0]) == P_COUNT,
@@ -227,6 +239,9 @@ inline Controls controlsFrom(const Shared& s) {
   c.link = static_cast<float>(s.get(P_VCA_LINK));
   c.vcaAutoRelease = s.get(P_VCA_AUTO) > 0.5;
   c.knee = static_cast<float>(s.get(P_KNEE));
+  c.satDrive = static_cast<float>(s.get(P_SAT_DRIVE));
+  c.attackMode = static_cast<float>(s.get(P_ATTACK_MODE));
+  c.stereoMode = static_cast<float>(s.get(P_STEREO_MODE));
   return c;
 }
 

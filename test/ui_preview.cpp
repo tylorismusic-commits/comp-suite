@@ -25,8 +25,8 @@ int main(int argc, char** argv) {
   const UiSize size = sizeForScale(scale);
   const double drawScale = static_cast<double>(size.width) / kPanelWidth;
 
-  static const char* kNames[] = {"76blue", "76black", "2a", "3a",
-                                "xpress", "vca",     "clean"};
+  static const char* kNames[] = {"76blue", "76black", "2a",    "3a",
+                                "xpress", "vca",     "clean", "molot"};
   Panel panel;
   panel.loadFont(fontDir);
   for (int model = 0; model < static_cast<int>(comp::Model::Count); ++model) {

@@ -13,7 +13,8 @@ enum class Model : int {
   Xpress = 4,   // diode-bridge style compressor with distortion modes
   Vca = 5,      // SSL-style stereo bus VCA
   Clean = 6,    // clean digital compressor
-  Count = 7
+  Molot = 7,    // character compressor with stereo modes and saturation
+  Count = 8
 };
 
 // Every control is normalised to 0..1.  Each model maps the shared slots to
@@ -38,7 +39,10 @@ struct Controls {
   bool truePeak = false;           // limiter detects inter-sample peaks
   float link = 1.0f;               // VCA stereo link: 0 dual mono, 1 linked
   bool vcaAutoRelease = false;     // VCA two-stage automatic release
-  float knee = 0.5f;               // Clean: 0..1, mapped to 0..18 dB
+  float knee = 0.5f;               // Clean/Molot: 0..1
+  float satDrive = 0.5f;           // Molot: saturator drive, 0..1
+  float attackMode = 0.0f;         // Molot: 0 Alpha, 1 Sigma
+  float stereoMode = 5.0f;         // Molot: 0 Mono .. 5 Stereo
 };
 
 // Metering published by the engine, in dB or normalised units.

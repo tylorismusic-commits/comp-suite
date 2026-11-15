@@ -149,6 +149,21 @@ inline constexpr Preset kPresets[] = {
     {"Clean Bass Control", "Bass", 6,
      {{P_THRESHOLD, 0.58f}, {P_RATIO, 3.f}, {P_KNEE, 0.45f}, {P_ATTACK, 0.45f},
       {P_RELEASE, 0.55f}, {P_MAKEUP, 0.54f}, {P_MIX, 1.f}, {-1, 0}}},
+
+    // --- Molot --------------------------------------------------------------
+    {"Molot Drum Smash", "Drums", 7,
+     {{P_THRESHOLD, 0.45f}, {P_RATIO, 5.f}, {P_KNEE, 0.4f}, {P_ATTACK, 0.25f},
+      {P_RELEASE, 0.35f}, {P_MAKEUP, 0.56f}, {P_MIX, 1.f}, {-1, 0}}},
+    {"Molot Vocal Grit", "Vocals", 7,
+     {{P_THRESHOLD, 0.55f}, {P_RATIO, 3.f}, {P_KNEE, 0.6f}, {P_ATTACK, 0.4f},
+      {P_RELEASE, 0.45f}, {P_MAKEUP, 0.54f}, {P_MIX, 1.f},
+      {P_DISTORTION, 1.f}, {-1, 0}}},
+    {"Molot Mix Bus", "Mix Bus", 7,
+     {{P_THRESHOLD, 0.62f}, {P_RATIO, 2.f}, {P_KNEE, 0.7f}, {P_ATTACK, 0.55f},
+      {P_RELEASE, 0.6f}, {P_MAKEUP, 0.52f}, {P_MIX, 1.f}, {-1, 0}}},
+    {"Molot Bass Grip", "Bass", 7,
+     {{P_THRESHOLD, 0.5f}, {P_RATIO, 4.f}, {P_KNEE, 0.5f}, {P_ATTACK, 0.35f},
+      {P_RELEASE, 0.5f}, {P_MAKEUP, 0.55f}, {P_MIX, 1.f}, {-1, 0}}},
 };
 
 inline constexpr int kPresetCount =

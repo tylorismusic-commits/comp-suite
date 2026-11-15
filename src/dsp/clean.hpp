@@ -97,9 +97,18 @@ public:
     const float output = outputSmooth_.next();
     const float gain = dbToGain(-gr_) * makeup;
 
-    left = colour(inL * gain, 0) * output;
-    right = colour(inR * gain, 1) * output;
+    // The colour stage is deliberately last in the whole chain, after the
+    // output limiter, so it is applied by postColour() rather than here.
+    left = inL * gain * output;
+    right = inR * gain * output;
     return gr_;
+  }
+
+  // Applied by the engine after its output limiter, immediately before the
+  // plugin output.  No-op when the colour mode is Off.
+  void postColour(float& left, float& right) noexcept {
+    left = colour(left, 0);
+    right = colour(right, 1);
   }
 
   void reset() noexcept {
@@ -114,15 +123,27 @@ public:
   }
 
 private:
-  // The optional distortion is the model's only colour.  Off is bit-clean.
+  // The optional distortion is the model's only colour.  Off is bit-clean,
+  // and the two shaped modes are deliberately gentle: the shaper is
+  // normalised to unity slope, so at these drive values a full-scale peak
+  // loses well under a decibel and what is left is a little harmonic shading.
   float colour(float x, int ch) noexcept {
     switch (static_cast<int>(distortion_ * 3.0f + 0.5f)) {
       case 1:  // Soft
-        return shaper_[ch].process(x, 1.8f, 0.0f);
+        return shaper_[ch].process(x, 0.35f, 0.0f);
       case 2:  // Hard
-        return shaper_[ch].process(x, 6.0f, 0.0f);
-      case 3:  // Clip
-        return clampf(x, -1.0f, 1.0f);
+        return shaper_[ch].process(x, 0.75f, 0.0f);
+      case 3: {  // Clip: a soft ceiling, inaudible below it
+        constexpr float kCeiling = 0.85f;
+        const float a = std::fabs(x);
+        if (a <= kCeiling) {
+          return x;
+        }
+        const float y =
+            kCeiling + (1.0f - kCeiling) *
+                           std::tanh((a - kCeiling) / (1.0f - kCeiling));
+        return x < 0.0f ? -y : y;
+      }
       default:
         return x;
     }

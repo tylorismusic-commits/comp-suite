@@ -38,7 +38,8 @@ struct Skin {
   Rgb screw;
 };
 
-enum Model { kBlue76, kBlack76, kOpto2A, kOpto3A, kXpress, kVca, kClean };
+enum Model { kBlue76, kBlack76, kOpto2A, kOpto3A, kXpress, kVca, kClean,
+             kMolot };
 
 Skin skinFor(int model) {
   switch (model) {
@@ -102,6 +103,22 @@ Skin skinFor(int model) {
               false,
               {0.08, 0.08, 0.08}, {0.95, 0.95, 0.95}, {0.92, 0.92, 0.92}, {0.05, 0.05, 0.05},
               {0.40, 0.40, 0.40}};
+    case kMolot:
+      return {"Molot  -  character compressor",
+              {0.31, 0.32, 0.20}, {0.24, 0.25, 0.15},
+              {0.89, 0.87, 0.74}, {0.63, 0.61, 0.49},
+              {0.16, 0.16, 0.12},
+              {0.36, 0.37, 0.25}, {0.20, 0.21, 0.14}, {0.80, 0.79, 0.66},
+              {0.95, 0.93, 0.80},
+              {0.12, 0.09, 0.08}, {0.36, 0.09, 0.08}, {0.15, 0.10, 0.09},
+              {0.85, 0.72, 0.62},
+              {0.36, 0.09, 0.08}, false,
+              {0.16, 0.16, 0.14}, {0.42, 0.42, 0.36}, {0.10, 0.10, 0.08},
+              {0.86, 0.84, 0.70},
+              false,
+              {0.18, 0.18, 0.14}, {0.55, 0.16, 0.12}, {0.80, 0.78, 0.66},
+              {0.95, 0.92, 0.82},
+              {0.35, 0.35, 0.30}};
     case kClean:
       return {"Clean  -  digital compressor",
               {0.19, 0.25, 0.35}, {0.13, 0.17, 0.25},
@@ -223,7 +240,8 @@ Rgb mix(Rgb a, Rgb b, double t) {
 
 // Models that have a Side Chain page.
 bool hasSideChain(int model) {
-  return model == kXpress || model == kVca || model == kClean;
+  return model == kXpress || model == kVca || model == kClean ||
+         model == kMolot;
 }
 
 bool isLimiter76(int model) {
@@ -354,20 +372,25 @@ void Panel::layout(const Shared& shared, const PanelState& state) {
     p.r = 14;
     widgets_.push_back(p);
   }
-  static const char* kTabNames[7] = {"76Blue", "76Black", "2A",     "3A",
-                                     "Xpress", "VCA",     "Clean"};
+  // Labels are indexed by model value; display order is separate so the tab
+  // strip can lead with Clean without renumbering the model parameter (which
+  // would silently repoint every saved session and preset).
+  static const char* kTabNames[8] = {"76Blue", "76Black", "2A",    "3A",
+                                     "Xpress", "VCA",     "Clean", "Molot"};
+  static const int kTabOrder[8] = {6, 0, 1, 2, 3, 4, 5, 7};
   const int tabCount = static_cast<int>(comp::Model::Count);
   const double tabW = (980.0 - (tabCount - 1) * 8.0) / tabCount;
   for (int i = 0; i < tabCount; ++i) {
+    const int modelValue = kTabOrder[i];
     Widget t{};
     t.kind = Kind::ModelTab;
     t.param = P_MODEL;
-    t.value = i;
+    t.value = modelValue;
     t.x = 30 + i * (tabW + 8.0);
     t.y = 70;
     t.w = tabW;
     t.h = 40;
-    t.label = kTabNames[i];
+    t.label = kTabNames[modelValue];
     widgets_.push_back(t);
   }
 
@@ -493,6 +516,25 @@ void Panel::layout(const Shared& shared, const PanelState& state) {
         button(P_DISTORTION, 890, 400, 60, 22, 3.0, "CLIP");
         knob(P_MIX, 796, 508, 25, "MIX", sc(kScaleMix), true);
         knob(P_OUTPUT, 912, 500, 27, "OUTPUT", sc(kScaleOutputGeneric));
+      }
+      break;
+    }
+    case kMolot: {
+      knob(P_THRESHOLD, 240, 424, 34, "THRESHOLD", sc(kScaleThreshold));
+      knob(P_RATIO, 400, 424, 34, "RATIO", sc(kScaleRatioNoAll));
+      knob(P_MAKEUP, 560, 424, 34, "MAKE UP", sc(kScaleOutputGeneric));
+      knob(P_KNEE, 700, 424, 26, "KNEE", {});
+      knob(P_ATTACK, 320, 552, 30, "ATTACK", sc(kScaleAttackVca));
+      knob(P_RELEASE, 480, 552, 30, "RELEASE", sc(kScaleReleaseVca));
+      knob(P_INPUT, 120, 520, 26, "INPUT", sc(kScaleOutputGeneric), true);
+      knob(P_SAT_DRIVE, 700, 520, 24, "SAT DRIVE", {});
+      knob(P_MIX, 796, 508, 25, "DRY / WET", sc(kScaleMix), true);
+      if (state.rightPage == 0) {
+        knob(P_SC_HPF, 888, 260, 34, "SIDE CHAIN HPF", sc(kScaleHpf));
+      } else {
+        toggle(P_DISTORTION, 830, 380, 1.0, "SAT", "OFF");
+        toggle(P_ATTACK_MODE, 888, 380, 1.0, "SIGMA", "ALPHA");
+        knob(P_STEREO_MODE, 888, 530, 22, "STEREO", {});
       }
       break;
     }

@@ -82,6 +82,34 @@ struct Biquad {
     set(b0n, b1n, b2n, a0n, a1n, a2n);
   }
 
+  // Plain second-order low-pass and high-pass, for the Molot port's detector
+  // and side-chain shaping.
+  void lowPass(float freq, float q, float sampleRate) noexcept {
+    const float w = omega(freq, sampleRate);
+    const float cw = std::cos(w);
+    const float alpha = std::sin(w) / (2.0f * std::max(q, 0.05f));
+    const float b0n = (1.0f - cw) * 0.5f;
+    const float b1n = 1.0f - cw;
+    const float b2n = (1.0f - cw) * 0.5f;
+    const float a0n = 1.0f + alpha;
+    const float a1n = -2.0f * cw;
+    const float a2n = 1.0f - alpha;
+    set(b0n, b1n, b2n, a0n, a1n, a2n);
+  }
+
+  void highPass(float freq, float q, float sampleRate) noexcept {
+    const float w = omega(freq, sampleRate);
+    const float cw = std::cos(w);
+    const float alpha = std::sin(w) / (2.0f * std::max(q, 0.05f));
+    const float b0n = (1.0f + cw) * 0.5f;
+    const float b1n = -(1.0f + cw);
+    const float b2n = (1.0f + cw) * 0.5f;
+    const float a0n = 1.0f + alpha;
+    const float a1n = -2.0f * cw;
+    const float a2n = 1.0f - alpha;
+    set(b0n, b1n, b2n, a0n, a1n, a2n);
+  }
+
 private:
   static float omega(float freq, float sampleRate) noexcept {
     const float nyquist = 0.5f * sampleRate;

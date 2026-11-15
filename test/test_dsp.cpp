@@ -501,6 +501,38 @@ int main() {
     check(ok, "VCA presets reset auto release");
   }
 
+  // Clean's distortion should shade, not squash: the shaped modes must stay
+  // within a decibel of the clean path at a realistic level, and Off must be
+  // genuinely transparent.
+  {
+    const auto levelAndThd = [](float mode) {
+      Engine engine;
+      engine.prepare(kSr);
+      Controls c = baseControls(Model::Clean);
+      c.input = 0.5f;
+      c.threshold = 1.0f;  // no compression, isolate the colour stage
+      c.distortion = mode;
+      const Render r = renderSine(engine, c, 1000.0f, -6.0f, 1.0f);
+      return rmsTail(r.left, 0.4f);
+    };
+    const float off = levelAndThd(0.0f);
+    const float soft = levelAndThd(1.0f / 3.0f);
+    const float hard = levelAndThd(2.0f / 3.0f);
+    const float clip = levelAndThd(1.0f);
+    const float expected = dbToGain(-6.0f) / std::sqrt(2.0f);
+    char label[160];
+    std::snprintf(label, sizeof(label),
+                  "Clean colour modes stay subtle (off %.2f, soft %.2f, hard "
+                  "%.2f, clip %.2f dB re input)",
+                  gainToDb(off / expected), gainToDb(soft / expected),
+                  gainToDb(hard / expected), gainToDb(clip / expected));
+    check(std::fabs(gainToDb(off / expected)) < 0.1f &&
+              std::fabs(gainToDb(soft / expected)) < 0.5f &&
+              std::fabs(gainToDb(hard / expected)) < 1.0f &&
+              std::fabs(gainToDb(clip / expected)) < 0.1f,
+          label);
+  }
+
   // Peak reduction must increase reduction monotonically, and the control
   // must be usable across its travel rather than slamming at one end.
   {
@@ -620,11 +652,15 @@ int main() {
     engine.prepare(kSr);
     Controls c = baseControls(static_cast<Model>(m));
     // Clean's input gain is centred: 0.5 is unity.  The 76s use 0.6.
-    c.input = m == static_cast<int>(Model::Clean) ? 0.5f : 0.6f;
+    c.input = (m == static_cast<int>(Model::Clean) ||
+               m == static_cast<int>(Model::Molot))
+                  ? 0.5f
+                  : 0.6f;
     c.threshold = (m == static_cast<int>(Model::Vca) ||
-                   m == static_cast<int>(Model::Clean))
+                   m == static_cast<int>(Model::Clean) ||
+                   m == static_cast<int>(Model::Molot))
                       ? 1.0f
-                      : m == static_cast<int>(Model::Xpress) ? 0.0f : 0.0f;
+                      : 0.0f;
     c.makeup = 0.5f;  // unity: the make-up controls are bipolar
     c.output = 0.5f;
     c.ratio = 0.5f;
