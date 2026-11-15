@@ -739,6 +739,53 @@ int main() {
     check(linear, label);
   }
 
+  // The 76's high ratios must stay musical.  A feedback loop collapsed the
+  // gain at 8:1 and above, leaving blips; the feed-forward law keeps the
+  // output alive and still increases reduction with the ratio.
+  {
+    const auto renderRatio = [](float ratio) {
+      Engine engine;
+      engine.prepare(kSr);
+      Controls c = baseControls(Model::Blue76);
+      c.input = 0.8f;
+      c.ratio = ratio;
+      return renderSine(engine, c, 100.0f, -6.0f, 1.0f);
+    };
+    float previousGr = 0.0f;
+    bool monotonic = true;
+    bool alive = true;
+    for (float step : {3.0f, 5.0f, 6.0f, 7.0f, 8.0f}) {
+      const Render r = renderRatio(step);
+      float peak = 0.0f;
+      for (float v : r.left) {
+        peak = std::max(peak, std::fabs(v));
+      }
+      if (r.peakGr < 1.0f || r.peakGr > 35.0f || peak < 0.005f) {
+        alive = false;
+      }
+      if (r.peakGr < previousGr - 0.5f) {
+        monotonic = false;
+      }
+      previousGr = r.peakGr;
+    }
+    check(alive, "76 high ratios stay audible (no blips)");
+    check(monotonic, "76 reduction rises with the ratio");
+
+    // More input means more reduction, as on the reference.
+    const float quiet = renderRatio(3.0f).peakGr;
+    Engine hotter;
+    hotter.prepare(kSr);
+    Controls c = baseControls(Model::Blue76);
+    c.input = 0.95f;
+    c.ratio = 3.0f;
+    const Render hot = renderSine(hotter, c, 100.0f, -6.0f, 1.0f);
+    char label[128];
+    std::snprintf(label, sizeof(label),
+                  "76 input drives reduction (%.1f -> %.1f dB)", quiet,
+                  hot.peakGr);
+    check(hot.peakGr > quiet + 1.0f, label);
+  }
+
   // Both 76 revisions have an all-buttons mode, and it compresses harder
   // than 4:1 in each.
   for (Model m : {Model::Blue76, Model::Black76}) {

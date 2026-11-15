@@ -12,12 +12,22 @@ namespace comp {
 // FET peak limiter modelled on the 1176 family.  The input transformer and
 // FET attenuator add asymmetric even and odd harmonics that grow with gain
 // reduction.  The "all buttons" setting runs the ratio at 20:1 with the extra
-// colour that mode adds on the hardware.
+// colour and faster release that mode adds on the hardware.
+//
+// The hardware detector is a feedback loop, but a digital loop closed that way
+// collapses at high ratios: the static slope has to be ratio-1, and on a
+// transient that demands more reduction than the detector can survive, the
+// gain latches to its floor and the audio turns into blips.  The NC76 reference
+// this model is measured against solves it the same way: a feed-forward peak
+// detector, attack/release applied to the over-threshold level, and a
+// (ratio-1)/ratio slope.  That is what is implemented here.  It keeps the
+// input knob's behaviour (more input, more reduction) and stays musical at
+// 20:1 and all-buttons.
 //
 // Both revisions have the "all buttons" mode.  On Blue it is extreme: the
-// ratio pushes to 20:1, transients push it further, the attack tightens and
-// the FET stage is driven harder.  On Black the same mode engages but stays
-// more controlled, matching the Rev E's more linear response.
+// ratio pushes further, the attack tightens, the release shortens and the FET
+// stage is driven harder.  On Black the same mode engages but stays more
+// controlled, matching the Rev E's more linear response.
 //
 // Blue (Rev A "bluestripe") — more distortion and even-order colour from the
 // input and FET stages.
@@ -48,11 +58,6 @@ public:
       fetShaper_[ch].reset();
       lpOut_[ch].reset();
     }
-    // Smooth the applied gain a little: without it the gain can jump from
-    // sample to sample on fast transients, which modulates the waveform and
-    // sounds like a slap on kicks.
-    gainSmooth_.setTime(0.7f, sr_);
-    gainSmooth_.reset(1.0f);
     inputSmooth_.setTime(25.0f, sr_);
     inputSmooth_.reset(dbToGain(-80.0f));
     driveSmooth_.setTime(25.0f, sr_);
@@ -61,10 +66,7 @@ public:
       dcLp_[ch].set(18.0f, sr_);
       dcLp_[ch].reset();
     }
-    env_ = 0.0f;
-    grPrev_ = 0.0f;
-    hold_ = 0;
-    holdSamples_ = static_cast<int>(0.0015f * sr_);
+    overDb_ = 0.0f;
     setControls(controls_);
   }
 
@@ -91,7 +93,10 @@ public:
     attackMs_ = 0.8f * std::pow(0.025f, (attackStep - 1.0f) / 6.0f);
     releaseMs_ = 50.0f * std::pow(22.0f, (releaseStep - 1.0f) / 6.0f);
     if (allButtons_) {
+      // All In is a faster, angrier setting on the hardware: the release is
+      // roughly a tenth of the panel value and the attack tightens.
       attackMs_ *= variant_ == Variant::Blue ? 0.5f : 0.7f;
+      releaseMs_ *= 0.1f;
     }
     attackCoeff_ = timeCoeff(attackMs_, sr_);
     releaseCoeff_ = timeCoeff(releaseMs_, sr_);
@@ -108,67 +113,40 @@ public:
     const float inL = left * inputGain;
     const float inR = right * inputGain;
 
-    // The 1176 is a feedback compressor: the side-chain taps the output of
-    // the gain cell, not the input.  The digital loop is closed on the gain
-    // rather than on the previous output sample: the detector sees the current
-    // input scaled by the gain that was just applied.  A one-sample delay on
-    // the *output* made the loop ring at high ratios (a slow wobble on
-    // sustained tones); on the gain it does not, because the gain is already
-    // smoothed.
-    const float detL =
-        sc.active ? sc.left
-                  : (topology_ == Topology::Feedback
-                         ? kFeedbackDetectorScale * inL * appliedGain_
-                         : inL);
-    const float detR =
-        sc.active ? sc.right
-                  : (topology_ == Topology::Feedback
-                         ? kFeedbackDetectorScale * inR * appliedGain_
-                         : inR);
+    // Feed-forward peak detector, as in the NC76 reference.  The programme
+    // input gain is part of the detector path, so turning the input up
+    // increases reduction.  An external side-chain is taken raw: its level is
+    // already set by the send, and the input knob should not attenuate it.
+    const float detL = sc.active ? sc.left : left * inputGain;
+    const float detR = sc.active ? sc.right : right * inputGain;
     const float peak = std::max(std::fabs(detL), std::fabs(detR));
-    // The 1176's release is program-dependent: the more the FET is pulling
-    // down, the longer it takes to let go.  That damping is also what keeps a
-    // digital feedback loop from hunting at high ratios.
-    float releaseCoeff = releaseCoeff_;
-    if (topology_ == Topology::Feedback) {
-      const float hunt = clampf(grPrev_ / 20.0f, 0.0f, 1.0f);
-      releaseCoeff = timeCoeff(releaseMs_ * (1.0f + 3.0f * hunt), sr_);
-    }
-    const bool blackDeep = variant_ == Variant::Black && grPrev_ > 6.0f;
-    if (peak > env_) {
-      env_ = attackCoeff_ * env_ + (1.0f - attackCoeff_) * peak;
-      hold_ = holdSamples_;
-    } else if (hold_ > 0) {
-      --hold_;  // hold before release, so LF cycles do not modulate the gain
-    } else {
-      const float rc = blackDeep ? releaseDeepCoeff_ : releaseCoeff;
-      env_ = rc * env_ + (1.0f - rc) * peak;
-    }
+    const float levelDb = gainToDb(peak);
 
     constexpr float kThresholdDb = -18.0f;
     const float kneeDb = variant_ == Variant::Black ? 2.5f : 1.0f;
-    // Program dependence: harder transients push the effective ratio up.
-    const float overDb = gainToDb(env_) - kThresholdDb;
-    const float push = clampf((overDb - 6.0f) / 12.0f, 0.0f, 1.0f);
-    // Program dependence belongs to the all-buttons mode.  Applying it to
-    // every ratio smeared 4:1, 8:1, 12:1 and 20:1 into each other, so the
-    // ratio buttons barely changed the sound.
-    const float allPush = variant_ == Variant::Blue ? 8.0f : 5.0f;
-    const float effRatio = allButtons_ ? ratio_ + allPush * push : ratio_;
-    // A feedback loop multiplies the static curve by 1/(1 + slope), so the
-    // static slope has to be ratio - 1 to land on the intended ratio.  An
-    // external side-chain bypasses the loop, so it needs the feed-forward
-    // slope: using ratio - 1 there gave 50+ dB of reduction and pinned the
-    // detector.
-    const bool inLoop = topology_ == Topology::Feedback && !sc.active;
-    const float slope = inLoop
-                            ? (effRatio - 1.0f)
-                            : (1.0f - 1.0f / std::max(effRatio, 1.0f));
-    const float grDb =
-        gainReductionDbSlope(gainToDb(env_), kThresholdDb, slope, kneeDb);
-    grPrev_ = grDb;
-    const float targetGain = dbToGain(-grDb);
-    const float gain = gainSmooth_.next(targetGain);
+    // Effective over-threshold level, with a small soft knee.  Slope 1 turns
+    // the gain computer into the over-level itself; the ratio is applied when
+    // the level is turned into reduction, so attack and release act on dB of
+    // over, exactly as the reference does.
+    const float over = gainReductionDbSlope(levelDb, kThresholdDb, 1.0f,
+                                           kneeDb, 1.0e9f);
+
+    const bool blackDeep = variant_ == Variant::Black && overDb_ > 6.0f;
+    const float rc = blackDeep ? releaseDeepCoeff_ : releaseCoeff_;
+    if (over > overDb_) {
+      overDb_ += (over - overDb_) * (1.0f - attackCoeff_);
+    } else {
+      overDb_ += (over - overDb_) * (1.0f - rc);
+    }
+
+    // Feed-forward slope.  All In adds the reference's 1.4x over-compression
+    // factor; at 20:1 this makes the mode bite noticeably harder without ever
+    // latching the gain to zero.
+    const float slope =
+        (1.0f - 1.0f / std::max(ratio_, 1.0f)) *
+        (allButtons_ ? 1.35f : 1.0f);
+    const float grDb = std::max(overDb_ * slope, 0.0f);
+    const float gain = dbToGain(-grDb);
 
     // The FET attenuator distorts more as it works harder.
     const float grNorm = clampf(grDb / 20.0f, 0.0f, 1.5f);
@@ -179,16 +157,11 @@ public:
     const float fetDrive =
         2.2f + 3.2f * grNorm + ratioDrive + (allButtons_ ? allDrive : 0.0f);
 
-    // Tap the gain-cell output, before the FET colour stage.  Tapping after
-    // the saturation created a pathological loop: more reduction lowered the
-    // detected level, which lowered the reduction, and the ratio ladder
-    // inverted.
     const float cellL = inL * gain;
     const float cellR = inR * gain;
-    appliedGain_ = gain;
     left = processChannel(cellL, 0, fetDrive, drive) * outputGain_;
     right = processChannel(cellR, 1, fetDrive, drive) * outputGain_;
-    return std::max(grDb, 0.0f);
+    return grDb;
   }
 
   void reset() noexcept {
@@ -198,11 +171,7 @@ public:
       inShaper_[ch].reset();
       fetShaper_[ch].reset();
     }
-    env_ = 0.0f;
-    grPrev_ = 0.0f;
-    hold_ = 0;
-    appliedGain_ = 1.0f;
-    gainSmooth_.reset(1.0f);
+    overDb_ = 0.0f;
   }
 
 private:
@@ -232,21 +201,11 @@ private:
   float releaseCoeff_ = 0.0f;
   float releaseDeepCoeff_ = 0.0f;
   float outputGain_ = 1.0f;
-  float env_ = 0.0f;
-  float grPrev_ = 0.0f;
-  int hold_ = 0;
-  int holdSamples_ = 0;
-  float appliedGain_ = 1.0f;
-  Topology topology_ = Topology::Feedback;
-  // Detector attenuation.  In feedback the loop multiplies the static curve,
-  // so the tap is scaled down to place the effective threshold: this puts it
-  // at -12 dBFS for the fixed -18 dBFS static threshold.
-  static constexpr float kFeedbackDetectorScale = 1.0f;
+  float overDb_ = 0.0f;
   OnePoleLP lpOut_[2];
   OnePoleLP dcLp_[2];
   Smoothed inputSmooth_;
   Smoothed driveSmooth_;
-  Smoothed gainSmooth_;
   AsymShaper inShaper_[2];
   AsymShaper fetShaper_[2];
 };

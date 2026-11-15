@@ -9,10 +9,11 @@ namespace comp {
 
 // Where a model's detector taps the signal.
 //
-// Feedback models (1176, 2A/3A) put the gain cell inside the detector loop,
-// so the detector sees the already-compressed output.  That is what gives them
-// their slow knee and thick recovery; it is not a stylistic choice.  The VCA
-// model is genuinely feed-forward, as the bus compressor it follows is.
+// Feedback models (2A/3A) put the gain cell inside the detector loop, so the
+// detector sees the already-compressed output.  That is what gives them their
+// slow knee and thick recovery.  The 76, VCA and Clean models are
+// feed-forward: a digital feedback loop collapses at high ratios, and the 76
+// reference law is feed-forward too.
 enum class Topology { FeedForward, Feedback };
 
 // Per-sample external side-chain input.  `active` is false when the host has

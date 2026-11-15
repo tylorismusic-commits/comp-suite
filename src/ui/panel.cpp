@@ -1212,9 +1212,13 @@ double curveTransferDb(int model, double inDb, const Shared& shared) {
   switch (model) {
     case kBlue76:
     case kBlack76:
+      // Feed-forward detector and (ratio-1)/ratio slope, as in the model.
       threshold = -18.0;
-      knee = 1.0;
-      slope = ratio - 1.0;  // the 76s detect in the loop
+      knee = model == kBlue76 ? 1.0 : 2.5;
+      slope = 1.0 - 1.0 / std::max(ratio, 1.0);
+      if (step >= 8) {
+        slope *= 1.35;  // All In's over-compression factor
+      }
       break;
     case kOpto2A:
     case kOpto3A:

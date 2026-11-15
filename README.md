@@ -14,8 +14,8 @@ tricks.
 | Tab | Character | Core |
 |---|---|---|
 | **Clean** | Transparent digital compression | Stereo RMS detector, soft knee, transfer-curve display |
-| 76Blue | 1176-family FET, blue-stripe voicing | Feedback FET limiter |
-| 76Black | 1176-family FET, black-face voicing | Feedback FET limiter |
+| 76Blue | 1176-family FET, blue-stripe voicing | Feed-forward FET detector, transformer/FET colour |
+| 76Black | 1176-family FET, black-face voicing | Feed-forward FET detector, softer knee |
 | 2A | LA-2A-family optical leveler | Photocell, side-chain network, Limit/Compress |
 | 3A | LA-3A-family optical leveler | Faster photocell, fixed ratio |
 | Xpress | Distressor-family compressor | Fixed threshold, ratio steps, distortion modes |
@@ -48,9 +48,10 @@ intensity, and link plus parallel mix behave as on the other models.
   **transfer curve** with the operating point, and Off. When the external
   side-chain is routed, the curve follows the side-chain input and marks it
   **SC**.
-- **Detection that matches the hardware** — 76 and 2A/3A detect in the feedback
-  loop; the VCA and Clean are feed-forward. A bounded gain computer keeps the
-  76 from nulling on transients.
+- **Detection that stays musical** — the 2A/3A use their feedback cell; the 76
+  uses a feed-forward peak detector and a (ratio−1)/ratio slope, the same law
+  as the NC76 reference, so 8:1, 12:1, 20:1 and All In stay audible instead of
+  latching the gain. VCA and Clean are feed-forward too.
 - **External side-chain** on both formats, with an Internal/External switch.
 - **Auto-makeup** — tracks average reduction and restores the level.
 - **True-peak limiting** — optional four-times oversampled detector.

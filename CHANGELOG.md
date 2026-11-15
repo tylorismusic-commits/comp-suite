@@ -25,6 +25,14 @@
 
 ### Fixed
 
+- **The 1176 models use the reference's feed-forward gain law.** They were
+  running a true digital feedback loop with a `ratio−1` slope, which became
+  unstable above 4:1: the gain latched to its floor and the output turned into
+  blips at 8:1, 12:1, 20:1 and All In. They now use a feed-forward peak
+  detector with attack/release on the over-threshold level and a
+  `(ratio−1)/ratio` slope, matching Tukan's NC76. Input now drives reduction
+  predictably, high ratios stay audible, and the transfer curve flattens
+  instead of folding over.
 - **The oversampling filters shared their state between left and right.** Left
   was processed first and the right channel inherited its history, so 2× and
   4× produced a ringing buzz that was louder on the right — on every model,
