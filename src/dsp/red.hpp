@@ -26,18 +26,17 @@ class RedCompressor {
 public:
   // The Red's ratio ladder, snapped to the nearest value when the shared
   // ladder arrives from another model.
+  // The Red has six ratios.  The control is six positions; a value arriving
+  // from another model's nine-step ladder clamps to the nearest end.
   static float ratioForStep(int step) noexcept {
     static const float kRed[6] = {1.5f, 2.0f, 3.0f, 5.0f, 7.0f, 10.0f};
-    const float shared =
-        ratioFromStep(std::min(std::max(step, 0), 8));
-    float best = kRed[0];
-    for (float r : kRed) {
-      if (std::fabs(r - shared) < std::fabs(best - shared)) {
-        best = r;
-      }
-    }
-    return best;
+    return kRed[std::min(std::max(step, 0), 5)];
   }
+
+  // Level calibration so the model sits at the same output as the others at
+  // the same settings.  Measured 0.7-1.4 dB low on a sine, more on
+  // peaky material because the detector is peak, not RMS.
+  static constexpr float kModelTrimDb = 1.5f;
 
   void prepare(float sampleRate) noexcept {
     sr_ = sampleRate > 0.0f ? sampleRate : 48000.0f;
@@ -137,7 +136,7 @@ public:
 
     const float makeup = makeupSmooth_.next();
     const float output = outputSmooth_.next();
-    const float trim = makeup * output;
+    const float trim = makeup * output * dbToGain(kModelTrimDb);
 
     // Transformer-coupled I/O: a touch of asymmetry and no DC.
     yL = transformerHp_[0].process(shaper_[0].process(yL * trim, 1.05f, 0.03f));

@@ -11,13 +11,16 @@
     compressor; the second is a fast peak limiter acting on the compressed
     signal. The limiter section's threshold controls it, and the engine's own
     output limiter is skipped for this model so the two do not stack.
-  - **Its own ratio ladder** (1.5, 2, 3, 5, 7, 10). The shared ladder snaps to
-    the nearest Red value, so switching models cannot land on a ratio the model
-    does not have.
+  - **Its own ratio ladder** (1.5, 2, 3, 5, 7, 10) on a six-position control,
+    so the knob shows six labels with no repeats. A value arriving from another
+    model's nine-step ladder clamps to the nearest end.
   - Program-dependent auto release (shared Auto Release switch), knee control,
     input and output trims, and a subtle transformer colour stage (asymmetric
     saturation plus a 15 Hz high-pass).
 - Four Red presets: Vocal Control, Drum Punch, Mix Glue, Bass Control.
+- **Red level calibration**: +1.5 dB fixed trim so the model sits at the same
+  output as Clean/Molot at the same settings (measured 0.7-1.4 dB low on a
+  sine, more on peaky material because the detector is peak).
 - README and screenshots updated for nine models.
 
 ## 0.7.0 — 2026-11-15

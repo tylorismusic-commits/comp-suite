@@ -702,9 +702,11 @@ int main() {
     const Render r = renderSine(engine, c, 100.0f, -30.0f, 0.5f);
     const float inRms = dbToGain(-30.0f) / std::sqrt(2.0f);
     const float outDb = gainToDb(rmsTail(r.left, 0.1f)) - gainToDb(inRms);
+    // The Red is level-calibrated to sit with the other models.
+    const float expectedDb = m == static_cast<int>(Model::Red) ? 1.5f : 0.0f;
     char label[96];
     std::snprintf(label, sizeof(label), "model %d neutral is unity (%.2f dB)", m, outDb);
-    check(std::fabs(outDb) < 0.5f, label);
+    check(std::fabs(outDb - expectedDb) < 0.5f, label);
   }
 
   // Moving the input knob must not produce zipper clicks: the gain is

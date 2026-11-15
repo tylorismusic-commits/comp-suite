@@ -177,8 +177,7 @@ const char* const kScaleThreshold[] = {"-40", "-30", "-20", "-10", "0"};
 const char* const kScaleRatio[] = {"1.5", "2", "3", "4", "6", "8", "12", "20", "ALL"};
 const char* const kScaleRatioNoAll[] = {"1.5", "2", "3", "4", "6", "8", "12", "20"};
 // The Red only has six ratios; the shared ladder snaps to the nearest.
-const char* const kScaleRatioRed[] = {"1.5", "2", "3", "3", "5",
-                                      "7",   "10", "10", "10"};
+const char* const kScaleRatioRed[] = {"1.5", "2", "3", "5", "7", "10"};
 const char* const kScaleMakeupVca[] = {"-10", "-5", "0", "+5", "+10"};
 const char* const kScaleAttackVca[] = {"0.1", "0.4", "1.7", "7", "30"};
 const char* const kScaleReleaseVca[] = {"0.1", "0.2", "0.3", "0.6", "1.2"};
@@ -438,13 +437,15 @@ void Panel::layout(const Shared& shared, const PanelState& state) {
   }
 
   auto knob = [&](uint32_t param, double x, double y, double r, const char* label,
-                  std::vector<const char*> scale, bool below = false) {
+                  std::vector<const char*> scale, bool below = false,
+                  int steps = 0) {
     Widget k{};
     k.kind = Kind::Knob;
     k.param = param;
     k.x = x;
     k.y = y;
     k.r = r;
+    k.steps = steps;
     k.label = label;
     k.scale = std::move(scale);
     k.labelBelow = below;
@@ -541,7 +542,7 @@ void Panel::layout(const Shared& shared, const PanelState& state) {
     }
     case kRed: {
       knob(P_THRESHOLD, 240, 424, 34, "THRESHOLD", sc(kScaleThreshold));
-      knob(P_RATIO, 400, 424, 34, "RATIO", sc(kScaleRatioRed));
+      knob(P_RATIO, 400, 424, 34, "RATIO", sc(kScaleRatioRed), false, 6);
       knob(P_MAKEUP, 560, 424, 34, "MAKE UP", sc(kScaleMakeupVca));
       knob(P_KNEE, 700, 424, 26, "KNEE", {});
       knob(P_ATTACK, 320, 552, 30, "ATTACK", sc(kScaleAttackVca));
@@ -708,8 +709,12 @@ bool Panel::pointerDown(Shared& shared, PanelState& state, double x, double y,
     switch (w.kind) {
       case Kind::Knob: {
         dragParam_ = static_cast<int>(w.param);
+        dragSteps_ = w.steps;
         dragStartY_ = y;
         dragStartValue_ = shared.get(w.param);
+        if (dragSteps_ > 1) {
+          dragStartValue_ = std::min(dragStartValue_, dragSteps_ - 1.0);
+        }
         (void)fine;
         return false;
       }
@@ -758,7 +763,10 @@ bool Panel::pointerMove(Shared& shared, PanelState& state, double x, double y,
   const double perPixel = spec.stepped
                               ? 1.0 / 18.0
                               : (spec.max - spec.min) / (fine ? 800.0 : 200.0);
-  const double v = dragStartValue_ + (dragStartY_ - y) * perPixel;
+  double v = dragStartValue_ + (dragStartY_ - y) * perPixel;
+  if (dragSteps_ > 1) {
+    v = std::min(v, dragSteps_ - 1.0);
+  }
   shared.set(param, v);
   state.presetDirty = true;
   return true;
@@ -1595,8 +1603,9 @@ void Panel::drawKnob(cairo_t* cr, const Widget& w, double value, int model) cons
   // Indicator: normalised against the parameter's own range, not assumed
   // to be 0..1 (the ratio ladder runs 0..8).
   const ParamSpec& spec = kParamSpecs[w.param];
-  const double span = spec.max - spec.min;
-  const double frac = span > 0.0 ? (value - spec.min) / span : 0.0;
+  const double vmax = w.steps > 1 ? w.steps - 1 : spec.max;
+  const double span = vmax - spec.min;
+  const double frac = span > 0.0 ? (std::min(value, vmax) - spec.min) / span : 0.0;
   const double a = knobAngle(clamp01(frac));
   cairo_set_line_width(cr, 2.0);
   setRgb(cr, skin.knobIndicator);

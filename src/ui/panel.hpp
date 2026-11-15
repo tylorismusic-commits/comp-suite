@@ -106,6 +106,7 @@ private:
     double w = 0.0;
     double h = 0.0;
     double r = 0.0;       // knob radius
+    int steps = 0;        // 0 = use the parameter's range; else N positions
     const char* label = "";
     std::vector<const char*> scale;
     bool labelBelow = false;
@@ -139,6 +140,7 @@ private:
   int dragParam_ = -1;
   double dragStartY_ = 0.0;
   double dragStartValue_ = 0.0;
+  int dragSteps_ = 0;
 
   cairo_surface_t* grain_ = nullptr;  // tiled noise for panel texture
   void* ft_ = nullptr;
