@@ -157,13 +157,14 @@ public:
     const float allPush = variant_ == Variant::Blue ? 8.0f : 5.0f;
     const float effRatio = allButtons_ ? ratio_ + allPush * push : ratio_;
     // A feedback loop multiplies the static curve by 1/(1 + slope), so the
-    // static slope has to be ratio - 1 to land on the intended ratio.  Using
-    // 1 - 1/ratio here (as a feed-forward model would) collapses the whole
-    // ladder into ~2:1.
-    const float slope =
-        topology_ == Topology::Feedback
-            ? (effRatio - 1.0f)
-            : (1.0f - 1.0f / std::max(effRatio, 1.0f));
+    // static slope has to be ratio - 1 to land on the intended ratio.  An
+    // external side-chain bypasses the loop, so it needs the feed-forward
+    // slope: using ratio - 1 there gave 50+ dB of reduction and pinned the
+    // detector.
+    const bool inLoop = topology_ == Topology::Feedback && !sc.active;
+    const float slope = inLoop
+                            ? (effRatio - 1.0f)
+                            : (1.0f - 1.0f / std::max(effRatio, 1.0f));
     const float grDb =
         gainReductionDbSlope(gainToDb(env_), kThresholdDb, slope, kneeDb);
     grPrev_ = grDb;

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(comp_suite VERSION 0.4.0 LANGUAGES CXX)
+project(comp_suite VERSION 0.4.1 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -83,6 +83,12 @@ target_include_directories(comp_geometry_test PRIVATE "${CMAKE_SOURCE_DIR}/src")
 target_link_libraries(comp_geometry_test PRIVATE PkgConfig::CAIRO)
 target_compile_features(comp_geometry_test PRIVATE cxx_std_17)
 add_test(NAME comp_geometry COMMAND comp_geometry_test)
+
+add_executable(comp_layout_test test/test_layout.cpp ${COMP_UI_SOURCES})
+target_include_directories(comp_layout_test PRIVATE "${CMAKE_SOURCE_DIR}/src")
+target_link_libraries(comp_layout_test PRIVATE PkgConfig::CAIRO PkgConfig::FREETYPE)
+target_compile_features(comp_layout_test PRIVATE cxx_std_17)
+add_test(NAME comp_layout COMMAND comp_layout_test)
 
 add_executable(comp_ui_preview test/ui_preview.cpp ${COMP_UI_SOURCES})
 target_include_directories(comp_ui_preview PRIVATE "${CMAKE_SOURCE_DIR}/src")

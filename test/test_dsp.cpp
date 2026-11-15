@@ -337,7 +337,9 @@ int main() {
     std::snprintf(label, sizeof(label),
                   "external side-chain reduces a silent signal (GR %.1f dB)",
                   peakGr);
-    check(peakGr > 3.0f, label);
+    // The feedback slope must not be applied outside the loop: with it, a
+    // normal side-chain level pinned the detector at 50+ dB.
+    check(peakGr > 3.0f && peakGr < 25.0f, label);
   }
 
   // Auto-makeup restores the level as reduction deepens.

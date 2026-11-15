@@ -1,6 +1,6 @@
 # Comp Suite
 
-**Version 0.4.0** · GPL-3.0-or-later
+**Version 0.4.1** · GPL-3.0-or-later
 
 A free CLAP and LV2 compressor with six models in one plugin:
 

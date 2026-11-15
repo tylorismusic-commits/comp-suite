@@ -66,6 +66,21 @@ public:
 
   bool dragging() const { return dragParam_ >= 0; }
 
+  // Geometry of the current layout, for the layout test.  Knobs report their
+  // bounding box in x/y/w/h with r set; toggles are centred on x.
+  struct WidgetRect {
+    uint32_t param = 0;
+    double x = 0.0;
+    double y = 0.0;
+    double w = 0.0;
+    double h = 0.0;
+    double r = 0.0;
+    const char* label = "";
+    bool knob = false;
+    bool toggle = false;
+  };
+  std::vector<WidgetRect> widgetRects() const;
+
 private:
   enum class Kind {
     Knob,
@@ -75,6 +90,7 @@ private:
     MeterSegment,
     Power,
     PageTab,
+    Pill,
   };
 
   struct Widget {
@@ -106,6 +122,7 @@ private:
   void drawKnob(cairo_t* cr, const Widget& w, double value, int model) const;
   void drawButton(cairo_t* cr, const Widget& w, bool lit, int model) const;
   void drawToggle(cairo_t* cr, const Widget& w, bool on, int model) const;
+  void drawPill(cairo_t* cr, const Widget& w, bool on, int model) const;
   void text(cairo_t* cr, const char* s, double x, double y, double size,
             int align, double r, double g, double b) const;
 

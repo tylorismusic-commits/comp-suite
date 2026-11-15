@@ -485,7 +485,8 @@ void Panel::layout(const Shared& shared, const PanelState& state) {
       knob(P_ATTACK, 320, 552, 30, "ATTACK", sc(kScaleAttackVca));
       knob(P_RELEASE, 480, 552, 30, "RELEASE", sc(kScaleReleaseVca));
       knob(P_VCA_LINK, 700, 424, 28, "LINK", {});
-      toggle(P_VCA_AUTO, 600, 546, 1.0, "AUTO", "MAN");
+      // High enough that both labels stay on the faceplate (it ends at 604).
+      toggle(P_VCA_AUTO, 600, 520, 1.0, "AUTO", "MAN");
       if (state.rightPage == 0) {
         knob(P_SC_HPF, 890, 260, 34, "SIDE CHAIN HPF", sc(kScaleHpf));
       } else {
@@ -495,10 +496,24 @@ void Panel::layout(const Shared& shared, const PanelState& state) {
     }
   }
 
-  // Output options, available on every model.
-  toggle(P_AUTO_MAKEUP, 770, 400, 1.0, "AUTO", "MAN");
-  toggle(P_TRUE_PEAK, 840, 400, 1.0, "TRUE", "PEAK");
-  toggle(P_SC_SOURCE, 910, 400, 1.0, "EXT", "INT");
+  // Global output options live in the header's empty right-hand side.  They
+  // were in the model rows before and collided with the output knobs, the
+  // Xpress distortion buttons and the output meter.
+  auto pill = [&](uint32_t param, double x, const char* label) {
+    Widget w{};
+    w.kind = Kind::Pill;
+    w.param = param;
+    w.x = x;
+    w.y = 20;
+    w.w = 84;
+    w.h = 24;
+    w.value = 1.0;
+    w.label = label;
+    widgets_.push_back(w);
+  };
+  pill(P_AUTO_MAKEUP, 736, "AUTO MAKEUP");
+  pill(P_TRUE_PEAK, 828, "TRUE PEAK");
+  pill(P_SC_SOURCE, 920, "EXT SC");
 
   // Limiter section, in the right column for every model (the reference
   // layout has one regardless of compressor style).
@@ -543,6 +558,8 @@ bool Panel::hitWidget(const Widget& w, double x, double y) const {
     case Kind::Toggle:
       return x >= w.x - w.w * 0.5 && x <= w.x + w.w * 0.5 && y >= w.y &&
              y <= w.y + w.h;
+    case Kind::Pill:
+      return x >= w.x && x <= w.x + w.w && y >= w.y && y <= w.y + w.h;
     default:
       return x >= w.x && x <= w.x + w.w && y >= w.y && y <= w.y + w.h;
   }
@@ -596,6 +613,10 @@ bool Panel::pointerDown(Shared& shared, PanelState& state, double x, double y,
       }
       case Kind::PageTab:
         state.rightPage = static_cast<int>(w.value);
+        return true;
+      case Kind::Pill:
+        shared.set(w.param, shared.get(w.param) > 0.5 ? 0.0 : 1.0);
+        state.presetDirty = true;
         return true;
     }
   }
@@ -1215,7 +1236,26 @@ void Panel::drawWidget(cairo_t* cr, const Widget& w, const Shared& shared,
       drawToggle(cr, w, shared.get(w.param) > 0.5, model);
       break;
     }
+    case Kind::Pill: {
+      drawPill(cr, w, shared.get(w.param) > 0.5, model);
+      break;
+    }
   }
+}
+
+// A compact latching button for the header utility strip.
+void Panel::drawPill(cairo_t* cr, const Widget& w, bool on, int model) const {
+  const Skin skin = skinFor(model);
+  roundRect(cr, w.x, w.y, w.w, w.h, 5);
+  setRgb(cr, on ? skin.btnOn : skin.btnOff);
+  cairo_fill(cr);
+  cairo_set_line_width(cr, 1.0);
+  setRgb(cr, {0.0, 0.0, 0.0}, 0.35);
+  roundRect(cr, w.x + 0.5, w.y + 0.5, w.w - 1.0, w.h - 1.0, 5);
+  cairo_stroke(cr);
+  const Rgb tc = on ? skin.btnTextOn : skin.btnText;
+  text(cr, w.label, w.x + w.w * 0.5, w.y + w.h * 0.5 + 3.5, 10, 1, tc.r,
+       tc.g, tc.b);
 }
 
 void Panel::drawKnob(cairo_t* cr, const Widget& w, double value, int model) const {
@@ -1342,6 +1382,41 @@ void Panel::drawToggle(cairo_t* cr, const Widget& w, bool on, int model) const {
   cairo_fill(cr);
   text(cr, w.buttonText[0], w.x, w.y - 8, 12, 1, skin.legend.r, skin.legend.g, skin.legend.b);
   text(cr, w.buttonText[1], w.x, w.y + w.h + 18, 12, 1, skin.legend.r, skin.legend.g, skin.legend.b);
+}
+
+// ---------------------------------------------------------------------------
+// Layout introspection (used by the layout test)
+// ---------------------------------------------------------------------------
+
+std::vector<Panel::WidgetRect> Panel::widgetRects() const {
+  std::vector<WidgetRect> out;
+  out.reserve(widgets_.size());
+  for (const Widget& w : widgets_) {
+    WidgetRect r;
+    r.param = w.param;
+    r.label = w.label;
+    r.knob = w.kind == Kind::Knob;
+    r.toggle = w.kind == Kind::Toggle;
+    r.r = w.r;
+    if (w.kind == Kind::Knob) {
+      r.x = w.x - w.r;
+      r.y = w.y - w.r;
+      r.w = w.r * 2.0;
+      r.h = w.r * 2.0;
+    } else if (w.kind == Kind::Toggle) {
+      r.x = w.x - w.w * 0.5;
+      r.y = w.y;
+      r.w = w.w;
+      r.h = w.h;
+    } else {
+      r.x = w.x;
+      r.y = w.y;
+      r.w = w.w;
+      r.h = w.h;
+    }
+    out.push_back(r);
+  }
+  return out;
 }
 
 } // namespace comp

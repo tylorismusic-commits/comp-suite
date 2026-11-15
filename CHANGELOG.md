@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.4.1 — 2026-11-15
+
+### Fixed
+
+- **External side-chain pinned the 76 models.** The gain computer applied the
+  feedback slope (`ratio - 1`) whenever the model was feedback, including when
+  an external side-chain had bypassed the loop. At 0.5 amplitude that produced
+  50+ dB of reduction and clamped the detector. The loop slope now only applies
+  while the loop is actually closed; an external side-chain uses the
+  feed-forward slope like the other models.
+- **Control placement.** The new Auto Makeup / True Peak / Sidechain switches
+  sat in the model rows, where they collided with the output knob, the Xpress
+  distortion buttons, and (on every model) the right-hand output meter. They
+  are now compact latching pills in the otherwise empty right side of the
+  header, so they cannot collide with model-specific controls. The VCA Auto
+  Release switch moved up so both of its labels stay on the faceplate.
+
+### Added
+
+- `comp_layout` test: builds every model and both right-hand pages, and fails
+  if any two controls overlap or if a control leaves the faceplate. This is
+  what caught the collisions above, and it guards the next layout change.
+
 ## 0.4.0 — 2026-11-14
 
 Feature pass. This release is allowed to add parameters and ports.
