@@ -1211,15 +1211,20 @@ double curveTransferDb(int model, double inDb, const Shared& shared) {
   double slope = 1.0 - 1.0 / std::max(ratio, 1.0);
   switch (model) {
     case kBlue76:
-    case kBlack76:
+    case kBlack76: {
       // Feed-forward detector and (ratio-1)/ratio slope, as in the model.
-      threshold = -18.0;
+      // The model's threshold is fixed post-input-gain; refer it back to the
+      // raw input axis the graph uses.
+      const double inputGainDb =
+          -80.0 + 103.0 * std::sqrt(shared.get(P_INPUT));
+      threshold = -28.0 - inputGainDb;
       knee = model == kBlue76 ? 1.0 : 2.5;
       slope = 1.0 - 1.0 / std::max(ratio, 1.0);
       if (step >= 8) {
         slope *= 1.35;  // All In's over-compression factor
       }
       break;
+    }
     case kOpto2A:
     case kOpto3A:
       threshold = -2.0 - 34.0 * shared.get(P_THRESHOLD);

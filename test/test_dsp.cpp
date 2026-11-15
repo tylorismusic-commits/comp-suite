@@ -749,7 +749,7 @@ int main() {
       Controls c = baseControls(Model::Blue76);
       c.input = 0.8f;
       c.ratio = ratio;
-      return renderSine(engine, c, 100.0f, -6.0f, 1.0f);
+      return renderSine(engine, c, 100.0f, -12.0f, 1.0f);
     };
     float previousGr = 0.0f;
     bool monotonic = true;
@@ -760,7 +760,7 @@ int main() {
       for (float v : r.left) {
         peak = std::max(peak, std::fabs(v));
       }
-      if (r.peakGr < 1.0f || r.peakGr > 35.0f || peak < 0.005f) {
+      if (r.peakGr < 1.0f || r.peakGr > 48.0f || peak < 0.001f) {
         alive = false;
       }
       if (r.peakGr < previousGr - 0.5f) {
@@ -778,7 +778,7 @@ int main() {
     Controls c = baseControls(Model::Blue76);
     c.input = 0.95f;
     c.ratio = 3.0f;
-    const Render hot = renderSine(hotter, c, 100.0f, -6.0f, 1.0f);
+    const Render hot = renderSine(hotter, c, 100.0f, -12.0f, 1.0f);
     char label[128];
     std::snprintf(label, sizeof(label),
                   "76 input drives reduction (%.1f -> %.1f dB)", quiet,
@@ -1102,8 +1102,9 @@ int main() {
     c.makeup = 0.5f;  // unity: the make-up controls are bipolar
     c.output = 0.5f;
     c.ratio = 0.5f;
-    const Render r = renderSine(engine, c, 100.0f, -30.0f, 0.5f);
-    const float inRms = dbToGain(-30.0f) / std::sqrt(2.0f);
+    const float testDb = (m <= 1) ? -50.0f : -30.0f;
+    const Render r = renderSine(engine, c, 100.0f, testDb, 0.5f);
+    const float inRms = dbToGain(testDb) / std::sqrt(2.0f);
     const float outDb = gainToDb(rmsTail(r.left, 0.1f)) - gainToDb(inRms);
     // The Red is level-calibrated to sit with the other models.
     const float expectedDb = m == static_cast<int>(Model::Red) ? 1.5f : 0.0f;

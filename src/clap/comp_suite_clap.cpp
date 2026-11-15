@@ -543,7 +543,7 @@ bool paramsValueToText(const clap_plugin_t* p, clap_id id, double value,
     case P_ATTACK: {
       double ms;
       if (model <= 1) {
-        ms = 0.8 * std::pow(0.025, std::round(value * 6.0) / 6.0);
+        ms = 0.04 * std::pow(40.0, std::round(value * 6.0) / 6.0);
       } else if (model == 4) {
         ms = 0.1 * std::pow(500.0, value);
       } else if (model == 5) {

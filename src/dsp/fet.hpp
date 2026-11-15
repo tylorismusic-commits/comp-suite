@@ -51,7 +51,9 @@ public:
     fetBias_ = 0.0f;
     baseDrive_ = blue ? 1.30f : 1.10f;
     inputDriveScale_ = blue ? 1.60f : 1.00f;
-    const float outLpHz = blue ? 16500.0f : 14000.0f;
+    // Keep the full range: the references are open at the top, and a low
+    // output low-pass removes exactly the room and air a drum bus needs.
+    const float outLpHz = blue ? 20000.0f : 18000.0f;
     for (int ch = 0; ch < 2; ++ch) {
       lpOut_[ch].set(outLpHz, sr_);
       inShaper_[ch].reset();
@@ -63,7 +65,9 @@ public:
     driveSmooth_.setTime(25.0f, sr_);
     driveSmooth_.reset(1.3f);
     for (int ch = 0; ch < 2; ++ch) {
-      dcLp_[ch].set(18.0f, sr_);
+      // Only remove DC, not sub-bass.  The old 18 Hz corner thinned the low
+      // end compared with the references.
+      dcLp_[ch].set(5.0f, sr_);
       dcLp_[ch].reset();
     }
     overDb_ = 0.0f;
@@ -84,13 +88,16 @@ public:
     ratioStep_ = ratioStep;
     allButtons_ = ratioStep >= 8;
 
-    // 1176 attack runs 1..7 (about 800 us down to 20 us); release runs 1..7
-    // (about 50 ms up to 1.1 s).  Both are log-spaced between their ends.
+    // 1176 attack runs 1..7 (about 1.6 ms down to 40 us); release runs 1..7
+    // (about 50 ms up to 1.1 s).  Both are log-spaced between their ends.  The
+    // attack range matches the NC76 reference: a slower attack lets the drum
+    // transient through and compresses the room behind it, instead of pinning
+    // the whole hit.
     const float attackStep =
         1.0f + std::round(clampf(c.attack, 0.0f, 1.0f) * 6.0f);
     const float releaseStep =
         1.0f + std::round(clampf(c.release, 0.0f, 1.0f) * 6.0f);
-    attackMs_ = 0.8f * std::pow(0.025f, (attackStep - 1.0f) / 6.0f);
+    attackMs_ = 0.04f * std::pow(40.0f, (attackStep - 1.0f) / 6.0f);
     releaseMs_ = 50.0f * std::pow(22.0f, (releaseStep - 1.0f) / 6.0f);
     if (allButtons_) {
       // All In is a faster, angrier setting on the hardware: the release is
@@ -122,7 +129,11 @@ public:
     const float peak = std::max(std::fabs(detL), std::fabs(detR));
     const float levelDb = gainToDb(peak);
 
-    constexpr float kThresholdDb = -18.0f;
+    // The input knob has a different taper from the reference (-80..+23 dB
+    // here, -20..+30 there).  This threshold is calibrated so the *effective*
+    // drive at the same knob position matches the NC76's Low mode, which is
+    // the comparison point: at input 0.5 the raw threshold lands at -20.8 dB.
+    constexpr float kThresholdDb = -28.0f;
     const float kneeDb = variant_ == Variant::Black ? 2.5f : 1.0f;
     // Effective over-threshold level, with a small soft knee.  Slope 1 turns
     // the gain computer into the over-level itself; the ratio is applied when

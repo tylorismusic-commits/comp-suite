@@ -196,7 +196,7 @@ int main(int argc, char** argv) {
   HostEvents events;
   events.inputs.push_back(paramEvent(0, 0));   // model 76Blue
   events.inputs.push_back(paramEvent(4, 8.0)); // ratio: ALL (top of the ladder)
-  events.inputs.push_back(paramEvent(2, 0.8)); // input drive
+  events.inputs.push_back(paramEvent(2, 0.4)); // moderate input drive
   clap_input_events_t inEvents{&events, inSize, inGet};
   clap_output_events_t outEvents{&events, outTryPush};
 
@@ -234,7 +234,7 @@ int main(int argc, char** argv) {
     events.inputs.clear();
   }
   check(finite, "host-driven processing stays finite");
-  check(peakOut > 0.05f && peakOut < 4.0f, "processed output has sane level");
+  check(peakOut > 0.02f && peakOut < 4.0f, "processed output has sane level");
   check(meter->get(plugin) < -1.0, "gain-adjustment metering reports reduction");
 
   double value = 0.0;

@@ -25,6 +25,12 @@
 
 ### Fixed
 
+- **The 1176 models were calibrated to the reference's drive and bandwidth.**
+  The fixed threshold now matches the NC76 Low mode at the same knob
+  positions, the attack range is 40 µs–1.6 ms instead of 20–800 µs so drum
+  transients and the room behind them survive, the DC block is 5 Hz instead of
+  18 Hz, and the output low-pass moved from 14–16.5 kHz to 18–20 kHz. The
+  result is the roomier, boomier character the references have.
 - **The 1176 models use the reference's feed-forward gain law.** They were
   running a true digital feedback loop with a `ratio−1` slope, which became
   unstable above 4:1: the gain latched to its floor and the output turned into
