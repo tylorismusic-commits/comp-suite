@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased — 0.3.0
+## 0.3.0 — 2026-11-14
 
 DSP structural pass. No new parameters: the port list and ABI stay frozen at
 0.2.0, so existing sessions and presets still load.

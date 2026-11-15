@@ -42,7 +42,7 @@ constexpr const char* kHomepage =
 constexpr const char* kPluginBinary = "comp_suite.so";
 constexpr const char* kUiBinary = "comp_suite_ui.so";
 constexpr int kVersionMajor = 0;
-constexpr int kVersionMinor = 2;
+constexpr int kVersionMinor = 3;
 constexpr int kVersionMicro = 0;
 
 // The meter outputs are not parameters: they exist only in the LV2 port list,
