@@ -121,6 +121,22 @@ int main(int argc, char** argv) {
 
   const Window window =
       static_cast<Window>(reinterpret_cast<uintptr_t>(widget));
+
+  // Ardour/suil only allows shrinking the plugin window when the X11 window
+  // advertises a PMinSize hint; otherwise the minimum equals the current size
+  // and resizing is grow-only.
+  {
+    XSizeHints hints{};
+    long supplied = 0;
+    const bool ok = XGetWMNormalHints(dpy, window, &hints, &supplied) != 0;
+    check(ok && (hints.flags & PMinSize) != 0 && hints.min_width == 520 &&
+              hints.min_height == 320,
+          "PMinSize hint advertises the 0.5x minimum");
+    check(ok && (hints.flags & PMaxSize) != 0 && hints.max_width == 2600 &&
+              hints.max_height == 1600,
+          "PMaxSize hint advertises the 2.5x maximum");
+  }
+
   bool idled = true;
   if (idle) {
     for (int i = 0; i < 5; ++i) {

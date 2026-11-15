@@ -11,10 +11,12 @@ path, and metadata errors that `lv2lint` flags.
 - **Preset banks.** 33 factory presets are exported as `pset:Preset`
   resources in six banks, so Ardour, REAPER and other hosts list them in their
   own preset menus instead of only inside the plugin's browser.
-- **Resizable UI.** The LV2 editor now uses the `ui:resize` feature and the
-  idle interface instead of a private 33 ms thread. Dragging the widget snaps
-  to the same 1/80 steps and 1040:640 aspect as the CLAP editor, and the
-  corrected size is reported back to the host.
+- **Resizable UI.** The LV2 editor now uses the host's idle interface instead of
+  a private 33 ms thread. It advertises `PMinSize`/`PMaxSize` X11 size hints,
+  which Ardour and suil use for the host window's minimum and maximum: without
+  a minimum hint the plugin window becomes grow-only, the classic X11
+  embedding trap. Dragging snaps to the same 1/80 steps and 1040:640 aspect as
+  the CLAP editor, and the corrected size is reported back to the host.
 - **Gain reduction in the mixer strip** through the Harrison inline-display
   extension, matching Hearth Channel.
 - **Correct units metadata.** Meter ports use `units:unit units:db`;
@@ -33,8 +35,8 @@ path, and metadata errors that `lv2lint` flags.
   preset-to-plugin attachment, symbol resolution and that every preset sets
   its model.
 - New Xvfb LV2 UI test: instantiates the editor, drives the idle interface,
-  resizes to an invalid size and checks the snapped result, and checks the
-  minimum-scale clamp.
+  checks the X11 PMinSize/PMaxSize hints, resizes to an invalid size and checks
+  the snapped result, and checks the minimum-scale clamp.
 
 ### Docs
 

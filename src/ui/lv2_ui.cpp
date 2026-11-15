@@ -228,6 +228,25 @@ LV2UI_Handle uiInstantiate(const LV2UI_Descriptor*, const char* /*pluginUri*/,
   XStoreName(ui->dpy, ui->win, "Comp Suite");
   XMapRaised(ui->dpy, ui->win);
 
+  // suil (and therefore Ardour) takes the host widget's minimum size from
+  // the X11 PMinSize hint.  Without it the minimum becomes the current window
+  // size, which makes the plugin window grow-only.  PMaxSize keeps growth
+  // inside the same 0.5x-2.5x range the editor draws at.
+  {
+    const comp::UiSize minSize = comp::sizeForScale(comp::kMinUiScale);
+    const comp::UiSize maxSize = comp::sizeForScale(comp::kMaxUiScale);
+    XSizeHints hints{};
+    hints.flags = PMinSize | PMaxSize | PBaseSize | PWinGravity;
+    hints.min_width = static_cast<int>(minSize.width);
+    hints.min_height = static_cast<int>(minSize.height);
+    hints.max_width = static_cast<int>(maxSize.width);
+    hints.max_height = static_cast<int>(maxSize.height);
+    hints.base_width = comp::kPanelWidth;
+    hints.base_height = comp::kPanelHeight;
+    hints.win_gravity = NorthWestGravity;
+    XSetWMNormalHints(ui->dpy, ui->win, &hints);
+  }
+
   ui->format = DefaultDepth(ui->dpy, screen) == 32 ? CAIRO_FORMAT_ARGB32
                                                    : CAIRO_FORMAT_RGB24;
   ui->windowSurface = cairo_xlib_surface_create(
