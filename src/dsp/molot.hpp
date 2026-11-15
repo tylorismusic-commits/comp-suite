@@ -39,14 +39,16 @@ public:
     const double knee = clampf(c.knee, 0.0f, 1.0f);
     const double attackS = (1.0 + 99.0 * clampf(c.attack, 0.0f, 1.0f)) / 1000.0;
     const double releaseS = (50.0 + 950.0 * clampf(c.release, 0.0f, 1.0f)) / 1000.0;
-    const bool sharp = c.attackMode > 0.5f;  // Sigma
+    // The reference maps Attack Mode 0 (Alpha) to the sharp/exp curve.
+    const bool sharp = c.attackMode < 0.5f;
     const double makeup = std::pow(10.0, (-12.0 + 24.0 * clampf(c.makeup, 0.0f, 1.0f)) / 20.0);
     const double dry = 1.0 - clampf(c.mix, 0.0f, 1.0f);
     const double drive = -12.0 + 24.0 * clampf(c.satDrive, 0.0f, 1.0f);
     const double satThreshold = std::pow(10.0, (12.0 - drive) / 20.0);
 
     stereoMode_ = std::clamp(static_cast<int>(c.stereoMode + 0.5f), 0, 5);
-    useSat_ = c.distortion > 0.5f;
+    // c.distortion is P_DISTORTION/3, so any non-zero step means on.
+    useSat_ = c.distortion > 0.1f;
     // The saturator is bypassed in S and M/S modes to avoid damaging the
     // stereo image, as in the original.
     const bool satAllowed =

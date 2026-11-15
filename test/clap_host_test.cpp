@@ -5,6 +5,9 @@
 
 #include <clap/all.h>
 
+#include <set>
+#include <string>
+
 #include "params.hpp"
 #include <dlfcn.h>
 #include <X11/Xlib.h>
@@ -374,6 +377,28 @@ int main(int argc, char** argv) {
         check(std::strcmp(buf, "Dist 3") == 0, "distortion reads as a mode");
         params->value_to_text(plugin, 13, 0.0, buf, sizeof(buf));
         check(std::strcmp(buf, "Off") == 0, "limiter reads as On/Off");
+      }
+
+      // Every model must name itself.  A short table here used to clamp the
+      // last three values to "VCA".
+      {
+        std::set<std::string> names;
+        bool allNamed = true;
+        for (int m = 0; m < static_cast<int>(comp::Model::Count); ++m) {
+          char buf[128] = {0};
+          params->value_to_text(plugin, 0, static_cast<double>(m), buf,
+                                sizeof(buf));
+          if (std::strlen(buf) == 0 ||
+              std::strcmp(buf, comp::kModelLabels[m]) != 0) {
+            std::printf("  model %d reads as '%s', expected '%s'\n", m, buf,
+                        comp::kModelLabels[m]);
+            allNamed = false;
+          }
+          names.insert(buf);
+        }
+        check(allNamed && names.size() ==
+                              static_cast<size_t>(comp::Model::Count),
+              "every model reports its own name");
       }
 
       selectModel(5.0);  // VCA: RATIO knob at (400,424)

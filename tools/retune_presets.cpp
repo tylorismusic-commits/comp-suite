@@ -61,6 +61,10 @@ comp::ParamId driveParam(int model, bool& increasesWithValue) {
     case 5:
       increasesWithValue = false;  // VCA threshold: lower dB is more reduction
       return comp::P_THRESHOLD;
+    case 6:
+    case 7:
+      increasesWithValue = false;  // Clean/Molot threshold, same direction
+      return comp::P_THRESHOLD;
     default:
       return comp::P_COUNT;
   }

@@ -81,15 +81,16 @@ public:
     // Stereo-linked RMS.  Mean power of the two channels, so a hard-panned
     // signal reads 3 dB low rather than full scale on one side only.
     const float power = 0.5f * (detL * detL + detR * detR);
-    rms_ += (power - rms_) * rmsCoeff_;
+    // timeCoeff() returns the retention factor: 1 - coeff is the update weight.
+    rms_ += (power - rms_) * (1.0f - rmsCoeff_);
     const float levelDb = gainToDb(std::sqrt(std::max(rms_, 1e-20f)));
 
     const float target =
         gainReductionDb(levelDb, thresholdDb_, ratio_, kneeDb_);
     if (target > gr_) {
-      gr_ += (target - gr_) * attackCoeff_;
+      gr_ += (target - gr_) * (1.0f - attackCoeff_);
     } else {
-      gr_ += (target - gr_) * releaseCoeff_;
+      gr_ += (target - gr_) * (1.0f - releaseCoeff_);
     }
     gr_ = std::max(gr_, 0.0f);
 

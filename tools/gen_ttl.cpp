@@ -43,7 +43,7 @@ constexpr const char* kPluginBinary = "comp_suite.so";
 constexpr const char* kUiBinary = "comp_suite_ui.so";
 constexpr int kVersionMajor = 0;
 constexpr int kVersionMinor = 6;
-constexpr int kVersionMicro = 0;  // LV2 has major/minor/micro, no patch
+constexpr int kVersionMicro = 1;  // LV2 has major/minor/micro, no patch
 
 // The meter outputs are not parameters: they exist only in the LV2 port list,
 // after the control ports.

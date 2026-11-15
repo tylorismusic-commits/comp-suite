@@ -398,8 +398,6 @@ bool paramsValue(const clap_plugin_t* p, clap_id id, double* value) {
 
 namespace {
 
-const char* const kModelNames[6] = {"76Blue", "76Black", "2A", "3A", "Xpress",
-                                    "VCA"};
 const char* const kDistortionNames[4] = {"Off", "Dist 2", "Dist 3", "Clip"};
 const char* const kMeterNames[5] = {"GR", "+8", "+4", "Graph", "Off"};
 
@@ -419,8 +417,10 @@ bool paramsValueToText(const clap_plugin_t* p, clap_id id, double value,
   switch (id) {
     case P_MODEL:
       // Format the value being asked about, not the current selection.
-      std::snprintf(out, size, "%s", kModelNames[std::clamp(
-                                         static_cast<int>(value + 0.5), 0, 5)]);
+      std::snprintf(
+          out, size, "%s",
+          kModelLabels[std::clamp(static_cast<int>(value + 0.5), 0,
+                                  static_cast<int>(Model::Count) - 1)]);
       return true;
     case P_ENABLED:
       std::snprintf(out, size, "%s", value > 0.5 ? "On" : "Off");
@@ -433,6 +433,10 @@ bool paramsValueToText(const clap_plugin_t* p, clap_id id, double value,
         } else {
           std::snprintf(out, size, "%+.1f dB", db);
         }
+      } else if (model == 6) {
+        std::snprintf(out, size, "%+.1f dB", -30.0 + 60.0 * value);
+      } else if (model == 7) {
+        std::snprintf(out, size, "%+.1f dB", -12.0 + 24.0 * value);
       } else {
         std::snprintf(out, size, "%.0f%%", value * 100.0);
       }
@@ -442,6 +446,10 @@ bool paramsValueToText(const clap_plugin_t* p, clap_id id, double value,
         std::snprintf(out, size, "%.0f", value * 100.0);
       } else if (model == 5) {
         std::snprintf(out, size, "%.1f dB", -30.0 + 40.0 * value);
+      } else if (model == 6) {
+        std::snprintf(out, size, "%.1f dB", -60.0 + 60.0 * value);
+      } else if (model == 7) {
+        std::snprintf(out, size, "%.1f dB", -40.0 + 40.0 * value);
       } else {
         std::snprintf(out, size, "%.0f%%", value * 100.0);
       }
@@ -465,6 +473,10 @@ bool paramsValueToText(const clap_plugin_t* p, clap_id id, double value,
         ms = 0.1 * std::pow(500.0, value);
       } else if (model == 5) {
         ms = 0.1 * std::pow(300.0, value);
+      } else if (model == 6) {
+        ms = 0.1 * std::pow(2000.0, value);
+      } else if (model == 7) {
+        ms = 1.0 + 99.0 * value;
       } else {
         std::snprintf(out, size, "%.0f%%", value * 100.0);
         return true;
@@ -484,6 +496,10 @@ bool paramsValueToText(const clap_plugin_t* p, clap_id id, double value,
         ms = 50.0 * std::pow(60.0, value);
       } else if (model == 5) {
         ms = 100.0 * std::pow(12.0, value);
+      } else if (model == 6) {
+        ms = 5.0 * std::pow(1000.0, value);
+      } else if (model == 7) {
+        ms = 50.0 + 950.0 * value;
       } else {
         std::snprintf(out, size, "%.0f%%", value * 100.0);
         return true;
@@ -528,6 +544,31 @@ bool paramsValueToText(const clap_plugin_t* p, clap_id id, double value,
     case P_LIMITER_THRESH:
       std::snprintf(out, size, "%.1f dB", -24.0 + 24.0 * value);
       return true;
+    case P_KNEE:
+      std::snprintf(out, size, "%.1f dB", 18.0 * value);
+      return true;
+    case P_SAT_DRIVE:
+      std::snprintf(out, size, "%+.1f dB", -12.0 + 24.0 * value);
+      return true;
+    case P_ATTACK_MODE:
+      std::snprintf(out, size, "%s", kAttackModeLabels[value > 0.5 ? 1 : 0]);
+      return true;
+    case P_STEREO_MODE:
+      std::snprintf(
+          out, size, "%s",
+          kStereoModeLabels[std::clamp(static_cast<int>(value + 0.5), 0, 5)]);
+      return true;
+    case P_AUTO_MAKEUP:
+    case P_TRUE_PEAK:
+    case P_VCA_AUTO:
+      std::snprintf(out, size, "%s", value > 0.5 ? "On" : "Off");
+      return true;
+    case P_SC_SOURCE:
+      std::snprintf(out, size, "%s", value > 0.5 ? "External" : "Internal");
+      return true;
+    case P_VCA_LINK:
+      std::snprintf(out, size, "%.0f%%", value * 100.0);
+      return true;
     default:
       std::snprintf(out, size, "%.2f", value);
       return true;
@@ -552,7 +593,7 @@ bool paramsTextToValue(const clap_plugin_t* p, clap_id id, const char* text,
   double v = 0.0;
   switch (id) {
     case P_MODEL:
-      if (matchList(kModelNames, 6, &v)) {
+      if (matchList(kModelLabels, static_cast<int>(Model::Count), &v)) {
         *value = v;
         return true;
       }

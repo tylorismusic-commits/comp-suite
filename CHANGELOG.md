@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.6.1 — 2026-11-15
+
+### Fixed
+
+- **Clean distorted heavily.** `timeCoeff()` returns the *retention* factor, but
+  the Clean compressor used it as the update weight, inverting both the RMS
+  detector and the gain smoother. The "RMS" tracked the instantaneous signal,
+  so the gain moved at audio rate: measured -16 dB THD with the colour stage
+  off, versus -62 dB now.
+- **Molot's Attack Mode was reversed.** The reference maps mode 0 (Alpha) to
+  the sharp/exp curve; the port had it the other way round.
+- **Molot's Saturation switch did nothing.** The code compared the normalised
+  distortion value (0-1, i.e. P_DISTORTION/3) against 0.5, so turning SAT on
+  (value 1 = 0.33) left it off.
+- **Host parameter text named the wrong models.** The CLAP string table still
+  had six entries and clamped, so Clean and Molot both read as "VCA" — three
+  VCA entries in REAPER's model list. It now uses the full label table.
+- **Value text for every parameter.** Knee, Sat Drive, Attack Mode, Stereo
+  Mode, Auto Makeup, Sidechain source, True Peak, VCA Link and VCA Auto now
+  report readable values instead of bare numbers, and Input/Threshold/Attack/
+  Release report dB and ms for the Clean and Molot models.
+
+### Note
+
+- Parameter *names* stay generic ("Threshold", "Input") across models so host
+  automation remains stable; the model selector and value text carry the
+  model-specific meaning.
+
 ## 0.6.0 — 2026-11-15
 
 ### Added

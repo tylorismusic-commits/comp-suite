@@ -533,6 +533,39 @@ int main() {
           label);
   }
 
+  // Molot's switches must actually flip the thing they claim to.
+  {
+    const auto render = [](float distortion, float attackMode) {
+      Engine engine;
+      engine.prepare(kSr);
+      Controls c = baseControls(Model::Molot);
+      c.input = 0.5f;
+      c.threshold = 0.5f;
+      c.distortion = distortion;
+      c.attackMode = attackMode;
+      c.satDrive = 1.0f;
+      return renderSine(engine, c, 500.0f, -6.0f, 1.5f);
+    };
+    const Render dry = render(0.0f, 0.0f);   // sat off, Alpha
+    const Render sat = render(1.0f, 0.0f);    // sat on
+    const Render sigma = render(0.0f, 1.0f);  // Sigma
+
+    const float dryRms = rmsTail(dry.left, 0.5f);
+    const float satRms = rmsTail(sat.left, 0.5f);
+    char label[160];
+    std::snprintf(label, sizeof(label),
+                  "Molot saturation changes the signal (%.2f dB)",
+                  gainToDb(satRms / std::max(dryRms, 1e-9f)));
+    check(std::fabs(gainToDb(satRms / std::max(dryRms, 1e-9f))) > 0.2f ||
+              std::fabs(sat.peakGr - dry.peakGr) > 0.2f,
+          label);
+
+    std::snprintf(label, sizeof(label),
+                  "Molot Alpha and Sigma differ (GR %.1f vs %.1f dB)",
+                  dry.peakGr, sigma.peakGr);
+    check(std::fabs(dry.peakGr - sigma.peakGr) > 0.5f, label);
+  }
+
   // Peak reduction must increase reduction monotonically, and the control
   // must be usable across its travel rather than slamming at one end.
   {
