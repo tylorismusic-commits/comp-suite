@@ -43,3 +43,10 @@ License 1.1. The licence text ships beside it as `assets/fonts/OFL.txt`.
 ## CLAP
 
 `third_party/clap` contains the CLAP headers, MIT licensed.
+
+## hearth-dsp
+
+The shared DSP modules under `third_party/hearth-dsp` (ADAA saturation,
+biquads, envelopes, true-peak detection, oversampling and the ratio ladder) are
+part of hearth-dsp, GPL-3.0-or-later, extracted from this project. See
+`third_party/hearth-dsp/THIRD_PARTY_NOTICES.md` for algorithm provenance.

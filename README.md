@@ -153,6 +153,8 @@ Hearth channel strip instead. In-plugin **user preset saving** is planned for
 1.1; CLAP and LV2 hosts already save and recall the full plugin state as their
 own presets.
 
+Shared DSP (ADAA, biquads, envelopes, oversampling, dynamics) lives in the
+separate `hearth-dsp` header-only library and is consumed here as a submodule.
 Measured behaviour lives in `tools/measure.py`, which renders reference
 implementations through REAPER and compares static curves, timing and
 harmonics.

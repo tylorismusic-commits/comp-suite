@@ -9,6 +9,14 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
 endif()
 include(GNUInstallDirs)
 
+# Shared header-only DSP (ADAA, biquad, envelope, oversampling, dynamics).
+set(HEARTH_DSP_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party/hearth-dsp"
+    CACHE PATH "Path to the hearth-dsp checkout")
+if(NOT EXISTS "${HEARTH_DSP_DIR}/include/hdsp/hdsp.hpp")
+  message(FATAL_ERROR "hearth-dsp not found at ${HEARTH_DSP_DIR}")
+endif()
+include_directories("${HEARTH_DSP_DIR}/include")
+
 enable_testing()
 
 set(CLAP_DIR "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/clap"
