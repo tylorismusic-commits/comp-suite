@@ -9,7 +9,7 @@ namespace comp {
 // formats cannot advertise different versions.
 constexpr int kVersionMajor = 1;
 constexpr int kVersionMinor = 0;
-constexpr int kVersionMicro = 0;
-constexpr const char* kVersion = "1.0.0";
+constexpr int kVersionMicro = 1;
+constexpr const char* kVersion = "1.0.1";
 
 } // namespace comp

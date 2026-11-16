@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.0.1 — 2026-11-15
+
+### Changed
+
+- **Shared DSP extracted into `hearth-dsp` 0.1.0** — ADAA saturation, biquads,
+  envelopes, smoothers, the ratio ladder, true-peak detection and oversampling
+  now live in a header-only library consumed as a `third_party/hearth-dsp`
+  submodule. No audio behaviour changed; all ten models, presets and the
+  oversampling modes are identical.
+- The library has its own CTest suite, including the left/right oversampling
+  isolation regression.
+- Builds now require `git submodule update --init --recursive` before CMake.
+
 ## 1.0.0 — 2026-11-15
 
 ### Added
