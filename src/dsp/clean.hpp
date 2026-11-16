@@ -107,8 +107,8 @@ public:
     return gr_;
   }
 
-  // Applied by the engine after its output limiter, immediately before the
-  // plugin output.  No-op when the colour mode is Off.
+  // Applied by the engine after the gain cell, before the model calibration
+  // trim and the output limiter.  No-op when the colour mode is Off.
   void postColour(float& left, float& right) noexcept {
     left = colour(left, 0);
     right = colour(right, 1);

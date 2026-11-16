@@ -56,6 +56,11 @@
   reduction on the reference signal instead of 6-11 dB. Other presets' gain
   reduction is unchanged by the level calibration; only their absolute output
   follows the new model trim.
+- **Factory presets now state every model-specific switch explicitly** — 76
+  Make Up, 2A/3A output, Clean distortion/output, Molot stereo/attack/
+  distortion, Red output/limiter, Easy output/link — so loading one cannot
+  inherit the previous model's switches. The 76 presets also use only the real
+  button-bank ratios (4/8/12/20/ALL).
 - **Red presets now switch Auto Release off explicitly**, as the VCA presets
   already did. Presets are partial by design, so a preceding preset could leave
   Auto Release on and make the release knob appear dead.

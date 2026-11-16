@@ -64,6 +64,10 @@ public:
     inputSmooth_.reset(dbToGain(-80.0f));
     driveSmooth_.setTime(25.0f, sr_);
     driveSmooth_.reset(1.3f);
+    makeupSmooth_.setTime(15.0f, sr_);
+    makeupSmooth_.reset(1.0f);
+    outputSmooth_.setTime(15.0f, sr_);
+    outputSmooth_.reset(1.0f);
     for (int ch = 0; ch < 2; ++ch) {
       // Only remove DC, not sub-bass.  The old 18 Hz corner thinned the low
       // end compared with the references.
@@ -72,6 +76,8 @@ public:
     }
     overDb_ = 0.0f;
     setControls(controls_);
+    makeupSmooth_.snap();
+    outputSmooth_.snap();
   }
 
   void setControls(const Controls& c) noexcept {
@@ -109,9 +115,11 @@ public:
     releaseCoeff_ = timeCoeff(releaseMs_, sr_);
     releaseDeepCoeff_ = timeCoeff(releaseMs_ * 1.35f, sr_);
 
-    outputGain_ = dbToGain(-12.0f + 24.0f * clampf(c.output, 0.0f, 1.0f));
+    outputSmooth_.setTarget(
+        dbToGain(-12.0f + 24.0f * clampf(c.output, 0.0f, 1.0f)));
     // Bipolar make-up, like the other models, independent of the output trim.
-    makeupGain_ = dbToGain(20.0f * (clampf(c.makeup, 0.0f, 1.0f) - 0.5f));
+    makeupSmooth_.setTarget(
+        dbToGain(20.0f * (clampf(c.makeup, 0.0f, 1.0f) - 0.5f)));
   }
 
   // Processes one stereo frame in place.  Returns gain reduction in dB (>= 0).
@@ -170,12 +178,12 @@ public:
     const float fetDrive =
         2.2f + 3.2f * grNorm + ratioDrive + (allButtons_ ? allDrive : 0.0f);
 
+    const float makeup = makeupSmooth_.next();
+    const float output = outputSmooth_.next();
     const float cellL = inL * gain;
     const float cellR = inR * gain;
-    left = processChannel(cellL, 0, fetDrive, drive) * makeupGain_ *
-           outputGain_;
-    right = processChannel(cellR, 1, fetDrive, drive) * makeupGain_ *
-            outputGain_;
+    left = processChannel(cellL, 0, fetDrive, drive) * makeup * output;
+    right = processChannel(cellR, 1, fetDrive, drive) * makeup * output;
     return grDb;
   }
 
@@ -187,6 +195,10 @@ public:
       fetShaper_[ch].reset();
     }
     overDb_ = 0.0f;
+    // Keep the current make-up/output level across a host reset; resetting to
+    // unity would make the output jump.
+    makeupSmooth_.snap();
+    outputSmooth_.snap();
   }
 
 private:
@@ -215,13 +227,13 @@ private:
   float attackCoeff_ = 0.0f;
   float releaseCoeff_ = 0.0f;
   float releaseDeepCoeff_ = 0.0f;
-  float outputGain_ = 1.0f;
-  float makeupGain_ = 1.0f;
   float overDb_ = 0.0f;
   OnePoleLP lpOut_[2];
   OnePoleLP dcLp_[2];
   Smoothed inputSmooth_;
   Smoothed driveSmooth_;
+  Smoothed makeupSmooth_;
+  Smoothed outputSmooth_;
   AsymShaper inShaper_[2];
   AsymShaper fetShaper_[2];
 };

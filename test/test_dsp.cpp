@@ -537,6 +537,93 @@ int main() {
       }
     }
     check(ratioOk, "3A presets set their fixed Compress mode");
+
+    // Model-specific switches and trims must be stated by every preset, not
+    // inherited from whatever was loaded before.
+    bool explicitOk = true;
+    for (int i = 0; i < kPresetCount; ++i) {
+      const Preset& preset = kPresets[i];
+      const auto has = [&](ParamId id) {
+        for (const PresetValue& v : preset.values) {
+          if (v.param == static_cast<int>(id)) {
+            return true;
+          }
+        }
+        return false;
+      };
+      const auto need = [&](ParamId id, const char* what) {
+        if (!has(id)) {
+          std::printf("  preset '%s' does not set %s\n", preset.name, what);
+          explicitOk = false;
+        }
+      };
+      switch (preset.model) {
+        case 0:
+        case 1:
+          need(P_MAKEUP, "Make Up");
+          need(P_OUTPUT, "Output");
+          break;
+        case 2:
+        case 3:
+          need(P_MAKEUP, "Gain");
+          need(P_OUTPUT, "Output switch");
+          break;
+        case 4:
+          need(P_DISTORTION, "Distortion");
+          need(P_OUTPUT, "Output");
+          break;
+        case 5:
+          need(P_MAKEUP, "Make Up");
+          break;
+        case 6:
+          need(P_MAKEUP, "Make Up");
+          need(P_OUTPUT, "Output");
+          need(P_DISTORTION, "Distortion");
+          break;
+        case 7:
+          need(P_MAKEUP, "Make Up");
+          need(P_DISTORTION, "Distortion");
+          need(P_STEREO_MODE, "Stereo Mode");
+          need(P_ATTACK_MODE, "Attack Mode");
+          break;
+        case 8:
+          need(P_MAKEUP, "Make Up");
+          need(P_OUTPUT, "Output");
+          need(P_LIMITER_ON, "Limiter");
+          break;
+        case 9:
+          need(P_OUTPUT, "Output");
+          need(P_VCA_LINK, "Link");
+          break;
+        default:
+          break;
+      }
+    }
+    check(explicitOk, "every model-specific preset control is explicit");
+
+    // The 76 button bank only has 4/8/12/20/ALL.  A preset on 3:1 or 6:1
+    // would leave the panel with no button lit (and LV2 has no host-side
+    // snap), so every 76 preset must sit on a real bank step.
+    bool bankOk = true;
+    for (int i = 0; i < kPresetCount; ++i) {
+      const Preset& preset = kPresets[i];
+      if (preset.model > 1) {
+        continue;
+      }
+      float ratio = 0.5f;
+      for (const PresetValue& v : preset.values) {
+        if (v.param == static_cast<int>(P_RATIO)) {
+          ratio = v.value;
+        }
+      }
+      const int step = ratioStepFrom(ratio);
+      if (step != 3 && step != 5 && step != 6 && step != 7 && step != 8) {
+        std::printf("  76 preset '%s' uses a non-bank ratio %.0f\n",
+                    preset.name, ratio);
+        bankOk = false;
+      }
+    }
+    check(bankOk, "76 presets use ratios on the button bank");
   }
 
   // Clean's distortion should shade, not squash: the shaped modes must stay

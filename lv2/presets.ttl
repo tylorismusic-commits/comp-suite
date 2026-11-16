@@ -40,7 +40,8 @@
     [ lv2:symbol "attack" ; pset:value 0.35 ] ,
     [ lv2:symbol "release" ; pset:value 0.45 ] ,
     [ lv2:symbol "output" ; pset:value 0.5 ] ,
-    [ lv2:symbol "mix" ; pset:value 1 ] .
+    [ lv2:symbol "mix" ; pset:value 1 ] ,
+    [ lv2:symbol "makeup" ; pset:value 0.5 ] .
 
 <https://github.com/tylorismusic-commits/comp-suite#preset_76-vocal-slam>
     a pset:Preset ;
@@ -55,7 +56,8 @@
     [ lv2:symbol "attack" ; pset:value 0.5 ] ,
     [ lv2:symbol "release" ; pset:value 0.4 ] ,
     [ lv2:symbol "output" ; pset:value 0.45 ] ,
-    [ lv2:symbol "mix" ; pset:value 1 ] .
+    [ lv2:symbol "mix" ; pset:value 1 ] ,
+    [ lv2:symbol "makeup" ; pset:value 0.5 ] .
 
 <https://github.com/tylorismusic-commits/comp-suite#preset_76-vocal-gentle>
     a pset:Preset ;
@@ -65,12 +67,13 @@
     pset:bank <https://github.com/tylorismusic-commits/comp-suite#bank_vocals> ;
     lv2:port
     [ lv2:symbol "model" ; pset:value 0 ] ,
-    [ lv2:symbol "input" ; pset:value 0.483 ] ,
-    [ lv2:symbol "ratio" ; pset:value 2 ] ,
+    [ lv2:symbol "input" ; pset:value 0.472 ] ,
+    [ lv2:symbol "ratio" ; pset:value 3 ] ,
     [ lv2:symbol "attack" ; pset:value 0.45 ] ,
     [ lv2:symbol "release" ; pset:value 0.55 ] ,
     [ lv2:symbol "output" ; pset:value 0.52 ] ,
-    [ lv2:symbol "mix" ; pset:value 1 ] .
+    [ lv2:symbol "mix" ; pset:value 1 ] ,
+    [ lv2:symbol "makeup" ; pset:value 0.5 ] .
 
 <https://github.com/tylorismusic-commits/comp-suite#preset_76-kick-punch>
     a pset:Preset ;
@@ -85,7 +88,8 @@
     [ lv2:symbol "attack" ; pset:value 0.85 ] ,
     [ lv2:symbol "release" ; pset:value 0.25 ] ,
     [ lv2:symbol "output" ; pset:value 0.5 ] ,
-    [ lv2:symbol "mix" ; pset:value 1 ] .
+    [ lv2:symbol "mix" ; pset:value 1 ] ,
+    [ lv2:symbol "makeup" ; pset:value 0.5 ] .
 
 <https://github.com/tylorismusic-commits/comp-suite#preset_76-snare-crack>
     a pset:Preset ;
@@ -100,7 +104,8 @@
     [ lv2:symbol "attack" ; pset:value 0.7 ] ,
     [ lv2:symbol "release" ; pset:value 0.3 ] ,
     [ lv2:symbol "output" ; pset:value 0.48 ] ,
-    [ lv2:symbol "mix" ; pset:value 1 ] .
+    [ lv2:symbol "mix" ; pset:value 1 ] ,
+    [ lv2:symbol "makeup" ; pset:value 0.5 ] .
 
 <https://github.com/tylorismusic-commits/comp-suite#preset_76-drum-smash-par>
     a pset:Preset ;
@@ -115,7 +120,8 @@
     [ lv2:symbol "attack" ; pset:value 0.6 ] ,
     [ lv2:symbol "release" ; pset:value 0.3 ] ,
     [ lv2:symbol "output" ; pset:value 0.42 ] ,
-    [ lv2:symbol "mix" ; pset:value 0.35 ] .
+    [ lv2:symbol "mix" ; pset:value 0.35 ] ,
+    [ lv2:symbol "makeup" ; pset:value 0.5 ] .
 
 <https://github.com/tylorismusic-commits/comp-suite#preset_76-room-crush>
     a pset:Preset ;
@@ -130,7 +136,8 @@
     [ lv2:symbol "attack" ; pset:value 0.5 ] ,
     [ lv2:symbol "release" ; pset:value 0.25 ] ,
     [ lv2:symbol "output" ; pset:value 0.4 ] ,
-    [ lv2:symbol "mix" ; pset:value 0.5 ] .
+    [ lv2:symbol "mix" ; pset:value 0.5 ] ,
+    [ lv2:symbol "makeup" ; pset:value 0.5 ] .
 
 <https://github.com/tylorismusic-commits/comp-suite#preset_76-bass-di>
     a pset:Preset ;
@@ -145,7 +152,8 @@
     [ lv2:symbol "attack" ; pset:value 0.55 ] ,
     [ lv2:symbol "release" ; pset:value 0.55 ] ,
     [ lv2:symbol "output" ; pset:value 0.5 ] ,
-    [ lv2:symbol "mix" ; pset:value 1 ] .
+    [ lv2:symbol "mix" ; pset:value 1 ] ,
+    [ lv2:symbol "makeup" ; pset:value 0.5 ] .
 
 <https://github.com/tylorismusic-commits/comp-suite#preset_76-guitar-bite>
     a pset:Preset ;
@@ -155,12 +163,13 @@
     pset:bank <https://github.com/tylorismusic-commits/comp-suite#bank_guitars> ;
     lv2:port
     [ lv2:symbol "model" ; pset:value 0 ] ,
-    [ lv2:symbol "input" ; pset:value 0.431 ] ,
-    [ lv2:symbol "ratio" ; pset:value 4 ] ,
+    [ lv2:symbol "input" ; pset:value 0.429 ] ,
+    [ lv2:symbol "ratio" ; pset:value 5 ] ,
     [ lv2:symbol "attack" ; pset:value 0.45 ] ,
     [ lv2:symbol "release" ; pset:value 0.5 ] ,
     [ lv2:symbol "output" ; pset:value 0.5 ] ,
-    [ lv2:symbol "mix" ; pset:value 1 ] .
+    [ lv2:symbol "mix" ; pset:value 1 ] ,
+    [ lv2:symbol "makeup" ; pset:value 0.5 ] .
 
 <https://github.com/tylorismusic-commits/comp-suite#preset_76b-vocal-level>
     a pset:Preset ;
@@ -175,7 +184,8 @@
     [ lv2:symbol "attack" ; pset:value 0.4 ] ,
     [ lv2:symbol "release" ; pset:value 0.5 ] ,
     [ lv2:symbol "output" ; pset:value 0.51 ] ,
-    [ lv2:symbol "mix" ; pset:value 1 ] .
+    [ lv2:symbol "mix" ; pset:value 1 ] ,
+    [ lv2:symbol "makeup" ; pset:value 0.5 ] .
 
 <https://github.com/tylorismusic-commits/comp-suite#preset_76b-bass-control>
     a pset:Preset ;
@@ -185,12 +195,13 @@
     pset:bank <https://github.com/tylorismusic-commits/comp-suite#bank_bass> ;
     lv2:port
     [ lv2:symbol "model" ; pset:value 1 ] ,
-    [ lv2:symbol "input" ; pset:value 0.447 ] ,
-    [ lv2:symbol "ratio" ; pset:value 4 ] ,
+    [ lv2:symbol "input" ; pset:value 0.454 ] ,
+    [ lv2:symbol "ratio" ; pset:value 3 ] ,
     [ lv2:symbol "attack" ; pset:value 0.6 ] ,
     [ lv2:symbol "release" ; pset:value 0.55 ] ,
     [ lv2:symbol "output" ; pset:value 0.5 ] ,
-    [ lv2:symbol "mix" ; pset:value 1 ] .
+    [ lv2:symbol "mix" ; pset:value 1 ] ,
+    [ lv2:symbol "makeup" ; pset:value 0.5 ] .
 
 <https://github.com/tylorismusic-commits/comp-suite#preset_76b-drum-bus>
     a pset:Preset ;
@@ -205,7 +216,8 @@
     [ lv2:symbol "attack" ; pset:value 0.75 ] ,
     [ lv2:symbol "release" ; pset:value 0.35 ] ,
     [ lv2:symbol "output" ; pset:value 0.52 ] ,
-    [ lv2:symbol "mix" ; pset:value 0.85 ] .
+    [ lv2:symbol "mix" ; pset:value 0.85 ] ,
+    [ lv2:symbol "makeup" ; pset:value 0.5 ] .
 
 <https://github.com/tylorismusic-commits/comp-suite#preset_76b-room-glue>
     a pset:Preset ;
@@ -220,7 +232,8 @@
     [ lv2:symbol "attack" ; pset:value 0.55 ] ,
     [ lv2:symbol "release" ; pset:value 0.3 ] ,
     [ lv2:symbol "output" ; pset:value 0.4 ] ,
-    [ lv2:symbol "mix" ; pset:value 0.45 ] .
+    [ lv2:symbol "mix" ; pset:value 0.45 ] ,
+    [ lv2:symbol "makeup" ; pset:value 0.5 ] .
 
 <https://github.com/tylorismusic-commits/comp-suite#preset_2a-vocal-glue>
     a pset:Preset ;
@@ -233,7 +246,8 @@
     [ lv2:symbol "threshold" ; pset:value 0.365 ] ,
     [ lv2:symbol "ratio" ; pset:value 0 ] ,
     [ lv2:symbol "makeup" ; pset:value 0.6 ] ,
-    [ lv2:symbol "mix" ; pset:value 1 ] .
+    [ lv2:symbol "mix" ; pset:value 1 ] ,
+    [ lv2:symbol "output" ; pset:value 0 ] .
 
 <https://github.com/tylorismusic-commits/comp-suite#preset_2a-vocal-limit>
     a pset:Preset ;
@@ -246,7 +260,8 @@
     [ lv2:symbol "threshold" ; pset:value 0.737 ] ,
     [ lv2:symbol "ratio" ; pset:value 8 ] ,
     [ lv2:symbol "makeup" ; pset:value 0.55 ] ,
-    [ lv2:symbol "mix" ; pset:value 1 ] .
+    [ lv2:symbol "mix" ; pset:value 1 ] ,
+    [ lv2:symbol "output" ; pset:value 0 ] .
 
 <https://github.com/tylorismusic-commits/comp-suite#preset_2a-bass-smooth>
     a pset:Preset ;
@@ -259,7 +274,8 @@
     [ lv2:symbol "threshold" ; pset:value 0.475 ] ,
     [ lv2:symbol "ratio" ; pset:value 0 ] ,
     [ lv2:symbol "makeup" ; pset:value 0.65 ] ,
-    [ lv2:symbol "mix" ; pset:value 1 ] .
+    [ lv2:symbol "mix" ; pset:value 1 ] ,
+    [ lv2:symbol "output" ; pset:value 0 ] .
 
 <https://github.com/tylorismusic-commits/comp-suite#preset_2a-guitar-strum>
     a pset:Preset ;
@@ -272,7 +288,8 @@
     [ lv2:symbol "threshold" ; pset:value 0.315 ] ,
     [ lv2:symbol "ratio" ; pset:value 0 ] ,
     [ lv2:symbol "makeup" ; pset:value 0.55 ] ,
-    [ lv2:symbol "mix" ; pset:value 1 ] .
+    [ lv2:symbol "mix" ; pset:value 1 ] ,
+    [ lv2:symbol "output" ; pset:value 0 ] .
 
 <https://github.com/tylorismusic-commits/comp-suite#preset_2a-room-level>
     a pset:Preset ;
@@ -285,7 +302,8 @@
     [ lv2:symbol "threshold" ; pset:value 0.517 ] ,
     [ lv2:symbol "ratio" ; pset:value 0 ] ,
     [ lv2:symbol "makeup" ; pset:value 0.58 ] ,
-    [ lv2:symbol "mix" ; pset:value 0.45 ] .
+    [ lv2:symbol "mix" ; pset:value 0.45 ] ,
+    [ lv2:symbol "output" ; pset:value 0 ] .
 
 <https://github.com/tylorismusic-commits/comp-suite#preset_3a-vocal-presence>
     a pset:Preset ;
@@ -298,7 +316,8 @@
     [ lv2:symbol "ratio" ; pset:value 0 ] ,
     [ lv2:symbol "threshold" ; pset:value 0.308 ] ,
     [ lv2:symbol "makeup" ; pset:value 0.6 ] ,
-    [ lv2:symbol "mix" ; pset:value 1 ] .
+    [ lv2:symbol "mix" ; pset:value 1 ] ,
+    [ lv2:symbol "output" ; pset:value 0 ] .
 
 <https://github.com/tylorismusic-commits/comp-suite#preset_3a-drum-room>
     a pset:Preset ;
@@ -311,7 +330,8 @@
     [ lv2:symbol "ratio" ; pset:value 0 ] ,
     [ lv2:symbol "threshold" ; pset:value 0.419 ] ,
     [ lv2:symbol "makeup" ; pset:value 0.55 ] ,
-    [ lv2:symbol "mix" ; pset:value 0.8 ] .
+    [ lv2:symbol "mix" ; pset:value 0.8 ] ,
+    [ lv2:symbol "output" ; pset:value 0 ] .
 
 <https://github.com/tylorismusic-commits/comp-suite#preset_3a-bass-fingers>
     a pset:Preset ;
@@ -324,7 +344,8 @@
     [ lv2:symbol "ratio" ; pset:value 0 ] ,
     [ lv2:symbol "threshold" ; pset:value 0.375 ] ,
     [ lv2:symbol "makeup" ; pset:value 0.63 ] ,
-    [ lv2:symbol "mix" ; pset:value 1 ] .
+    [ lv2:symbol "mix" ; pset:value 1 ] ,
+    [ lv2:symbol "output" ; pset:value 0 ] .
 
 <https://github.com/tylorismusic-commits/comp-suite#preset_3a-guitar-bus>
     a pset:Preset ;
@@ -337,7 +358,8 @@
     [ lv2:symbol "ratio" ; pset:value 0 ] ,
     [ lv2:symbol "threshold" ; pset:value 0.342 ] ,
     [ lv2:symbol "makeup" ; pset:value 0.56 ] ,
-    [ lv2:symbol "mix" ; pset:value 0.9 ] .
+    [ lv2:symbol "mix" ; pset:value 0.9 ] ,
+    [ lv2:symbol "output" ; pset:value 0 ] .
 
 <https://github.com/tylorismusic-commits/comp-suite#preset_xpress-vocal-dense>
     a pset:Preset ;
@@ -536,7 +558,9 @@
     [ lv2:symbol "attack" ; pset:value 0.35 ] ,
     [ lv2:symbol "release" ; pset:value 0.5 ] ,
     [ lv2:symbol "makeup" ; pset:value 0.55 ] ,
-    [ lv2:symbol "mix" ; pset:value 1 ] .
+    [ lv2:symbol "mix" ; pset:value 1 ] ,
+    [ lv2:symbol "distortion" ; pset:value 0 ] ,
+    [ lv2:symbol "output" ; pset:value 0.5 ] .
 
 <https://github.com/tylorismusic-commits/comp-suite#preset_clean-drum-control>
     a pset:Preset ;
@@ -553,7 +577,9 @@
     [ lv2:symbol "attack" ; pset:value 0.2 ] ,
     [ lv2:symbol "release" ; pset:value 0.35 ] ,
     [ lv2:symbol "makeup" ; pset:value 0.55 ] ,
-    [ lv2:symbol "mix" ; pset:value 1 ] .
+    [ lv2:symbol "mix" ; pset:value 1 ] ,
+    [ lv2:symbol "distortion" ; pset:value 0 ] ,
+    [ lv2:symbol "output" ; pset:value 0.5 ] .
 
 <https://github.com/tylorismusic-commits/comp-suite#preset_clean-mix-glue>
     a pset:Preset ;
@@ -571,7 +597,9 @@
     [ lv2:symbol "release" ; pset:value 0.6 ] ,
     [ lv2:symbol "makeup" ; pset:value 0.52 ] ,
     [ lv2:symbol "mix" ; pset:value 1 ] ,
-    [ lv2:symbol "limiter_on" ; pset:value 1 ] .
+    [ lv2:symbol "limiter_on" ; pset:value 1 ] ,
+    [ lv2:symbol "distortion" ; pset:value 0 ] ,
+    [ lv2:symbol "output" ; pset:value 0.5 ] .
 
 <https://github.com/tylorismusic-commits/comp-suite#preset_clean-bass-control>
     a pset:Preset ;
@@ -588,7 +616,9 @@
     [ lv2:symbol "attack" ; pset:value 0.45 ] ,
     [ lv2:symbol "release" ; pset:value 0.55 ] ,
     [ lv2:symbol "makeup" ; pset:value 0.54 ] ,
-    [ lv2:symbol "mix" ; pset:value 1 ] .
+    [ lv2:symbol "mix" ; pset:value 1 ] ,
+    [ lv2:symbol "distortion" ; pset:value 0 ] ,
+    [ lv2:symbol "output" ; pset:value 0.5 ] .
 
 <https://github.com/tylorismusic-commits/comp-suite#preset_molot-drum-smash>
     a pset:Preset ;
@@ -605,7 +635,10 @@
     [ lv2:symbol "attack" ; pset:value 0.25 ] ,
     [ lv2:symbol "release" ; pset:value 0.35 ] ,
     [ lv2:symbol "makeup" ; pset:value 0.56 ] ,
-    [ lv2:symbol "mix" ; pset:value 1 ] .
+    [ lv2:symbol "mix" ; pset:value 1 ] ,
+    [ lv2:symbol "distortion" ; pset:value 0 ] ,
+    [ lv2:symbol "stereo_mode" ; pset:value 5 ] ,
+    [ lv2:symbol "attack_mode" ; pset:value 0 ] .
 
 <https://github.com/tylorismusic-commits/comp-suite#preset_molot-vocal-grit>
     a pset:Preset ;
@@ -623,7 +656,9 @@
     [ lv2:symbol "release" ; pset:value 0.45 ] ,
     [ lv2:symbol "makeup" ; pset:value 0.54 ] ,
     [ lv2:symbol "mix" ; pset:value 1 ] ,
-    [ lv2:symbol "distortion" ; pset:value 1 ] .
+    [ lv2:symbol "distortion" ; pset:value 1 ] ,
+    [ lv2:symbol "stereo_mode" ; pset:value 5 ] ,
+    [ lv2:symbol "attack_mode" ; pset:value 0 ] .
 
 <https://github.com/tylorismusic-commits/comp-suite#preset_molot-mix-bus>
     a pset:Preset ;
@@ -640,7 +675,10 @@
     [ lv2:symbol "attack" ; pset:value 0.55 ] ,
     [ lv2:symbol "release" ; pset:value 0.6 ] ,
     [ lv2:symbol "makeup" ; pset:value 0.52 ] ,
-    [ lv2:symbol "mix" ; pset:value 1 ] .
+    [ lv2:symbol "mix" ; pset:value 1 ] ,
+    [ lv2:symbol "distortion" ; pset:value 0 ] ,
+    [ lv2:symbol "stereo_mode" ; pset:value 5 ] ,
+    [ lv2:symbol "attack_mode" ; pset:value 0 ] .
 
 <https://github.com/tylorismusic-commits/comp-suite#preset_molot-bass-grip>
     a pset:Preset ;
@@ -657,7 +695,10 @@
     [ lv2:symbol "attack" ; pset:value 0.35 ] ,
     [ lv2:symbol "release" ; pset:value 0.5 ] ,
     [ lv2:symbol "makeup" ; pset:value 0.55 ] ,
-    [ lv2:symbol "mix" ; pset:value 1 ] .
+    [ lv2:symbol "mix" ; pset:value 1 ] ,
+    [ lv2:symbol "distortion" ; pset:value 0 ] ,
+    [ lv2:symbol "stereo_mode" ; pset:value 5 ] ,
+    [ lv2:symbol "attack_mode" ; pset:value 0 ] .
 
 <https://github.com/tylorismusic-commits/comp-suite#preset_red-vocal-control>
     a pset:Preset ;
@@ -674,7 +715,9 @@
     [ lv2:symbol "attack" ; pset:value 0.35 ] ,
     [ lv2:symbol "release" ; pset:value 0.5 ] ,
     [ lv2:symbol "makeup" ; pset:value 0.55 ] ,
-    [ lv2:symbol "mix" ; pset:value 1 ] .
+    [ lv2:symbol "mix" ; pset:value 1 ] ,
+    [ lv2:symbol "output" ; pset:value 0.5 ] ,
+    [ lv2:symbol "limiter_on" ; pset:value 0 ] .
 
 <https://github.com/tylorismusic-commits/comp-suite#preset_red-drum-punch>
     a pset:Preset ;
@@ -691,7 +734,9 @@
     [ lv2:symbol "attack" ; pset:value 0.15 ] ,
     [ lv2:symbol "release" ; pset:value 0.35 ] ,
     [ lv2:symbol "makeup" ; pset:value 0.56 ] ,
-    [ lv2:symbol "mix" ; pset:value 1 ] .
+    [ lv2:symbol "mix" ; pset:value 1 ] ,
+    [ lv2:symbol "output" ; pset:value 0.5 ] ,
+    [ lv2:symbol "limiter_on" ; pset:value 0 ] .
 
 <https://github.com/tylorismusic-commits/comp-suite#preset_red-mix-glue>
     a pset:Preset ;
@@ -709,7 +754,8 @@
     [ lv2:symbol "release" ; pset:value 0.6 ] ,
     [ lv2:symbol "makeup" ; pset:value 0.53 ] ,
     [ lv2:symbol "mix" ; pset:value 1 ] ,
-    [ lv2:symbol "limiter_on" ; pset:value 1 ] .
+    [ lv2:symbol "limiter_on" ; pset:value 1 ] ,
+    [ lv2:symbol "output" ; pset:value 0.5 ] .
 
 <https://github.com/tylorismusic-commits/comp-suite#preset_red-bass-control>
     a pset:Preset ;
@@ -726,7 +772,9 @@
     [ lv2:symbol "attack" ; pset:value 0.4 ] ,
     [ lv2:symbol "release" ; pset:value 0.55 ] ,
     [ lv2:symbol "makeup" ; pset:value 0.54 ] ,
-    [ lv2:symbol "mix" ; pset:value 1 ] .
+    [ lv2:symbol "mix" ; pset:value 1 ] ,
+    [ lv2:symbol "output" ; pset:value 0.5 ] ,
+    [ lv2:symbol "limiter_on" ; pset:value 0 ] .
 
 <https://github.com/tylorismusic-commits/comp-suite#preset_easy-squish-drums>
     a pset:Preset ;
@@ -744,7 +792,9 @@
     [ lv2:symbol "sat_type" ; pset:value 2 ] ,
     [ lv2:symbol "easy_mode" ; pset:value 0 ] ,
     [ lv2:symbol "easy_char" ; pset:value 1 ] ,
-    [ lv2:symbol "mix" ; pset:value 1 ] .
+    [ lv2:symbol "mix" ; pset:value 1 ] ,
+    [ lv2:symbol "output" ; pset:value 0.5 ] ,
+    [ lv2:symbol "vca_link" ; pset:value 1 ] .
 
 <https://github.com/tylorismusic-commits/comp-suite#preset_easy-lift-drums>
     a pset:Preset ;
@@ -762,7 +812,9 @@
     [ lv2:symbol "sat_type" ; pset:value 1 ] ,
     [ lv2:symbol "easy_mode" ; pset:value 1 ] ,
     [ lv2:symbol "easy_char" ; pset:value 0 ] ,
-    [ lv2:symbol "mix" ; pset:value 1 ] .
+    [ lv2:symbol "mix" ; pset:value 1 ] ,
+    [ lv2:symbol "output" ; pset:value 0.5 ] ,
+    [ lv2:symbol "vca_link" ; pset:value 1 ] .
 
 <https://github.com/tylorismusic-commits/comp-suite#preset_easy-room-glue>
     a pset:Preset ;
@@ -780,7 +832,9 @@
     [ lv2:symbol "sat_type" ; pset:value 1 ] ,
     [ lv2:symbol "easy_mode" ; pset:value 1 ] ,
     [ lv2:symbol "easy_char" ; pset:value 0 ] ,
-    [ lv2:symbol "mix" ; pset:value 1 ] .
+    [ lv2:symbol "mix" ; pset:value 1 ] ,
+    [ lv2:symbol "output" ; pset:value 0.5 ] ,
+    [ lv2:symbol "vca_link" ; pset:value 1 ] .
 
 <https://github.com/tylorismusic-commits/comp-suite#preset_easy-parallel-squish>
     a pset:Preset ;
@@ -798,5 +852,7 @@
     [ lv2:symbol "sat_type" ; pset:value 2 ] ,
     [ lv2:symbol "easy_mode" ; pset:value 0 ] ,
     [ lv2:symbol "easy_char" ; pset:value 1 ] ,
-    [ lv2:symbol "mix" ; pset:value 0.4 ] .
+    [ lv2:symbol "mix" ; pset:value 0.4 ] ,
+    [ lv2:symbol "output" ; pset:value 0.5 ] ,
+    [ lv2:symbol "vca_link" ; pset:value 1 ] .
 
