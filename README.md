@@ -59,6 +59,10 @@ intensity, and link plus parallel mix behave as on the other models.
   2× adds 30 samples of latency and 4× adds 45; both are reported to the host
   for delay compensation.
 - **Molot stereo modes** — Mono, Dual Mono, Mid, Side, M/S and Stereo.
+- **VCA Link** — 0% gives independent left/right detectors (dual mono); 100%
+  (default) makes both detectors follow the louder channel, so a stereo bus
+  does not shift when one side is louder. It changes detection only, never the
+  stereo image.
 - **Level-matched models** — every model is output-calibrated at noon, so
   switching tabs changes the sound, not the monitoring level. The output knob
   is a trim around that calibrated level; the 76s also have a separate make-up

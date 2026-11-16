@@ -51,6 +51,11 @@
   in both formats, even with no compression or distortion. Each channel now
   has its own filter state, with a regression test that feeds a left-only and
   a right-only signal and requires the other side to stay at −300 dB.
+- **The 76 presets were retuned for the new feed-forward law** and the
+  re-anchored model level: their drive now lands at the intended 3-7 dB
+  reduction on the reference signal instead of 6-11 dB. Other presets' gain
+  reduction is unchanged by the level calibration; only their absolute output
+  follows the new model trim.
 - **Red presets now switch Auto Release off explicitly**, as the VCA presets
   already did. Presets are partial by design, so a preceding preset could leave
   Auto Release on and make the release knob appear dead.
