@@ -9,6 +9,26 @@ tricks.
 
 ![Comp Suite — Clean model with the transfer curve](docs/clean-curve.png)
 
+## 1.0 highlights
+
+- **The 76s are rebuilt around the NC76 law** — feed-forward peak detection,
+  a `(ratio−1)/ratio` slope, 40 µs–1.6 ms attack, full-band output, and a fixed
+  calibration that puts them at the reference level. High ratios and All In
+  stay musical instead of collapsing, and there is a new **MAKE UP** control
+  separate from OUTPUT.
+- **Oversampling: Off / 2× / 4×** across the whole path. 2× reports 30 samples
+  and 4× 45; both formats pass the latency to the host for PDC. Off remains
+  zero-latency.
+- **All ten models are level-matched at noon** (within about 2 dB on broadband
+  material), so flipping tabs changes the sound, not the monitoring level.
+- **Presets refreshed** — the 76 bank was re-solved for the new law, the three
+  off-bank ratios moved onto 4/8/12/20/ALL, and every model-specific switch is
+  now stated explicitly so a preset cannot inherit the previous model's setup.
+- **Bug fixes** — per-channel oversampling state (the right-side buzz), the
+  CLAP latency/reactivation lifecycle, mix applied once on Easy/Molot, a
+  transparent limiter, side-chain-aware transfer curve, non-finite input
+  guards, and no parameter leakage on model switches.
+
 ## Models
 
 | Tab | Character | Core |
@@ -129,7 +149,9 @@ A release tarball is produced by `cmake --build build --target dist`.
 
 1.0 is the finished feature set: ten models, off/2×/4× oversampling, both
 plugin formats. Ten models is the set; the Hearth compressor lives in the
-Hearth channel strip instead.
+Hearth channel strip instead. In-plugin **user preset saving** is planned for
+1.1; CLAP and LV2 hosts already save and recall the full plugin state as their
+own presets.
 
 Measured behaviour lives in `tools/measure.py`, which renders reference
 implementations through REAPER and compares static curves, timing and
