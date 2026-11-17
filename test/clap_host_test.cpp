@@ -12,6 +12,7 @@
 #include <dlfcn.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
+#include <X11/keysym.h>
 #include <X11/Xatom.h>
 #include <X11/extensions/XTest.h>
 #include <X11/extensions/XShm.h>
@@ -511,6 +512,20 @@ int main(int argc, char** argv) {
         events.inputs.clear();
         std::this_thread::sleep_for(std::chrono::milliseconds(150));
       };
+      auto rightClick = [&](int x, int y) {
+        XTestFakeMotionEvent(dpy, -1, x, y, CurrentTime);
+        XTestFakeButtonEvent(dpy, 3, True, CurrentTime);
+        XTestFakeButtonEvent(dpy, 3, False, CurrentTime);
+        XFlush(dpy);
+        std::this_thread::sleep_for(std::chrono::milliseconds(150));
+      };
+      auto key = [&](KeySym sym) {
+        const KeyCode code = XKeysymToKeycode(dpy, sym);
+        XTestFakeKeyEvent(dpy, code, True, CurrentTime);
+        XTestFakeKeyEvent(dpy, code, False, CurrentTime);
+        XFlush(dpy);
+        std::this_thread::sleep_for(std::chrono::milliseconds(40));
+      };
       auto paramValue = [&](uint32_t id) {
         double v = 0.0;
         params->get_value(plugin, id, &v);
@@ -522,6 +537,12 @@ int main(int argc, char** argv) {
       drag(112, 520, -50);
       std::printf("  76 input %.2f -> %.2f\n", inBefore, paramValue(2));
       check(paramValue(2) > inBefore + 0.05, "dragging 76 INPUT moves it");
+      rightClick(930, 500);
+      key(XK_minus);
+      key(XK_6);
+      key(XK_Return);
+      check(std::fabs(paramValue(8) - 0.25) < 1e-4,
+            "right-click typed value enters -6 dB");
       double outBefore = paramValue(8);
       drag(930, 500, -50);
       std::printf("  76 output %.2f -> %.2f\n", outBefore, paramValue(8));

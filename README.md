@@ -1,6 +1,6 @@
 # Comp Suite
 
-**Version 1.0.1** · GPL-3.0-or-later · [Releases](https://github.com/tylorismusic-commits/comp-suite/releases)
+**Version 1.1.0** · GPL-3.0-or-later · [Releases](https://github.com/tylorismusic-commits/comp-suite/releases)
 
 Ten compressor models in one CLAP and LV2 plugin for Linux. The goal is a
 single plugin that covers a whole mix: transparent digital control, classic
@@ -90,6 +90,13 @@ intensity, and link plus parallel mix behave as on the other models.
 - **Preset banks** — 49 factory presets, exported as LV2 `pset:Preset` banks.
 - **Ardour integration** — gain reduction in the mixer strip through the
   Harrison inline-display extension.
+
+## Typed values
+
+Right-click any knob to open a value field. Type a value with its natural unit
+— for example `-20 dB`, `5 ms`, `1.2k`, `8:1`, `Off`, or a model / mode name —
+then press Enter to commit or Escape to cancel. The field uses the same value
+formatting as the host parameter list.
 
 ## Download
 

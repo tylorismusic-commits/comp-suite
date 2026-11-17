@@ -25,6 +25,7 @@
 #include "dsp/engine.hpp"
 #include "dsp/common.hpp"
 #include "params.hpp"
+#include "value_text.hpp"
 #include "version.hpp"
 #include "ui/geometry.hpp"
 #include "ui/panel.hpp"
@@ -276,6 +277,10 @@ private:
     const double s = scale();
     switch (ev.type) {
       case ButtonPress: {
+        if (display_ && window_) {
+          XSetInputFocus(display_, window_, RevertToParent, CurrentTime);
+          XFlush(display_);
+        }
         const bool fine = (ev.xbutton.state & ShiftMask) != 0;
         const double x = ev.xbutton.x / s;
         const double y = ev.xbutton.y / s;
@@ -285,12 +290,30 @@ private:
           panel_.wheel(shared_, state_, x, y, -1.0);
         } else if (ev.xbutton.button == Button1) {
           panel_.pointerDown(shared_, state_, x, y, fine);
+        } else if (ev.xbutton.button == Button3) {
+          panel_.beginTextEntry(shared_, state_, x, y);
         }
         break;
       }
       case ButtonRelease:
         panel_.pointerUp();
         break;
+      case KeyPress: {
+        char buf[8] = {};
+        KeySym sym = 0;
+        XKeyEvent key = ev.xkey;
+        const int n = XLookupString(&key, buf, sizeof(buf), &sym, nullptr);
+        if (sym == XK_Return || sym == XK_KP_Enter) {
+          panel_.textKey(shared_, state_, Panel::kTextEnter, 0);
+        } else if (sym == XK_Escape) {
+          panel_.textKey(shared_, state_, Panel::kTextEscape, 0);
+        } else if (sym == XK_BackSpace) {
+          panel_.textKey(shared_, state_, Panel::kTextBackspace, 0);
+        } else if (n > 0) {
+          panel_.textKey(shared_, state_, 0, buf[0]);
+        }
+        break;
+      }
       case MotionNotify: {
         const bool fine = (ev.xmotion.state & ShiftMask) != 0;
         panel_.pointerMove(shared_, state_, ev.xmotion.x / s, ev.xmotion.y / s,
@@ -471,10 +494,6 @@ bool paramsValue(const clap_plugin_t* p, clap_id id, double* value) {
 
 namespace {
 
-const char* const kDistortionNames[4] = {"Off", "Dist 2", "Dist 3", "Clip"};
-const char* const kMeterNames[6] = {"GR",   "+8", "+4",
-                                    "Graph", "Off", "Curve"};
-
 } // namespace
 
 // Hosts show these strings in their generic parameter lists.  Without them
@@ -482,295 +501,20 @@ const char* const kMeterNames[6] = {"GR",   "+8", "+4",
 // are selecting.
 bool paramsValueToText(const clap_plugin_t* p, clap_id id, double value,
                        char* out, uint32_t size) {
-  const Plugin* s = self(p);
-  const int model = currentModel(s);
-  switch (id) {
-    case P_MODEL:
-      // Format the value being asked about, not the current selection.
-      std::snprintf(
-          out, size, "%s",
-          kModelLabels[std::clamp(static_cast<int>(value + 0.5), 0,
-                                  static_cast<int>(Model::Count) - 1)]);
-      return true;
-    case P_ENABLED:
-      std::snprintf(out, size, "%s", value > 0.5 ? "On" : "Off");
-      return true;
-    case P_INPUT:
-      if (model <= 1 || model == 4) {
-        const double db = -80.0 + 103.0 * std::sqrt(std::clamp(value, 0.0, 1.0));
-        if (db <= -79.0) {
-          std::snprintf(out, size, "Off");
-        } else {
-          std::snprintf(out, size, "%+.1f dB", db);
-        }
-      } else if (model == 6) {
-        std::snprintf(out, size, "%+.1f dB", -30.0 + 60.0 * value);
-      } else if (model == 7) {
-        std::snprintf(out, size, "%+.1f dB", -12.0 + 24.0 * value);
-      } else if (model == 8 || model == 9) {
-        std::snprintf(out, size, "%+.1f dB", -18.0 + 36.0 * value);
-      } else {
-        std::snprintf(out, size, "%.0f%%", value * 100.0);
-      }
-      return true;
-    case P_THRESHOLD:
-      if (model == 2 || model == 3) {
-        std::snprintf(out, size, "%.0f", value * 100.0);
-      } else if (model == 5) {
-        std::snprintf(out, size, "%.1f dB", -30.0 + 40.0 * value);
-      } else if (model == 6) {
-        std::snprintf(out, size, "%.1f dB", -40.0 + 40.0 * value);
-      } else if (model == 7 || model == 8) {
-        std::snprintf(out, size, "%.1f dB", -40.0 + 40.0 * value);
-      } else {
-        std::snprintf(out, size, "%.0f%%", value * 100.0);
-      }
-      return true;
-    case P_RATIO: {
-      const int step = ratioStepFrom(static_cast<float>(value));
-      if (model == 8) {
-        std::snprintf(out, size, "%.1f:1", RedCompressor::ratioForStep(step));
-      } else if (model == 7 && ratioFromStep(step) > 10.9) {
-        std::snprintf(out, size, "Limit");
-      } else if (model == 2 || model == 3) {
-        std::snprintf(out, size, "%s", step >= 4 ? "Limit" : "Compress");
-      } else if (model <= 1 && step >= 8) {
-        std::snprintf(out, size, "ALL");
-      } else {
-        std::snprintf(out, size, "%.1f:1", ratioFromStep(step));
-      }
-      return true;
-    }
-    case P_ATTACK: {
-      double ms;
-      if (model <= 1) {
-        ms = 0.04 * std::pow(40.0, std::round(value * 6.0) / 6.0);
-      } else if (model == 4) {
-        ms = 0.1 * std::pow(500.0, value);
-      } else if (model == 5) {
-        ms = 0.1 * std::pow(300.0, value);
-      } else if (model == 6) {
-        ms = 0.1 * std::pow(2000.0, value);
-      } else if (model == 7) {
-        ms = 1.0 + 99.0 * value;
-      } else if (model == 8) {
-        ms = 0.3 * std::pow(300.0, value);
-      } else {
-        std::snprintf(out, size, "%.0f%%", value * 100.0);
-        return true;
-      }
-      if (ms < 1.0) {
-        std::snprintf(out, size, "%.0f us", ms * 1000.0);
-      } else {
-        std::snprintf(out, size, "%.0f ms", ms);
-      }
-      return true;
-    }
-    case P_RELEASE: {
-      double ms;
-      if (model <= 1) {
-        ms = 50.0 * std::pow(22.0, std::round(value * 6.0) / 6.0);
-      } else if (model == 4) {
-        ms = 50.0 * std::pow(60.0, value);
-      } else if (model == 5) {
-        ms = 100.0 * std::pow(12.0, value);
-      } else if (model == 6) {
-        ms = 5.0 * std::pow(1000.0, value);
-      } else if (model == 7) {
-        ms = 50.0 + 950.0 * value;
-      } else if (model == 8) {
-        ms = 100.0 * std::pow(40.0, value);
-      } else {
-        std::snprintf(out, size, "%.0f%%", value * 100.0);
-        return true;
-      }
-      std::snprintf(out, size, ms < 1000.0 ? "%.0f ms" : "%.2f s",
-                    ms < 1000.0 ? ms : ms / 1000.0);
-      return true;
-    }
-    case P_MAKEUP:
-      if (model == 7) {
-        std::snprintf(out, size, "%+.1f dB", -12.0 + 24.0 * value);
-      } else {
-        std::snprintf(out, size, "%+.1f dB", (value - 0.5) * 20.0);
-      }
-      return true;
-    case P_OUTPUT:
-      if (model == 2 || model == 3) {
-        std::snprintf(out, size, "%s", value > 0.5 ? "+6" : "0");
-      } else if (model <= 1) {
-        std::snprintf(out, size, "%+.1f dB", -12.0 + 24.0 * value);
-      } else if (model == 6) {
-        std::snprintf(out, size, "%+.1f dB", -30.0 + 60.0 * value);
-      } else {
-        std::snprintf(out, size, "%+.1f dB", -12.0 + 24.0 * value);
-      }
-      return true;
-    case P_MIX:
-      std::snprintf(out, size, "%.0f%%", value * 100.0);
-      return true;
-    case P_SC_HPF:
-      if (value < 0.01 && model == 9) {
-        std::snprintf(out, size, "Auto");
-      } else if (value < 0.01) {
-        std::snprintf(out, size, "Off");
-      } else if (model == 7) {
-        std::snprintf(out, size, "%.0f Hz", 40.0 + 220.0 * value);
-      } else {
-        std::snprintf(out, size, "%.0f Hz", 20.0 * std::pow(20.0, value));
-      }
-      return true;
-    case P_DISTORTION:
-      std::snprintf(out, size, "%s", kDistortionNames[std::clamp(
-                                         static_cast<int>(value + 0.5), 0, 3)]);
-      return true;
-    case P_METER:
-      std::snprintf(out, size, "%s", kMeterNames[std::clamp(
-                                         static_cast<int>(value + 0.5), 0, 5)]);
-      return true;
-    case P_LIMITER_ON:
-      std::snprintf(out, size, "%s", value > 0.5 ? "On" : "Off");
-      return true;
-    case P_LIMITER_THRESH:
-      std::snprintf(out, size, "%.1f dB", -24.0 + 24.0 * value);
-      return true;
-    case P_KNEE:
-      // Clean and Red are in dB; Molot's knee is a fraction of its threshold.
-      if (model == 6) {
-        std::snprintf(out, size, "%.1f dB", 18.0 * value);
-      } else if (model == 8) {
-        std::snprintf(out, size, "%.1f dB", 12.0 * value);
-      } else if (model == 7) {
-        std::snprintf(out, size, "%.0f%%", value * 100.0);
-      } else {
-        std::snprintf(out, size, "%.1f dB", 18.0 * value);
-      }
-      return true;
-    case P_SAT_DRIVE:
-      if (model == 9) {
-        std::snprintf(out, size, "%.0f%%", value * 100.0);
-      } else {
-        std::snprintf(out, size, "%+.1f dB", -12.0 + 24.0 * value);
-      }
-      return true;
-    case P_BEEF:
-    case P_AIR:
-      std::snprintf(out, size, "%.0f%%", value * 100.0);
-      return true;
-    case P_DRUM_TYPE:
-      std::snprintf(
-          out, size, "%s",
-          kDrumTypeLabels[std::clamp(static_cast<int>(value + 0.5), 0, 5)]);
-      return true;
-    case P_EASY_MODE:
-      std::snprintf(out, size, "%s", kEasyModeLabels[value > 0.5 ? 1 : 0]);
-      return true;
-    case P_EASY_CHAR:
-      std::snprintf(out, size, "%s", kEasyCharLabels[value > 0.5 ? 1 : 0]);
-      return true;
-    case P_SAT_TYPE:
-      std::snprintf(
-          out, size, "%s",
-          kSatTypeLabels[std::clamp(static_cast<int>(value + 0.5), 0, 2)]);
-      return true;
-    case P_OVERSAMPLE:
-      std::snprintf(
-          out, size, "%s",
-          kOversampleLabels[std::clamp(static_cast<int>(value + 0.5), 0, 2)]);
-      return true;
-    case P_ATTACK_MODE:
-      std::snprintf(out, size, "%s", kAttackModeLabels[value > 0.5 ? 1 : 0]);
-      return true;
-    case P_STEREO_MODE:
-      std::snprintf(
-          out, size, "%s",
-          kStereoModeLabels[std::clamp(static_cast<int>(value + 0.5), 0, 5)]);
-      return true;
-    case P_AUTO_MAKEUP:
-    case P_TRUE_PEAK:
-    case P_VCA_AUTO:
-      std::snprintf(out, size, "%s", value > 0.5 ? "On" : "Off");
-      return true;
-    case P_SC_SOURCE:
-      std::snprintf(out, size, "%s", value > 0.5 ? "External" : "Internal");
-      return true;
-    case P_VCA_LINK:
-      std::snprintf(out, size, "%.0f%%", value * 100.0);
-      return true;
-    default:
-      std::snprintf(out, size, "%.2f", value);
-      return true;
+  if (id >= P_COUNT) {
+    return false;
   }
+  const std::string text = formatParamValue(self(p)->shared, id, value);
+  std::snprintf(out, size, "%s", text.c_str());
+  return true;
 }
 
 bool paramsTextToValue(const clap_plugin_t* p, clap_id id, const char* text,
                        double* value) {
-  if (!text) {
+  if (!text || id >= P_COUNT) {
     return false;
   }
-  const int model = currentModel(self(p));
-  auto matchList = [&](const char* const* list, int n, double* out) {
-    for (int i = 0; i < n; ++i) {
-      if (strcasecmp(text, list[i]) == 0) {
-        *out = i;
-        return true;
-      }
-    }
-    return false;
-  };
-  double v = 0.0;
-  switch (id) {
-    case P_MODEL:
-      if (matchList(kModelLabels, static_cast<int>(Model::Count), &v)) {
-        *value = v;
-        return true;
-      }
-      break;
-    case P_DISTORTION:
-      if (matchList(kDistortionNames, 4, &v)) {
-        *value = v;
-        return true;
-      }
-      break;
-    case P_METER:
-      if (matchList(kMeterNames, 5, &v)) {
-        *value = v;
-        return true;
-      }
-      break;
-    case P_RATIO: {
-      // Accept "8", "8:1" and "ALL".
-      if (model <= 1 && strcasecmp(text, "ALL") == 0) {
-        *value = 8.0;
-        return true;
-      }
-      char* endp = nullptr;
-      const double num = std::strtod(text, &endp);
-      if (endp != text) {
-        int best = 0;
-        double bestDelta = 1e9;
-        for (int i = 0; i < 9; ++i) {
-          const double d = std::fabs(ratioFromStep(i) - num);
-          if (d < bestDelta) {
-            bestDelta = d;
-            best = i;
-          }
-        }
-        *value = best;
-        return true;
-      }
-      break;
-    }
-    default:
-      break;
-  }
-  char* end = nullptr;
-  v = std::strtod(text, &end);
-  if (end == text) {
-    return false;
-  }
-  *value = v;
-  return true;
+  return parseParamValue(self(p)->shared, id, text, value);
 }
 
 void applyEvents(Plugin* s, const clap_input_events_t* in) {

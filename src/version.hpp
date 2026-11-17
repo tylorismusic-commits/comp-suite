@@ -8,8 +8,8 @@ namespace comp {
 // The CLAP descriptor and the LV2 metadata both read them from here so the two
 // formats cannot advertise different versions.
 constexpr int kVersionMajor = 1;
-constexpr int kVersionMinor = 0;
-constexpr int kVersionMicro = 1;
-constexpr const char* kVersion = "1.0.1";
+constexpr int kVersionMinor = 1;
+constexpr int kVersionMicro = 0;
+constexpr const char* kVersion = "1.1.0";
 
 } // namespace comp

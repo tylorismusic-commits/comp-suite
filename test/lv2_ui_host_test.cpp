@@ -11,11 +11,14 @@
 
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
+#include <X11/keysym.h>
 
 #include <cstdint>
+#include <cmath>
 #include <cstdio>
 #include <cstring>
 #include <string>
+#include <vector>
 
 #include <chrono>
 
@@ -39,6 +42,15 @@ struct HostResize {
   int calls = 0;
 };
 
+struct Written {
+  uint32_t port = 0;
+  float value = 0.0f;
+};
+
+struct HostWrite {
+  std::vector<Written> events;
+};
+
 int onResize(void* handle, int width, int height) {
   auto* host = static_cast<HostResize*>(handle);
   host->lastWidth = width;
@@ -47,7 +59,41 @@ int onResize(void* handle, int width, int height) {
   return 0;
 }
 
-void onWrite(LV2UI_Controller, uint32_t, uint32_t, uint32_t, const void*) {}
+void onWrite(LV2UI_Controller controller, uint32_t port, uint32_t size,
+             uint32_t, const void* buffer) {
+  if (!controller || !buffer || size != sizeof(float)) {
+    return;
+  }
+  auto* host = static_cast<HostWrite*>(controller);
+  host->events.push_back({port, *static_cast<const float*>(buffer)});
+}
+
+void sendRightClick(Display* dpy, Window window, int x, int y) {
+  XEvent ev{};
+  ev.type = ButtonPress;
+  ev.xbutton.display = dpy;
+  ev.xbutton.window = window;
+  ev.xbutton.root = RootWindow(dpy, DefaultScreen(dpy));
+  ev.xbutton.x = x;
+  ev.xbutton.y = y;
+  ev.xbutton.button = Button3;
+  ev.xbutton.same_screen = True;
+  XSendEvent(dpy, window, False, 0, &ev);
+  XSync(dpy, False);
+}
+
+void sendKey(Display* dpy, Window window, KeySym sym) {
+  const KeyCode code = XKeysymToKeycode(dpy, sym);
+  XEvent ev{};
+  ev.type = KeyPress;
+  ev.xkey.display = dpy;
+  ev.xkey.window = window;
+  ev.xkey.root = RootWindow(dpy, DefaultScreen(dpy));
+  ev.xkey.keycode = code;
+  ev.xkey.same_screen = True;
+  XSendEvent(dpy, window, False, 0, &ev);
+  XSync(dpy, False);
+}
 
 using DescriptorFn = const LV2UI_Descriptor* (*)(uint32_t);
 
@@ -92,6 +138,7 @@ int main(int argc, char** argv) {
   HostResize host;
   host.api.handle = &host;
   host.api.ui_resize = &onResize;
+  HostWrite writes;
   float scale = 1.0f;
 
   LV2_Feature parentFeature{LV2_UI__parent,
@@ -105,7 +152,7 @@ int main(int argc, char** argv) {
   LV2UI_Widget widget = nullptr;
   LV2UI_Handle handle = ui->instantiate(
       ui, "https://github.com/tylorismusic-commits/comp-suite",
-      (bundle + "/").c_str(), &onWrite, nullptr, &widget, features);
+      (bundle + "/").c_str(), &onWrite, &writes, &widget, features);
   check(handle != nullptr, "UI instantiates with a parent window");
   if (!handle) {
     return 1;
@@ -154,6 +201,25 @@ int main(int argc, char** argv) {
     const float gr = 6.5f;
     ui->port_event(handle, 4 + comp::P_COUNT + 2, sizeof(float), 0, &gr);
     idle->idle(handle);
+  }
+
+  // Right-click a knob, type a value and commit it with Enter.
+  if (idle) {
+    writes.events.clear();
+    sendRightClick(dpy, window, 930, 500);  // Output
+    idle->idle(handle);
+    sendKey(dpy, window, XK_minus);
+    sendKey(dpy, window, XK_6);
+    sendKey(dpy, window, XK_Return);
+    idle->idle(handle);
+    bool wroteOutput = false;
+    for (const Written& e : writes.events) {
+      if (e.port == 4 + comp::P_OUTPUT &&
+          std::fabs(e.value - 0.25f) < 1e-4f) {
+        wroteOutput = true;
+      }
+    }
+    check(wroteOutput, "right-click typed value commits -6 dB to Output");
   }
 
   // ---------------------------------------------------------------------
