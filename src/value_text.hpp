@@ -209,6 +209,22 @@ inline std::string formatParamValue(const Shared& shared, uint32_t id,
   }
 }
 
+// Text shown in the editor's value bubble.  The 76 attack and release knobs
+// are numbered 1..7 on the faceplate, so the bubble shows that position rather
+// than a raw time; typing the same number selects the same position.
+inline std::string formatEditValue(const Shared& shared, uint32_t id,
+                                   double value) {
+  const int model = static_cast<int>(shared.get(P_MODEL) + 0.5);
+  if ((id == P_ATTACK || id == P_RELEASE) && model <= 1) {
+    const int position = std::clamp(
+        static_cast<int>(std::lround(value * 6.0)), 0, 6) + 1;
+    char buf[16];
+    std::snprintf(buf, sizeof(buf), "%d", position);
+    return buf;
+  }
+  return formatParamValue(shared, id, value);
+}
+
 inline bool parseParamValue(const Shared& shared, uint32_t id,
                             const std::string& raw, double* out) {
   const ParamSpec& s = kParamSpecs[id];
@@ -257,6 +273,9 @@ inline bool parseParamValue(const Shared& shared, uint32_t id,
   }
   const std::string suffix = trimText(std::string(end));
   auto ms = [&]() {
+    if (suffix == "us" || suffix == "\u00b5s") {
+      return value / 1000.0;
+    }
     return suffix == "s" || suffix == "sec" ? value * 1000.0 : value;
   };
   auto hz = [&]() {
@@ -313,6 +332,13 @@ inline bool parseParamValue(const Shared& shared, uint32_t id,
       return true;
     case P_ATTACK:
       if (model <= 1) {
+        // A bare 1..7 is the knob's numbered position, matching the legends
+        // and the editor bubble.  A unit suffix still means a time.
+        if (suffix.empty() && value >= 1.0 && value <= 7.0 &&
+            std::fabs(value - std::round(value)) < 1.0e-6) {
+          *out = (std::round(value) - 1.0) / 6.0;
+          return true;
+        }
         const double step =
             std::round(6.0 * std::log(std::max(ms(), 0.001) / 0.04) /
                        std::log(40.0)) /
@@ -334,6 +360,12 @@ inline bool parseParamValue(const Shared& shared, uint32_t id,
       return true;
     case P_RELEASE:
       if (model <= 1) {
+        // Bare 1..7 selects the numbered knob position, as above.
+        if (suffix.empty() && value >= 1.0 && value <= 7.0 &&
+            std::fabs(value - std::round(value)) < 1.0e-6) {
+          *out = (std::round(value) - 1.0) / 6.0;
+          return true;
+        }
         const double step =
             std::round(6.0 * std::log(std::max(ms(), 0.001) / 50.0) /
                        std::log(22.0)) /
