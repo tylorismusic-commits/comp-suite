@@ -2260,7 +2260,13 @@ void Panel::drawPill(cairo_t* cr, const Widget& w, bool on, int model) const {
   setRgb(cr, {0.0, 0.0, 0.0}, 0.35);
   roundRect(cr, w.x + 0.5, w.y + 0.5, w.w - 1.0, w.h - 1.0, 5);
   cairo_stroke(cr);
-  const Rgb tc = on ? skin.btnTextOn : skin.btnText;
+  Rgb tc = on ? skin.btnTextOn : skin.btnText;
+  // The 2A is a light faceplate, so the limiter and global stereo-mode pills
+  // need a red legend to stay legible and match the model's markings.
+  if (model == kOpto2A &&
+      (w.param == P_LIMITER_ON || w.param == P_MS_MODE)) {
+    tc = {0.92, 0.14, 0.08};
+  }
   text(cr, w.label, w.x + w.w * 0.5, w.y + w.h * 0.5 + 3.5, 10, 1, tc.r,
        tc.g, tc.b);
 }

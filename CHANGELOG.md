@@ -4,6 +4,8 @@
 
 - Molot hides the global M/S pill (it has its own Stereo knob), and the two
   controls now mirror each other when switching models.
+- 2A limiter and global stereo-mode pill legends use red for legibility on the
+  light faceplate.
 
 ## 1.3.0 — 2026-11-19
 
