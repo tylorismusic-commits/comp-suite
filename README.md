@@ -1,6 +1,6 @@
 # Comp Suite
 
-**Version 1.1.0** · GPL-3.0-or-later · [Releases](https://github.com/tylorismusic-commits/comp-suite/releases)
+**Version 1.2.0** · GPL-3.0-or-later · [Releases](https://github.com/tylorismusic-commits/comp-suite/releases)
 
 Ten compressor models in one CLAP and LV2 plugin for Linux. The goal is a
 single plugin that covers a whole mix: transparent digital control, classic
