@@ -87,7 +87,9 @@ intensity, and link plus parallel mix behave as on the other models.
   switching tabs changes the sound, not the monitoring level. The output knob
   is a trim around that calibrated level; the 76s also have a separate make-up
   control.
-- **Preset banks** — 49 factory presets, exported as LV2 `pset:Preset` banks.
+- **Preset banks** — 49 factory presets, exported as LV2 `pset:Preset` banks,
+  plus a user bank with save, rename, duplicate, delete, export and drag-drop
+  import.
 - **Ardour integration** — gain reduction in the mixer strip through the
   Harrison inline-display extension.
 
@@ -96,7 +98,18 @@ intensity, and link plus parallel mix behave as on the other models.
 Right-click any knob to open a value field. Type a value with its natural unit
 — for example `-20 dB`, `5 ms`, `1.2k`, `8:1`, `Off`, or a model / mode name —
 then press Enter to commit or Escape to cancel. The field uses the same value
-formatting as the host parameter list.
+formatting as the host parameter list, with gold text so the typed value stands
+out from the faceplate legends.
+
+On the 76 models the attack and release knobs are numbered 1–7, and the typed
+field follows that scale: type `3` to select position 3. Add a unit suffix
+(`3 ms`, `200 us`) to enter an exact time instead. Bare values outside 1–7 are
+still read as milliseconds, as before.
+
+Double-click a knob to reset it. The reset value comes from the current preset,
+so it restores what that preset stores for the parameter; parameters the preset
+does not set, and sessions with no preset selected, reset to the factory
+default.
 
 ## Download
 
@@ -157,9 +170,9 @@ A release tarball is produced by `cmake --build build --target dist`.
 
 1.0 is the finished feature set: ten models, off/2×/4× oversampling, both
 plugin formats. Ten models is the set; the Hearth compressor lives in the
-Hearth channel strip instead. In-plugin **user preset saving** is planned for
-1.1; CLAP and LV2 hosts already save and recall the full plugin state as their
-own presets.
+Hearth channel strip instead. The in-plugin user preset bank is implemented;
+CLAP and LV2 hosts also save and recall the full plugin state as their own
+presets.
 
 Shared DSP (ADAA, biquads, envelopes, oversampling, dynamics) lives in the
 separate `hearth-dsp` header-only library and is consumed here as a submodule.

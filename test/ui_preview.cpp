@@ -9,6 +9,7 @@
 #include <string>
 
 #include "params.hpp"
+#include "presets.hpp"
 #include "ui/geometry.hpp"
 #include "ui/panel.hpp"
 
@@ -91,6 +92,14 @@ int main(int argc, char** argv) {
       cairo_destroy(cr2);
       state.presetOpen = 1;
       state.presetIndex = 25;
+      // Show the user bank beside the factory presets in the preview.
+      UserPreset demo;
+      demo.name = "My Vocal Chain";
+      demo.values.reserve(P_COUNT);
+      for (uint32_t i = 0; i < P_COUNT; ++i) demo.values.push_back(shared.get(i));
+      state.userPresets.push_back(demo);
+      state.presetIndex = kPresetCount;
+      state.presetScroll = 40;
       for (int i = 0; i < 3; ++i) panel.tick(shared, state);
       cairo_surface_t* s3 = cairo_image_surface_create(CAIRO_FORMAT_ARGB32,
                                                        size.width, size.height);

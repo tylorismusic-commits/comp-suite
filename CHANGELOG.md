@@ -1,5 +1,25 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- **User preset bank.** Save, rename, duplicate, delete, export and drag-drop
+  import presets next to the 49 factory presets.
+
+- **Double-click to reset.** Double-clicking a knob restores the current
+  preset's value for that parameter, or the factory default when no preset is
+  active.
+- **76 attack and release accept faceplate positions.** Typing `1`–`7` on the
+  76 models now selects the numbered knob position; a unit suffix (`3 ms`,
+  `200 us`) still enters an exact time.
+
+### Changed
+
+- The right-click value bubble uses gold text so the live typed value is
+  distinct from the surrounding legends, and shows the 1–7 position on the 76
+  attack and release controls.
+
 ## 1.0.1 — 2026-11-15
 
 ### Changed
