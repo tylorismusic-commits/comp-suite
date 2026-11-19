@@ -227,7 +227,12 @@ private:
                     const float* scLeft, const float* scRight,
                     Stats& st) noexcept {
     const bool scReady = scLeft && scRight;
-    const int msMode = std::clamp(controls_.msMode, 0, 3);
+    // Molot has its own Stereo Mode control; the global M/S pill is hidden
+    // for that model, so do not let a stale global setting affect it.
+    const int msMode =
+        active_ == static_cast<int>(Model::Molot)
+            ? 0
+            : std::clamp(controls_.msMode, 0, 3);
     for (int i = 0; i < frames; ++i) {
       // A host may hand us NaN, inf, or absurd values from a broken bus.  A
       // single one would poison every recursive state in the model, so the

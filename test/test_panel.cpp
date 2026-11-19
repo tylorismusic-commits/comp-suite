@@ -319,6 +319,55 @@ int main() {
     cairo_surface_destroy(surf);
   }
 
+  {
+    // Molot owns its Stereo Mode knob; the global M/S cycle is hidden for it.
+    Shared shared;
+    Panel panel;
+    PanelState state;
+    state.rightPage = 1;
+    cairo_surface_t* surf =
+        cairo_image_surface_create(CAIRO_FORMAT_RGB24, kPanelWidth, kPanelHeight);
+    cairo_t* cr = cairo_create(surf);
+    shared.set(P_MODEL, 7.0);
+    panel.draw(cr, shared, state);
+    bool hasGlobalMs = false;
+    bool hasMolotStereo = false;
+    for (const auto& r : panel.widgetRects()) {
+      hasGlobalMs = hasGlobalMs || r.param == P_MS_MODE;
+      hasMolotStereo = hasMolotStereo || r.param == P_STEREO_MODE;
+    }
+    check(!hasGlobalMs, "Molot hides the global M/S pill");
+    check(hasMolotStereo, "Molot keeps its own stereo knob");
+
+    shared.set(P_MODEL, 5.0);
+    shared.set(P_MS_MODE, 1.0);
+    panel.draw(cr, shared, state);
+    hasGlobalMs = false;
+    for (const auto& r : panel.widgetRects()) {
+      hasGlobalMs = hasGlobalMs || r.param == P_MS_MODE;
+    }
+    check(hasGlobalMs, "VCA keeps the global M/S pill");
+
+    // Flipping from VCA in M/S gives Molot's own knob the same setting.
+    panel.pointerDown(shared, state, 865.8, 90.0, false);
+    panel.pointerUp();
+    check(shared.get(P_MODEL) == 7.0, "Molot tab selects Molot");
+    check(shared.get(P_STEREO_MODE) == 4.0,
+          "Molot stereo knob follows global M/S");
+    panel.draw(cr, shared, state);
+
+    // And leaving Molot in Side carries that back to the global pill.
+    shared.set(P_STEREO_MODE, 3.0);
+    panel.draw(cr, shared, state);
+    panel.pointerDown(shared, state, 767.0, 90.0, false);
+    panel.pointerUp();
+    check(shared.get(P_MODEL) == 5.0, "VCA tab selects VCA");
+    check(shared.get(P_MS_MODE) == 3.0,
+          "global M/S follows Molot's stereo knob");
+    cairo_destroy(cr);
+    cairo_surface_destroy(surf);
+  }
+
   std::printf("%d failure(s)\n", gFailures);
   return gFailures == 0 ? 0 : 1;
 }

@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Molot hides the global M/S pill (it has its own Stereo knob), and the two
+  controls now mirror each other when switching models.
+
 ## 1.3.0 — 2026-11-19
 
 ### Added

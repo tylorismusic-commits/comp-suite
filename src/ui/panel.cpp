@@ -759,7 +759,8 @@ void Panel::layout(const Shared& shared, const PanelState& state) {
 
   // Global mid/side mode, on the Output page where there is room below the
   // limiter.  The side-chain page keeps that column for the SC HPF.
-  if (!(hasSideChain(model) && state.rightPage == 0)) {
+  if (model != kMolot &&
+      !(hasSideChain(model) && state.rightPage == 0)) {
     Widget ms{};
     ms.kind = Kind::Cycle;
     ms.param = P_MS_MODE;
@@ -904,7 +905,27 @@ bool Panel::pointerDown(Shared& shared, PanelState& state, double x, double y,
         shared.set(P_ENABLED, shared.get(P_ENABLED) > 0.5 ? 0.0 : 1.0);
         state.presetDirty = true;
         return true;
-      case Kind::ModelTab:
+      case Kind::ModelTab: {
+        const int oldModel = static_cast<int>(shared.get(P_MODEL) + 0.5);
+        const int nextModel = static_cast<int>(w.value);
+        // Molot's own Stereo knob mirrors the global M/S mode while flipping
+        // models.  Mono and Dual have no global equivalent, so leaving Molot
+        // in one of those falls back to Stereo.
+        if (nextModel == kMolot && oldModel != kMolot) {
+          static const int kToMolot[4] = {5, 4, 2, 3};
+          const int ms = std::clamp(
+              static_cast<int>(shared.get(P_MS_MODE) + 0.5), 0, 3);
+          shared.set(P_STEREO_MODE, kToMolot[ms]);
+        } else if (oldModel == kMolot && nextModel != kMolot) {
+          const int sm = std::clamp(
+              static_cast<int>(shared.get(P_STEREO_MODE) + 0.5), 0, 5);
+          const int ms = sm == 4 ? 1 : (sm == 2 ? 2 : (sm == 3 ? 3 : 0));
+          shared.set(P_MS_MODE, ms);
+        }
+        shared.set(P_MODEL, w.value);
+        state.presetDirty = true;
+        return true;
+      }
       case Kind::MeterSegment:
         shared.set(w.param, w.value);
         state.presetDirty = true;

@@ -134,6 +134,38 @@ int main() {
     diff = 0.0f;
     for (int i = 0; i < 256; ++i) diff = std::max(diff, std::fabs(sl[i] + sr[i]));
     check(diff < 1.0e-6f, "side mode outputs the side signal in antiphase");
+
+    // Molot has its own Stereo Mode control.  The hidden global left in a
+    // previous state must not change its sound.
+    auto runMolot = [&](int mode, std::vector<float>& outL,
+                        std::vector<float>& outR) {
+      Engine engine;
+      engine.prepare(kSr);
+      Controls c = baseControls(Model::Molot);
+      c.stereoMode = 5.0f;  // Molot own Stereo
+      c.msMode = mode;
+      engine.setControls(c);
+      outL.resize(512);
+      outR.resize(512);
+      for (int i = 0; i < 512; ++i) {
+        outL[i] = 0.2f * std::sin(0.03f * i);
+        outR[i] = 0.1f * std::cos(0.021f * i);
+      }
+      Meters meters;
+      for (int start = 0; start < 512; start += 256) {
+        engine.process(outL.data() + start, outR.data() + start, 256, meters);
+      }
+    };
+    std::vector<float> aL, aR, bL, bR;
+    runMolot(0, aL, aR);
+    runMolot(2, bL, bR);
+    float molotDiff = 0.0f;
+    for (int i = 0; i < 512; ++i) {
+      molotDiff = std::max(molotDiff, std::fabs(aL[i] - bL[i]));
+      molotDiff = std::max(molotDiff, std::fabs(aR[i] - bR[i]));
+    }
+    check(molotDiff < 1.0e-6f,
+          "Molot ignores the hidden global M/S mode");
   }
 
   // Every model stays finite and compresses a loud sine.
