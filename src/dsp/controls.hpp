@@ -75,6 +75,7 @@ struct Controls {
   float easyChar = 0.0f;           // Easy: 0 Normal, 1 Extreme
   float satType = 1.0f;            // Easy: 0 Soft, 1 Tape, 2 Hard
   float oversample = 0.0f;         // 0 Off, 1 2x, 2 4x
+  int msMode = 0;                  // 0 stereo, 1 M/S, 2 mid, 3 side
 };
 
 // Metering published by the engine, in dB or normalised units.

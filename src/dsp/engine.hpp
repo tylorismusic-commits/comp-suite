@@ -227,6 +227,7 @@ private:
                     const float* scLeft, const float* scRight,
                     Stats& st) noexcept {
     const bool scReady = scLeft && scRight;
+    const int msMode = std::clamp(controls_.msMode, 0, 3);
     for (int i = 0; i < frames; ++i) {
       // A host may hand us NaN, inf, or absurd values from a broken bus.  A
       // single one would poison every recursive state in the model, so the
@@ -235,23 +236,53 @@ private:
       const float rawR = std::isfinite(right[i]) ? right[i] : 0.0f;
       const float dryL = clampf(rawL, -32.0f, 32.0f);
       const float dryR = clampf(rawR, -32.0f, 32.0f);
-      float wetL = dryL;
-      float wetR = dryR;
+      // Optional global mid/side processing.  The model still sees two
+      // channels; in M/S mode they are mid and side, in Mid/Side mode the
+      // chosen component is processed on both channels and folded back out.
+      float procL = dryL;
+      float procR = dryR;
+      if (msMode == 1) {
+        procL = 0.5f * (dryL + dryR);
+        procR = 0.5f * (dryL - dryR);
+      } else if (msMode == 2) {
+        procL = procR = 0.5f * (dryL + dryR);
+      } else if (msMode == 3) {
+        procL = 0.5f * (dryL - dryR);
+        procR = -procL;
+      }
+
+      float wetL = procL;
+      float wetR = procR;
       SidechainFrame sc;
       if (scReady) {
-        sc.left = clampf(std::isfinite(scLeft[i]) ? scLeft[i] : 0.0f, -32.0f,
-                         32.0f);
-        sc.right = clampf(std::isfinite(scRight[i]) ? scRight[i] : 0.0f, -32.0f,
-                          32.0f);
-        sc.active = true;
+        float scL = clampf(std::isfinite(scLeft[i]) ? scLeft[i] : 0.0f,
+                           -32.0f, 32.0f);
+        float scR = clampf(std::isfinite(scRight[i]) ? scRight[i] : 0.0f,
+                           -32.0f, 32.0f);
         st.scPeak =
-            std::max(st.scPeak, std::max(std::fabs(sc.left), std::fabs(sc.right)));
+            std::max(st.scPeak, std::max(std::fabs(scL), std::fabs(scR)));
+        if (msMode == 1) {
+          const float m = 0.5f * (scL + scR);
+          const float s = 0.5f * (scL - scR);
+          scL = m;
+          scR = s;
+        } else if (msMode == 2) {
+          const float m = 0.5f * (scL + scR);
+          scL = scR = m;
+        } else if (msMode == 3) {
+          const float s = 0.5f * (scL - scR);
+          scL = s;
+          scR = -s;
+        }
+        sc.left = scL;
+        sc.right = scR;
+        sc.active = true;
       }
       float gr = processModel(active_, wetL, wetR, sc);
 
       if (fade_ < 1.0f) {
-        float oldL = dryL;
-        float oldR = dryR;
+        float oldL = procL;
+        float oldR = procR;
         const float oldGr = processModel(previous_, oldL, oldR, sc);
         const float f = fade_;
         wetL = oldL * (1.0f - f) + wetL * f;
@@ -268,6 +299,18 @@ private:
         const float makeup = dbToGain(std::min(autoMakeupDb_, 24.0f));
         wetL *= makeup;
         wetR *= makeup;
+      }
+
+      // Decode the processed mid/side pair before the stereo output stage.
+      if (msMode == 1) {
+        const float m = wetL;
+        const float s = wetR;
+        wetL = m + s;
+        wetR = m - s;
+      } else if (msMode == 2) {
+        wetR = wetL;
+      } else if (msMode == 3) {
+        wetR = -wetL;
       }
 
       const float mix = mixSmooth_.next();

@@ -757,6 +757,19 @@ void Panel::layout(const Shared& shared, const PanelState& state) {
     }
   }
 
+  // Global mid/side mode, on the Output page where there is room below the
+  // limiter.  The side-chain page keeps that column for the SC HPF.
+  if (!(hasSideChain(model) && state.rightPage == 0)) {
+    Widget ms{};
+    ms.kind = Kind::Cycle;
+    ms.param = P_MS_MODE;
+    ms.x = 820;
+    ms.y = 330;
+    ms.w = 132;
+    ms.h = 24;
+    widgets_.push_back(ms);
+  }
+
   // Global output options live in the header's empty right-hand side.  They
   // were in the model rows before and collided with the output knobs, the
   // Xpress distortion buttons and the output meter.
@@ -916,7 +929,10 @@ bool Panel::pointerDown(Shared& shared, PanelState& state, double x, double y,
         return true;
       case Kind::Cycle: {
         const int v = static_cast<int>(shared.get(w.param) + 0.5);
-        shared.set(w.param, static_cast<double>((v + 1) % 3));
+        const int count = kParamSpecs[w.param].labels.count > 0
+                              ? kParamSpecs[w.param].labels.count
+                              : 3;
+        shared.set(w.param, static_cast<double>((v + 1) % count));
         state.presetDirty = true;
         return true;
       }
@@ -2201,11 +2217,13 @@ void Panel::drawWidget(cairo_t* cr, const Widget& w, const Shared& shared,
     }
     case Kind::Cycle: {
       static const char* const kOsNames[] = {"OS OFF", "OS 2X", "OS 4X"};
+      const Labels& labels = kParamSpecs[w.param].labels;
+      const int count = labels.count > 0 ? labels.count : 3;
       const int v = std::clamp(static_cast<int>(shared.get(w.param) + 0.5),
-                               0, 2);
+                               0, count - 1);
       Widget copy = w;
-      copy.label = kOsNames[v];
-      drawPill(cr, copy, v != 0, model);
+      copy.label = labels.count > 0 ? labels.names[v] : kOsNames[v];
+      drawPill(cr, copy, labels.count > 0 ? v != 0 : v != 0, model);
       break;
     }
   }

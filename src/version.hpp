@@ -10,6 +10,6 @@ namespace comp {
 constexpr int kVersionMajor = 1;
 constexpr int kVersionMinor = 1;
 constexpr int kVersionMicro = 0;
-constexpr const char* kVersion = "1.2.0";
+constexpr const char* kVersion = "1.3.0";
 
 } // namespace comp

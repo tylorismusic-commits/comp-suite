@@ -1,6 +1,6 @@
 # Comp Suite
 
-**Version 1.2.0** · GPL-3.0-or-later · [Releases](https://github.com/tylorismusic-commits/comp-suite/releases)
+**Version 1.3.0** · GPL-3.0-or-later · [Releases](https://github.com/tylorismusic-commits/comp-suite/releases)
 
 Ten compressor models in one CLAP and LV2 plugin for Linux. The goal is a
 single plugin that covers a whole mix: transparent digital control, classic
@@ -79,6 +79,9 @@ intensity, and link plus parallel mix behave as on the other models.
   2× adds 30 samples of latency and 4× adds 45; both are reported to the host
   for delay compensation.
 - **Molot stereo modes** — Mono, Dual Mono, Mid, Side, M/S and Stereo.
+- **Global stereo mode** — Stereo, M/S, Mid or Side for every model, on the
+  Output page. Mid/Side modes process the selected component and fold it back
+  to stereo.
 - **VCA Link** — 0% gives independent left/right detectors (dual mono); 100%
   (default) makes both detectors follow the louder channel, so a stereo bus
   does not shift when one side is louder. It changes detection only, never the

@@ -301,6 +301,24 @@ int main() {
     cairo_surface_destroy(surf);
   }
 
+
+  {
+    // The global mid/side cycle lives on the Output page.
+    Shared shared;
+    Panel panel;
+    PanelState state;
+    cairo_surface_t* surf =
+        cairo_image_surface_create(CAIRO_FORMAT_RGB24, kPanelWidth, kPanelHeight);
+    cairo_t* cr = cairo_create(surf);
+    panel.draw(cr, shared, state);
+    shared.set(P_MS_MODE, 0.0);
+    panel.pointerDown(shared, state, 886, 342, false);
+    panel.pointerUp();
+    check(shared.get(P_MS_MODE) == 1.0, "stereo mode cycles to M/S");
+    cairo_destroy(cr);
+    cairo_surface_destroy(surf);
+  }
+
   std::printf("%d failure(s)\n", gFailures);
   return gFailures == 0 ? 0 : 1;
 }

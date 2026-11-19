@@ -434,22 +434,37 @@
         pg:group <https://github.com/tylorismusic-commits/comp-suite#oversampling> ;
     ] ,
     [
-        a lv2:AudioPort , lv2:InputPort ;
+        a lv2:InputPort , lv2:ControlPort ;
         lv2:index 35 ;
+        lv2:symbol "ms_mode" ;
+        lv2:name "Stereo Mode" ;
+        lv2:default 0 ;
+        lv2:minimum 0 ;
+        lv2:maximum 3 ;
+        lv2:integer true ;
+        lv2:scalePoint [ rdf:value 0 ; rdfs:label "Stereo" ] ,
+            [ rdf:value 1 ; rdfs:label "M/S" ] ,
+            [ rdf:value 2 ; rdfs:label "Mid" ] ,
+            [ rdf:value 3 ; rdfs:label "Side" ] ;
+        pg:group <https://github.com/tylorismusic-commits/comp-suite#output> ;
+    ] ,
+    [
+        a lv2:AudioPort , lv2:InputPort ;
+        lv2:index 36 ;
         lv2:symbol "sc_in_l" ;
         lv2:name "Sidechain Left" ;
         lv2:portProperty lv2:isSideChain ;
     ] ,
     [
         a lv2:AudioPort , lv2:InputPort ;
-        lv2:index 36 ;
+        lv2:index 37 ;
         lv2:symbol "sc_in_r" ;
         lv2:name "Sidechain Right" ;
         lv2:portProperty lv2:isSideChain ;
     ] ,
     [
         a lv2:OutputPort , lv2:ControlPort ;
-        lv2:index 37 ;
+        lv2:index 38 ;
         lv2:symbol "gr_meter" ;
         lv2:name "Gain Reduction" ;
         lv2:default 0 ;
@@ -461,7 +476,7 @@
     ] ,
     [
         a lv2:OutputPort , lv2:ControlPort ;
-        lv2:index 38 ;
+        lv2:index 39 ;
         lv2:symbol "out_peak_l" ;
         lv2:name "Output Peak Left" ;
         lv2:default 0 ;
@@ -473,7 +488,7 @@
     ] ,
     [
         a lv2:OutputPort , lv2:ControlPort ;
-        lv2:index 39 ;
+        lv2:index 40 ;
         lv2:symbol "out_peak_r" ;
         lv2:name "Output Peak Right" ;
         lv2:default 0 ;
@@ -485,7 +500,7 @@
     ] ,
     [
         a lv2:OutputPort , lv2:ControlPort ;
-        lv2:index 40 ;
+        lv2:index 41 ;
         lv2:symbol "in_peak_l" ;
         lv2:name "Input Peak Left" ;
         lv2:default 0 ;
@@ -497,7 +512,7 @@
     ] ,
     [
         a lv2:OutputPort , lv2:ControlPort ;
-        lv2:index 41 ;
+        lv2:index 42 ;
         lv2:symbol "in_peak_r" ;
         lv2:name "Input Peak Right" ;
         lv2:default 0 ;
@@ -509,7 +524,7 @@
     ] ,
     [
         a lv2:OutputPort , lv2:ControlPort ;
-        lv2:index 42 ;
+        lv2:index 43 ;
         lv2:symbol "out_vu" ;
         lv2:name "Output VU" ;
         lv2:default 0 ;
@@ -521,7 +536,7 @@
     ] ,
     [
         a lv2:OutputPort , lv2:ControlPort ;
-        lv2:index 43 ;
+        lv2:index 44 ;
         lv2:symbol "sc_peak" ;
         lv2:name "Sidechain Peak" ;
         lv2:default 0 ;
@@ -533,7 +548,7 @@
     ] ,
     [
         a lv2:OutputPort , lv2:ControlPort ;
-        lv2:index 44 ;
+        lv2:index 45 ;
         lv2:symbol "sc_active" ;
         lv2:name "Sidechain Active" ;
         lv2:default 0 ;
@@ -545,7 +560,7 @@
     ] ,
     [
         a lv2:OutputPort , lv2:ControlPort ;
-        lv2:index 45 ;
+        lv2:index 46 ;
         lv2:symbol "latency" ;
         lv2:name "Latency" ;
         lv2:default 0 ;

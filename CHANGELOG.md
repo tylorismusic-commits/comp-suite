@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.3.0 — 2026-11-19
+
+### Added
+
+- **Global stereo mode** on the Output page: Stereo, M/S, Mid and Side.
+  Mid/Side modes process the selected component through the active model and
+  fold it back to stereo. External side-chain inputs are matrixed to match.
+- The existing external side-chain input remains available on every model via
+  the header **EXT SC** switch.
+
 ## 1.2.0 — 2026-11-19
 
 ### Added

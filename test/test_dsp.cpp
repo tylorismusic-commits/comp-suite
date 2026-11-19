@@ -106,6 +106,36 @@ Controls baseControls(Model model) {
 } // namespace
 
 int main() {
+
+  // Global mid/side modes fold the stereo field as expected.
+  {
+    auto runMode = [&](int mode, float* l, float* r) {
+      Engine engine;
+      engine.prepare(kSr);
+      Controls c = baseControls(Model::Clean);
+      c.msMode = mode;
+      engine.setControls(c);
+      Meters meters;
+      engine.process(l, r, 256, meters);
+    };
+    std::vector<float> l(256), r(256);
+    for (int i = 0; i < 256; ++i) {
+      l[i] = 0.2f * std::sin(0.03f * i);
+      r[i] = 0.1f * std::cos(0.021f * i);
+    }
+    std::vector<float> ml = l, mr = r;
+    runMode(2, ml.data(), mr.data());
+    float diff = 0.0f;
+    for (int i = 0; i < 256; ++i) diff = std::max(diff, std::fabs(ml[i] - mr[i]));
+    check(diff < 1.0e-6f, "mid mode outputs the mid signal on both channels");
+
+    std::vector<float> sl = l, sr = r;
+    runMode(3, sl.data(), sr.data());
+    diff = 0.0f;
+    for (int i = 0; i < 256; ++i) diff = std::max(diff, std::fabs(sl[i] + sr[i]));
+    check(diff < 1.0e-6f, "side mode outputs the side signal in antiphase");
+  }
+
   // Every model stays finite and compresses a loud sine.
   for (int m = 0; m < static_cast<int>(Model::Count); ++m) {
     Engine engine;

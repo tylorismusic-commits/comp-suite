@@ -46,6 +46,7 @@ enum ParamId : uint32_t {
   P_EASY_CHAR,
   P_SAT_TYPE,
   P_OVERSAMPLE,
+  P_MS_MODE,
   P_COUNT
 };
 
@@ -97,6 +98,7 @@ inline constexpr const char* kDistortionLabels[] = {"Off", "Dist 2", "Dist 3",
 inline constexpr const char* kMeterLabels[] = {"GR",   "+8", "+4", "Graph",
                                                "Off",  "Curve"};
 inline constexpr const char* kScSourceLabels[] = {"Internal", "External"};
+inline constexpr const char* kMsModeLabels[] = {"Stereo", "M/S", "Mid", "Side"};
 
 static_assert(static_cast<int>(Model::Count) ==
                   static_cast<int>(sizeof(kModelLabels) /
@@ -165,6 +167,8 @@ inline constexpr ParamSpec kParamSpecs[P_COUNT] = {
      false, nullptr, labels(kSatTypeLabels)},
     {"oversample", "Oversampling", "Oversampling", 0.0, 2.0, 0.0, true, false,
      false, nullptr, labels(kOversampleLabels)},
+    {"ms_mode", "Stereo Mode", "Output", 0.0, 3.0, 0.0, true, false,
+     false, nullptr, labels(kMsModeLabels)},
 };
 
 static_assert(sizeof(kParamSpecs) / sizeof(kParamSpecs[0]) == P_COUNT,
@@ -291,6 +295,7 @@ inline Controls controlsFrom(const Shared& s) {
   c.easyChar = static_cast<float>(s.get(P_EASY_CHAR));
   c.satType = static_cast<float>(s.get(P_SAT_TYPE));
   c.oversample = static_cast<float>(s.get(P_OVERSAMPLE));
+  c.msMode = static_cast<int>(s.get(P_MS_MODE) + 0.5);
   return c;
 }
 
