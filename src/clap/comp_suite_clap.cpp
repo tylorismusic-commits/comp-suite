@@ -445,19 +445,6 @@ struct Plugin {
   std::vector<float> monoRight;
 };
 
-const clap_plugin_descriptor_t kDescriptor = {
-    CLAP_VERSION,
-    kPluginId,
-    kPluginName,
-    kVendor,
-    "https://github.com/tylorismusic-commits/comp-suite",
-    "",
-    "",
-    kVersion,
-    "Ten compressor models in one plugin: Clean, Easy, 76Blue, 76Black, 2A, 3A, Xpress, VCA, Molot and Red.",
-    nullptr,
-};
-
 const char* const kFeatures[] = {CLAP_PLUGIN_FEATURE_AUDIO_EFFECT,
                                  CLAP_PLUGIN_FEATURE_COMPRESSOR,
                                  CLAP_PLUGIN_FEATURE_STEREO, nullptr};
@@ -675,6 +662,19 @@ void paramsFlush(const clap_plugin_t* p, const clap_input_events_t* in,
 const clap_plugin_params_t kParamsExt = {
     paramsCount, paramsInfo, paramsValue, paramsValueToText, paramsTextToValue,
     paramsFlush,
+};
+
+const clap_plugin_descriptor_t kDescriptor = {
+    CLAP_VERSION,
+    kPluginId,
+    kPluginName,
+    kVendor,
+    "https://github.com/tylorismusic-commits/comp-suite",
+    "",
+    "",
+    kVersion,
+    "Ten compressor models in one plugin: Clean, Easy, 76Blue, 76Black, 2A, 3A, Xpress, VCA, Molot and Red.",
+    kFeatures,
 };
 
 // --- State ------------------------------------------------------------------
