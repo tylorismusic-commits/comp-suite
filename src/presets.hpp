@@ -21,7 +21,7 @@ struct Preset {
   const char* name;
   const char* category;
   int model;
-  PresetValue values[16];
+  PresetValue values[P_COUNT + 1];
 };
 
 // Roughly thirty starting points, each using its model the way it turns up in
@@ -237,6 +237,18 @@ inline constexpr Preset kPresets[] = {
       {P_AIR, 0.25f}, {P_SAT_DRIVE, 0.60f}, {P_SAT_TYPE, 2.f},
       {P_EASY_MODE, 0.f}, {P_EASY_CHAR, 1.f}, {P_MIX, 0.40f}, {P_OUTPUT, 0.5f}, {P_VCA_LINK, 1.0f},
       {-1, 0}}},
+    {"Bass Synth Blend", "User", 7,
+     {      {0, 7.0f}, {1, 1.0f}, {2, 0.5f}, {3, 0.574000001f}, {4, 4.0f}, {5, 0.349999994f},
+      {6, 0.5f}, {7, 0.770000012f}, {8, 0.5f}, {9, 1.0f}, {10, 0.0f}, {11, 1.0f}, {12, 0.0f},
+      {13, 0.0f}, {14, 1.0f}, {15, 0.0f}, {16, 0.0f}, {17, 0.0f}, {18, 1.0f}, {19, 0.0f},
+      {20, 0.5f}, {21, 1.0f}, {22, 1.0f}, {23, 5.0f}, {24, 0.35f}, {25, 0.2f}, {26, 2.0f},
+      {27, 0.0f}, {28, 0.0f}, {29, 1.0f}, {30, 0.0f}, {31, 0.0f}}},
+    {"VCA Vocal Bus", "User", 5,
+     {      {0, 5.0f}, {1, 1.0f}, {2, 0.6f}, {3, 0.642999997f}, {4, 5.0f}, {5, 0.620000005f},
+      {6, 0.400000006f}, {7, 0.6f}, {8, 0.5f}, {9, 1.0f}, {10, 0.0f}, {11, 0.0f}, {12, 0.0f},
+      {13, 1.0f}, {14, 0.735f}, {15, 0.0f}, {16, 0.0f}, {17, 1.0f}, {18, 1.0f}, {19, 0.0f},
+      {20, 0.5f}, {21, 0.5f}, {22, 0.0f}, {23, 5.0f}, {24, 0.35f}, {25, 0.2f}, {26, 2.0f},
+      {27, 0.0f}, {28, 0.0f}, {29, 1.0f}, {30, 1.0f}, {31, 0.0f}}},
 };
 
 inline constexpr int kPresetCount =

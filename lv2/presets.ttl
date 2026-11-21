@@ -27,6 +27,10 @@
     a pset:Bank ;
     rdfs:label "Mix Bus" .
 
+<https://github.com/tylorismusic-commits/comp-suite#bank_user>
+    a pset:Bank ;
+    rdfs:label "User" .
+
 <https://github.com/tylorismusic-commits/comp-suite#preset_76-vocal-push>
     a pset:Preset ;
     lv2:appliesTo <https://github.com/tylorismusic-commits/comp-suite> ;
@@ -855,4 +859,84 @@
     [ lv2:symbol "mix" ; pset:value 0.4 ] ,
     [ lv2:symbol "output" ; pset:value 0.5 ] ,
     [ lv2:symbol "vca_link" ; pset:value 1 ] .
+
+<https://github.com/tylorismusic-commits/comp-suite#preset_bass-synth-blend>
+    a pset:Preset ;
+    lv2:appliesTo <https://github.com/tylorismusic-commits/comp-suite> ;
+    rdfs:label "Bass Synth Blend" ;
+    rdfs:comment "User" ;
+    pset:bank <https://github.com/tylorismusic-commits/comp-suite#bank_user> ;
+    lv2:port
+    [ lv2:symbol "model" ; pset:value 5 ] ,
+    [ lv2:symbol "power" ; pset:value 1 ] ,
+    [ lv2:symbol "input" ; pset:value 0.5 ] ,
+    [ lv2:symbol "threshold" ; pset:value 0.574 ] ,
+    [ lv2:symbol "ratio" ; pset:value 4 ] ,
+    [ lv2:symbol "attack" ; pset:value 0.35 ] ,
+    [ lv2:symbol "release" ; pset:value 0.5 ] ,
+    [ lv2:symbol "makeup" ; pset:value 0.77 ] ,
+    [ lv2:symbol "output" ; pset:value 0.5 ] ,
+    [ lv2:symbol "mix" ; pset:value 1 ] ,
+    [ lv2:symbol "sc_hpf" ; pset:value 0 ] ,
+    [ lv2:symbol "distortion" ; pset:value 1 ] ,
+    [ lv2:symbol "meter" ; pset:value 0 ] ,
+    [ lv2:symbol "limiter_on" ; pset:value 0 ] ,
+    [ lv2:symbol "limiter_threshold" ; pset:value 1 ] ,
+    [ lv2:symbol "auto_makeup" ; pset:value 0 ] ,
+    [ lv2:symbol "sc_source" ; pset:value 0 ] ,
+    [ lv2:symbol "true_peak" ; pset:value 0 ] ,
+    [ lv2:symbol "vca_link" ; pset:value 1 ] ,
+    [ lv2:symbol "vca_auto" ; pset:value 0 ] ,
+    [ lv2:symbol "knee" ; pset:value 0.5 ] ,
+    [ lv2:symbol "sat_drive" ; pset:value 1 ] ,
+    [ lv2:symbol "attack_mode" ; pset:value 1 ] ,
+    [ lv2:symbol "stereo_mode" ; pset:value 5 ] ,
+    [ lv2:symbol "beef" ; pset:value 0.35 ] ,
+    [ lv2:symbol "air" ; pset:value 0.2 ] ,
+    [ lv2:symbol "drum_type" ; pset:value 2 ] ,
+    [ lv2:symbol "easy_mode" ; pset:value 0 ] ,
+    [ lv2:symbol "easy_char" ; pset:value 0 ] ,
+    [ lv2:symbol "sat_type" ; pset:value 1 ] ,
+    [ lv2:symbol "oversample" ; pset:value 0 ] ,
+    [ lv2:symbol "ms_mode" ; pset:value 0 ] .
+
+<https://github.com/tylorismusic-commits/comp-suite#preset_vca-vocal-bus>
+    a pset:Preset ;
+    lv2:appliesTo <https://github.com/tylorismusic-commits/comp-suite> ;
+    rdfs:label "VCA Vocal Bus" ;
+    rdfs:comment "User" ;
+    pset:bank <https://github.com/tylorismusic-commits/comp-suite#bank_user> ;
+    lv2:port
+    [ lv2:symbol "model" ; pset:value 5 ] ,
+    [ lv2:symbol "power" ; pset:value 1 ] ,
+    [ lv2:symbol "input" ; pset:value 0.6 ] ,
+    [ lv2:symbol "threshold" ; pset:value 0.643 ] ,
+    [ lv2:symbol "ratio" ; pset:value 5 ] ,
+    [ lv2:symbol "attack" ; pset:value 0.62 ] ,
+    [ lv2:symbol "release" ; pset:value 0.4 ] ,
+    [ lv2:symbol "makeup" ; pset:value 0.6 ] ,
+    [ lv2:symbol "output" ; pset:value 0.5 ] ,
+    [ lv2:symbol "mix" ; pset:value 1 ] ,
+    [ lv2:symbol "sc_hpf" ; pset:value 0 ] ,
+    [ lv2:symbol "distortion" ; pset:value 0 ] ,
+    [ lv2:symbol "meter" ; pset:value 0 ] ,
+    [ lv2:symbol "limiter_on" ; pset:value 1 ] ,
+    [ lv2:symbol "limiter_threshold" ; pset:value 0.735 ] ,
+    [ lv2:symbol "auto_makeup" ; pset:value 0 ] ,
+    [ lv2:symbol "sc_source" ; pset:value 0 ] ,
+    [ lv2:symbol "true_peak" ; pset:value 1 ] ,
+    [ lv2:symbol "vca_link" ; pset:value 1 ] ,
+    [ lv2:symbol "vca_auto" ; pset:value 0 ] ,
+    [ lv2:symbol "knee" ; pset:value 0.5 ] ,
+    [ lv2:symbol "sat_drive" ; pset:value 0.5 ] ,
+    [ lv2:symbol "attack_mode" ; pset:value 0 ] ,
+    [ lv2:symbol "stereo_mode" ; pset:value 5 ] ,
+    [ lv2:symbol "beef" ; pset:value 0.35 ] ,
+    [ lv2:symbol "air" ; pset:value 0.2 ] ,
+    [ lv2:symbol "drum_type" ; pset:value 2 ] ,
+    [ lv2:symbol "easy_mode" ; pset:value 0 ] ,
+    [ lv2:symbol "easy_char" ; pset:value 0 ] ,
+    [ lv2:symbol "sat_type" ; pset:value 1 ] ,
+    [ lv2:symbol "oversample" ; pset:value 1 ] ,
+    [ lv2:symbol "ms_mode" ; pset:value 0 ] .
 
