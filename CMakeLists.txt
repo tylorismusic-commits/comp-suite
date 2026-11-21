@@ -44,10 +44,65 @@ endif()
 
 set(COMP_UI_SOURCES src/ui/panel.cpp)
 
+set(COMP_RESOURCE_FILES
+  "${CMAKE_SOURCE_DIR}/assets/fonts/Jost-ExtraBold.ttf"
+  "${CMAKE_SOURCE_DIR}/assets/fonts/OFL.txt")
+
 # ---------------------------------------------------------------------------
-# CLAP plugin: six models, one X11/Cairo editor.
+# CLAP plugin: six models, one cairo editor (X11 on Linux, Cocoa on macOS).
 # ---------------------------------------------------------------------------
-if(SUITE_X11)
+if(APPLE)
+enable_language(OBJCXX)
+add_library(comp_suite MODULE
+  src/clap/comp_suite_clap.cpp
+  ${COMP_UI_SOURCES}
+  src/ui/cocoa_view.mm)
+target_include_directories(comp_suite PRIVATE
+  "${CMAKE_SOURCE_DIR}/src"
+  "${CMAKE_SOURCE_DIR}/third_party/clap/include"
+  ${CAIRO_INCLUDE_DIRS})
+target_compile_definitions(comp_suite PRIVATE SUITE_MACOS_COCOA=1)
+target_compile_options(comp_suite PRIVATE -fobjc-arc)
+target_link_libraries(comp_suite PRIVATE
+  PkgConfig::CAIRO PkgConfig::FREETYPE
+  "-framework Cocoa" "-framework CoreGraphics" "-framework QuartzCore"
+  Threads::Threads ${CMAKE_DL_LIBS})
+target_compile_features(comp_suite PRIVATE cxx_std_17)
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+  target_compile_options(comp_suite PRIVATE -Wall -Wextra -fvisibility=hidden)
+endif()
+set_target_properties(comp_suite PROPERTIES
+  PREFIX ""
+  OUTPUT_NAME "CompSuite"
+  SUFFIX ".dylib"
+  LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/macos")
+
+set(COMP_CLAP_BUNDLE "${CMAKE_BINARY_DIR}/clap/CompSuite.clap")
+find_program(DYLIBBUNDLER dylibbundler)
+add_custom_target(comp_suite_bundle ALL
+  COMMAND ${CMAKE_COMMAND} -E remove_directory "${COMP_CLAP_BUNDLE}"
+  COMMAND ${CMAKE_COMMAND} -E make_directory
+          "${COMP_CLAP_BUNDLE}/Contents/MacOS"
+  COMMAND ${CMAKE_COMMAND} -E copy
+          "$<TARGET_FILE:comp_suite>"
+          "${COMP_CLAP_BUNDLE}/Contents/MacOS/CompSuite"
+  COMMAND ${CMAKE_COMMAND} -E copy
+          "${CMAKE_SOURCE_DIR}/packaging/macos/Info.plist"
+          "${COMP_CLAP_BUNDLE}/Contents/Info.plist"
+  COMMAND ${CMAKE_COMMAND} -E make_directory
+          "${COMP_CLAP_BUNDLE}/Contents/Resources/CompSuite.resources"
+  COMMAND ${CMAKE_COMMAND} -E copy_if_different ${COMP_RESOURCE_FILES}
+          "${COMP_CLAP_BUNDLE}/Contents/Resources/CompSuite.resources/"
+  DEPENDS comp_suite ${COMP_RESOURCE_FILES})
+if(DYLIBBUNDLER)
+  add_custom_command(TARGET comp_suite_bundle POST_BUILD
+    COMMAND "${DYLIBBUNDLER}" -od -b
+            -x "${COMP_CLAP_BUNDLE}/Contents/MacOS/CompSuite"
+            -d "${COMP_CLAP_BUNDLE}/Contents/Frameworks"
+            -p "@loader_path/../Frameworks")
+endif()
+install(DIRECTORY "${COMP_CLAP_BUNDLE}" DESTINATION "${CLAP_DIR}")
+elseif(SUITE_X11)
 add_library(comp_suite MODULE
   src/clap/comp_suite_clap.cpp
   ${COMP_UI_SOURCES})
@@ -67,10 +122,6 @@ set_target_properties(comp_suite PROPERTIES
   SUFFIX ".clap"
   LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/clap")
 
-set(COMP_RESOURCE_FILES
-  "${CMAKE_SOURCE_DIR}/assets/fonts/Jost-ExtraBold.ttf"
-  "${CMAKE_SOURCE_DIR}/assets/fonts/OFL.txt")
-
 add_custom_target(comp_suite_bundle ALL
   COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/clap/CompSuite.resources"
   COMMAND ${CMAKE_COMMAND} -E copy_if_different ${COMP_RESOURCE_FILES}
@@ -80,7 +131,7 @@ add_custom_target(comp_suite_bundle ALL
 install(TARGETS comp_suite LIBRARY DESTINATION "${CLAP_DIR}")
 install(FILES ${COMP_RESOURCE_FILES}
         DESTINATION "${CLAP_DIR}/CompSuite.resources")
-endif()  # SUITE_X11
+endif()  # APPLE / SUITE_X11
 
 # ---------------------------------------------------------------------------
 # Tests and tools
