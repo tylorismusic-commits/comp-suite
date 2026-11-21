@@ -32,13 +32,22 @@ find_package(Threads REQUIRED)
 pkg_check_modules(LV2 REQUIRED IMPORTED_TARGET lv2)
 pkg_check_modules(CAIRO REQUIRED IMPORTED_TARGET cairo)
 pkg_check_modules(FREETYPE REQUIRED IMPORTED_TARGET freetype2)
-pkg_check_modules(X11 REQUIRED IMPORTED_TARGET x11)
+# The editor hosts are X11 today.  macOS builds the portable subset (DSP,
+# panel, tests, tools) until a Cocoa view lands, so X11 stays optional.
+option(SUITE_NO_X11 "Skip X11 editor targets (portable subset)" OFF)
+if(APPLE OR SUITE_NO_X11)
+  set(SUITE_X11 OFF)
+else()
+  pkg_check_modules(X11 REQUIRED IMPORTED_TARGET x11)
+  set(SUITE_X11 ON)
+endif()
 
 set(COMP_UI_SOURCES src/ui/panel.cpp)
 
 # ---------------------------------------------------------------------------
 # CLAP plugin: six models, one X11/Cairo editor.
 # ---------------------------------------------------------------------------
+if(SUITE_X11)
 add_library(comp_suite MODULE
   src/clap/comp_suite_clap.cpp
   ${COMP_UI_SOURCES})
@@ -71,6 +80,7 @@ add_custom_target(comp_suite_bundle ALL
 install(TARGETS comp_suite LIBRARY DESTINATION "${CLAP_DIR}")
 install(FILES ${COMP_RESOURCE_FILES}
         DESTINATION "${CLAP_DIR}/CompSuite.resources")
+endif()  # SUITE_X11
 
 # ---------------------------------------------------------------------------
 # Tests and tools
@@ -103,6 +113,7 @@ target_include_directories(comp_ui_preview PRIVATE "${CMAKE_SOURCE_DIR}/src")
 target_link_libraries(comp_ui_preview PRIVATE PkgConfig::CAIRO PkgConfig::FREETYPE)
 target_compile_features(comp_ui_preview PRIVATE cxx_std_17)
 
+if(SUITE_X11)
 find_library(XTST_LIBRARY Xtst)
 find_program(XVFB_RUN xvfb-run)
 add_executable(comp_clap_host_test test/clap_host_test.cpp)
@@ -123,6 +134,7 @@ else()
   add_test(NAME comp_clap_host
     COMMAND comp_clap_host_test "${CMAKE_BINARY_DIR}/clap/CompSuite.clap")
 endif()
+endif()  # SUITE_X11
 
 add_executable(comp_offline_render tools/offline_render.cpp)
 target_include_directories(comp_offline_render PRIVATE "${CMAKE_SOURCE_DIR}/src")
@@ -160,6 +172,7 @@ set_target_properties(comp_suite_lv2 PROPERTIES
   OUTPUT_NAME "comp_suite"
   LIBRARY_OUTPUT_DIRECTORY "${LV2_BUNDLE_DIR}")
 
+if(SUITE_X11)
 add_library(comp_suite_lv2_ui MODULE src/ui/lv2_ui.cpp ${COMP_UI_SOURCES})
 target_include_directories(comp_suite_lv2_ui PRIVATE
   "${CMAKE_SOURCE_DIR}/src" "${CMAKE_SOURCE_DIR}/third_party/clap/include")
@@ -182,8 +195,10 @@ add_custom_target(comp_suite_lv2_bundle ALL
           "${CMAKE_SOURCE_DIR}/assets/fonts/OFL.txt"
           "${LV2_BUNDLE_DIR}/"
   DEPENDS comp_suite_lv2 comp_suite_lv2_ui)
+endif()  # SUITE_X11
 
 # Release tarball: both bundles, ready to drop into ~/.lv2 and ~/.clap.
+if(SUITE_X11)
 add_custom_target(dist
   COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/dist"
   COMMAND ${CMAKE_COMMAND} -E tar czf
@@ -192,9 +207,13 @@ add_custom_target(dist
   WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
   DEPENDS comp_suite_lv2_bundle comp_suite_bundle
   COMMENT "Packing comp-suite-${PROJECT_VERSION}")
+endif()  # SUITE_X11
 
-install(TARGETS comp_suite_lv2 comp_suite_lv2_ui
-        LIBRARY DESTINATION "${LV2_DIR}/comp-suite.lv2")
+install(TARGETS comp_suite_lv2 LIBRARY DESTINATION "${LV2_DIR}/comp-suite.lv2")
+if(SUITE_X11)
+  install(TARGETS comp_suite_lv2_ui
+          LIBRARY DESTINATION "${LV2_DIR}/comp-suite.lv2")
+endif()
 install(FILES
   lv2/manifest.ttl
   lv2/comp_suite.ttl
@@ -203,7 +222,7 @@ install(FILES
   assets/fonts/OFL.txt
   DESTINATION "${LV2_DIR}/comp-suite.lv2")
 
-if(LILV_FOUND)
+if(LILV_FOUND AND SUITE_X11)
   add_executable(comp_lv2_host_test test/lv2_host_test.cpp)
   target_include_directories(comp_lv2_host_test PRIVATE
     "${CMAKE_SOURCE_DIR}/src" ${PKG_CONFIG_LV2_INCLUDE_DIRS})
@@ -215,6 +234,7 @@ endif()
 
 # The UI is loaded directly (no suil) so the test can drive the idle
 # interface and the resize handshake itself.
+if(SUITE_X11)
 add_executable(comp_lv2_ui_host_test test/lv2_ui_host_test.cpp)
 target_include_directories(comp_lv2_ui_host_test PRIVATE
   "${CMAKE_SOURCE_DIR}/src" ${PKG_CONFIG_LV2_INCLUDE_DIRS})
@@ -230,3 +250,4 @@ else()
   add_test(NAME comp_lv2_ui_host
     COMMAND comp_lv2_ui_host_test "${LV2_BUNDLE_DIR}")
 endif()
+endif()  # SUITE_X11
