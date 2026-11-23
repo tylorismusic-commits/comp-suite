@@ -28,6 +28,7 @@
 
 #include "dsp/engine.hpp"
 #include "dsp/common.hpp"
+#include "insert_peer.hpp"
 #include "params.hpp"
 #include "value_text.hpp"
 #include "version.hpp"
@@ -443,6 +444,16 @@ struct Plugin {
   // Second channel for a mono host: the engine keeps per-channel state, so
   // aliasing both sides onto one buffer would process every sample twice.
   std::vector<float> monoRight;
+
+  // Insert peer: publishes metadata/parameters on the Suite bus and adopts
+  // Suite Control's edits, including the LINK assignment saved in our state.
+  suite::peer::Client peer;
+  bool peerRegistered = false;
+  std::thread peerThread;
+  std::atomic<bool> peerRun{false};
+  std::atomic<uint32_t> linkBus{0};
+  std::atomic<uint32_t> linkChannel{0};
+  std::atomic<uint32_t> linkSlot{0};
 };
 
 const char* const kFeatures[] = {CLAP_PLUGIN_FEATURE_AUDIO_EFFECT,
@@ -688,8 +699,17 @@ bool stateSave(const clap_plugin_t* p, const clap_ostream_t* stream) {
   const double scale = s->editor.scale();
   const int64_t written = stream->write(stream, values, sizeof(values));
   const int64_t writtenScale = stream->write(stream, &scale, sizeof(scale));
+  // LINK assignment, appended so states saved before it still load.
+  constexpr uint32_t kLinkMagic = 0x4b504c43;  // CPLK
+  constexpr uint32_t kLinkVersion = 1;
+  const uint32_t link[5] = {kLinkMagic, kLinkVersion,
+                            s->linkBus.load(std::memory_order_relaxed),
+                            s->linkChannel.load(std::memory_order_relaxed),
+                            s->linkSlot.load(std::memory_order_relaxed)};
+  const int64_t writtenLink = stream->write(stream, link, sizeof(link));
   return written == static_cast<int64_t>(sizeof(values)) &&
-         writtenScale == static_cast<int64_t>(sizeof(scale));
+         writtenScale == static_cast<int64_t>(sizeof(scale)) &&
+         writtenLink == static_cast<int64_t>(sizeof(link));
 }
 
 bool stateLoad(const clap_plugin_t* p, const clap_istream_t* stream) {
@@ -708,6 +728,14 @@ bool stateLoad(const clap_plugin_t* p, const clap_istream_t* stream) {
   if (stream->read(stream, &scale, sizeof(scale)) == static_cast<int64_t>(sizeof(scale)) &&
       scale > 0.0) {
     s->editor.resize(scale);
+  }
+  uint32_t link[5] = {};
+  if (stream->read(stream, link, sizeof(link)) ==
+          static_cast<int64_t>(sizeof(link)) &&
+      link[0] == 0x4b504c43 && link[1] == 1) {
+    s->linkBus.store(link[2], std::memory_order_relaxed);
+    s->linkChannel.store(link[3], std::memory_order_relaxed);
+    s->linkSlot.store(link[4], std::memory_order_relaxed);
   }
   return true;
 }
@@ -911,7 +939,11 @@ const clap_plugin_latency_t kLatencyExt = {latencyGet};
 bool pluginInit(const clap_plugin_t*) { return true; }
 
 void pluginDestroy(const clap_plugin_t* p) {
-  delete self(p);
+  Plugin* s = self(p);
+  if (s->peerRun.exchange(false) && s->peerThread.joinable()) {
+    s->peerThread.join();
+  }
+  delete s;
 }
 
 bool pluginActivate(const clap_plugin_t* p, double sampleRate, uint32_t,
@@ -921,6 +953,44 @@ bool pluginActivate(const clap_plugin_t* p, double sampleRate, uint32_t,
   s->engine.prepare(static_cast<float>(sampleRate),
                     static_cast<float>(s->shared.get(P_OVERSAMPLE)));
   s->active.store(true, std::memory_order_relaxed);
+  if (!s->peerRegistered &&
+      s->peer.registerSlot(0, "Comp Suite", P_COUNT,
+                           suite::peer::kKindInsert, P_ENABLED) >= 0) {
+    s->peerRegistered = true;
+    suite::peer::ParamMeta meta[P_COUNT];
+    comp::fillParamMeta(meta, P_COUNT);
+    s->peer.publishMeta(meta, P_COUNT);
+    s->peer.publishLink(s->linkBus.load(std::memory_order_relaxed),
+                        s->linkChannel.load(std::memory_order_relaxed),
+                        s->linkSlot.load(std::memory_order_relaxed));
+    s->peerRun.store(true, std::memory_order_relaxed);
+    s->peerThread = std::thread([s] {
+      while (s->peerRun.load(std::memory_order_relaxed)) {
+        if (s->peerRegistered) {
+          // Adopt before publishing, so a newer remote value is never
+          // overwritten by a stale local one.
+          for (uint32_t i = 0; i < P_COUNT; ++i) {
+            double v = 0.0;
+            if (s->peer.takeRemote(static_cast<int>(i), &v) &&
+                std::fabs(v - s->shared.get(i)) > 1e-12) {
+              s->shared.set(i, v);
+            }
+          }
+          suite::peer::LinkInfo link;
+          if (s->peer.takeRemoteLink(&link)) {
+            s->linkBus.store(link.bus, std::memory_order_relaxed);
+            s->linkChannel.store(link.channel, std::memory_order_relaxed);
+            s->linkSlot.store(link.slot, std::memory_order_relaxed);
+          }
+          for (uint32_t i = 0; i < P_COUNT; ++i) {
+            s->peer.publish(static_cast<int>(i), s->shared.get(i));
+          }
+          s->peer.beat();
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(40));
+      }
+    });
+  }
   s->reportedOversample.store(
       static_cast<int>(s->shared.get(P_OVERSAMPLE) + 0.5),
       std::memory_order_relaxed);
@@ -941,7 +1011,15 @@ bool pluginActivate(const clap_plugin_t* p, double sampleRate, uint32_t,
 }
 
 void pluginDeactivate(const clap_plugin_t* p) {
-  self(p)->active.store(false, std::memory_order_relaxed);
+  Plugin* s = self(p);
+  s->active.store(false, std::memory_order_relaxed);
+  if (s->peerRun.exchange(false) && s->peerThread.joinable()) {
+    s->peerThread.join();
+  }
+  if (s->peerRegistered) {
+    s->peer.unregisterSlot();
+    s->peerRegistered = false;
+  }
 }
 
 bool pluginStartProcessing(const clap_plugin_t*) { return true; }

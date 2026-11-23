@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Suite insert support (Linux): registers on the Suite Control peer bus as an
+  insert, publishes its parameter metadata and bypass index, adopts remote
+  edits and the LINK assignment, and saves the link with the CLAP/LV2 state.
+  CLAP and LV2 targets hide their symbols so several Suite plug-ins can share
+  a host process safely.
+
+## Unreleased
+
 - Molot hides the global M/S pill (it has its own Stereo knob), and the two
   controls now mirror each other when switching models.
 - 2A limiter and global stereo-mode pill legends use red for legibility on the

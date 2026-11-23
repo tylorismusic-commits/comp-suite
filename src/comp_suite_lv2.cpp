@@ -4,20 +4,31 @@
 // Ten compressor models in one plugin.  The control ports mirror the CLAP
 // parameter ids: port = kPortFirstParam + ParamId.
 
+#include <lv2/atom/atom.h>
 #include <lv2/core/lv2.h>
+#include <lv2/state/state.h>
+#include <lv2/urid/urid.h>
 
+#include <atomic>
 #include <cmath>
+#include <cstdint>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <memory>
+#include <thread>
+#include <vector>
 
 #include "dsp/engine.hpp"
 #include "dsp/inline_display.hpp"
+#include "insert_peer.hpp"
 #include "params.hpp"
 
 namespace {
 
 constexpr const char* kPluginUri = "https://github.com/tylorismusic-commits/comp-suite";
+constexpr const char* kStateUri =
+    "https://github.com/tylorismusic-commits/comp-suite#insert";
 
 // Audio ports first, then controls, then meter outputs.
 enum Port : uint32_t {
@@ -71,6 +82,19 @@ struct Plugin {
   comp::InlineDisplay display;
   const comp::InlineDisplayQueueDraw* queueDraw = nullptr;
   uint32_t drawCounter = 0;
+
+  // Insert peer (protocol v3).
+  suite::peer::Client peer;
+  bool peerRegistered = false;
+  std::thread peerThread;
+  std::atomic<bool> peerRun{false};
+  std::atomic<uint32_t> linkBus{0};
+  std::atomic<uint32_t> linkChannel{0};
+  std::atomic<uint32_t> linkSlot{0};
+  const LV2_URID_Map* map = nullptr;
+  uint32_t chunkType = 0;
+  uint32_t stateKey = 0;
+  bool restored = false;
 };
 
 LV2_Handle instantiate(const LV2_Descriptor*, double rate, const char*,
@@ -87,6 +111,10 @@ LV2_Handle instantiate(const LV2_Descriptor*, double rate, const char*,
         (*f)->data) {
       p->queueDraw = static_cast<const comp::InlineDisplayQueueDraw*>(
           static_cast<const void*>((*f)->data));
+    } else if (!std::strcmp((*f)->URI, LV2_URID__map) && (*f)->data) {
+      p->map = static_cast<const LV2_URID_Map*>(f[0]->data);
+      p->chunkType = p->map->map(p->map->handle, LV2_ATOM__Chunk);
+      p->stateKey = p->map->map(p->map->handle, kStateUri);
     }
   }
   return p;
@@ -129,9 +157,54 @@ void activate(LV2_Handle handle) {
   if (p->latency) {
     *p->latency = static_cast<float>(p->engine.latencySamples());
   }
+  if (!p->peerRegistered &&
+      p->peer.registerSlot(0, "Comp Suite", comp::P_COUNT,
+                           suite::peer::kKindInsert, comp::P_ENABLED) >= 0) {
+    p->peerRegistered = true;
+    suite::peer::ParamMeta meta[comp::P_COUNT];
+    comp::fillParamMeta(meta, comp::P_COUNT);
+    p->peer.publishMeta(meta, comp::P_COUNT);
+    p->peer.publishLink(p->linkBus.load(std::memory_order_relaxed),
+                        p->linkChannel.load(std::memory_order_relaxed),
+                        p->linkSlot.load(std::memory_order_relaxed));
+    p->peerRun.store(true, std::memory_order_relaxed);
+    p->peerThread = std::thread([p] {
+      while (p->peerRun.load(std::memory_order_relaxed)) {
+        if (p->peerRegistered) {
+          for (uint32_t i = 0; i < comp::P_COUNT; ++i) {
+            double v = 0.0;
+            if (p->peer.takeRemote(static_cast<int>(i), &v) &&
+                std::fabs(v - p->shared.get(i)) > 1e-12) {
+              p->shared.set(i, v);
+            }
+          }
+          suite::peer::LinkInfo link;
+          if (p->peer.takeRemoteLink(&link)) {
+            p->linkBus.store(link.bus, std::memory_order_relaxed);
+            p->linkChannel.store(link.channel, std::memory_order_relaxed);
+            p->linkSlot.store(link.slot, std::memory_order_relaxed);
+          }
+          for (uint32_t i = 0; i < comp::P_COUNT; ++i) {
+            p->peer.publish(static_cast<int>(i), p->shared.get(i));
+          }
+          p->peer.beat();
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(40));
+      }
+    });
+  }
 }
 
-void deactivate(LV2_Handle) {}
+void deactivate(LV2_Handle handle) {
+  auto* p = static_cast<Plugin*>(handle);
+  if (p->peerRun.exchange(false) && p->peerThread.joinable()) {
+    p->peerThread.join();
+  }
+  if (p->peerRegistered) {
+    p->peer.unregisterSlot();
+    p->peerRegistered = false;
+  }
+}
 
 void run(LV2_Handle handle, uint32_t frames) {
   auto* p = static_cast<Plugin*>(handle);
@@ -150,14 +223,23 @@ void run(LV2_Handle handle, uint32_t frames) {
   // that actually changed are applied, so a port the host has not refreshed
   // yet cannot undo a change made in the UI.
   if (p->ports) {
-    for (uint32_t i = 0; i < comp::P_COUNT; ++i) {
-      float* v = p->ports[PORT_FIRST_PARAM + i];
-      if (!v) {
-        continue;
+    if (p->restored) {
+      // State restore wins over the session's stale control port values.
+      for (uint32_t i = 0; i < comp::P_COUNT; ++i) {
+        float* v = p->ports[PORT_FIRST_PARAM + i];
+        if (v) p->lastPort[i] = *v;
       }
-      if (!p->portsSeen || *v != p->lastPort[i]) {
-        p->shared.setFromHost(i, static_cast<double>(*v));
-        p->lastPort[i] = *v;
+      p->restored = false;
+    } else {
+      for (uint32_t i = 0; i < comp::P_COUNT; ++i) {
+        float* v = p->ports[PORT_FIRST_PARAM + i];
+        if (!v) {
+          continue;
+        }
+        if (!p->portsSeen || *v != p->lastPort[i]) {
+          p->shared.setFromHost(i, static_cast<double>(*v));
+          p->lastPort[i] = *v;
+        }
       }
     }
     p->portsSeen = true;
@@ -213,7 +295,84 @@ void run(LV2_Handle handle, uint32_t frames) {
   }
 }
 
-void cleanup(LV2_Handle handle) { delete static_cast<Plugin*>(handle); }
+void cleanup(LV2_Handle handle) {
+  auto* p = static_cast<Plugin*>(handle);
+  if (p->peerRun.exchange(false) && p->peerThread.joinable()) {
+    p->peerThread.join();
+  }
+  delete p;
+}
+
+// --------------------------------------------------------------- LV2 state
+
+constexpr uint32_t kStateMagic = 0x49504d43;  // CMPI
+constexpr uint32_t kStateVersion = 1;
+
+LV2_State_Status stateSave(LV2_Handle handle, LV2_State_Store_Function store,
+                           LV2_State_Handle storeHandle, uint32_t,
+                           const LV2_Feature* const*) {
+  auto* p = static_cast<Plugin*>(handle);
+  if (!p->chunkType || !p->stateKey) return LV2_STATE_ERR_UNKNOWN;
+
+  const uint32_t count = comp::P_COUNT;
+  std::vector<uint8_t> blob(12 + count * sizeof(double) + 3 * sizeof(uint32_t));
+  std::memcpy(blob.data(), &kStateMagic, 4);
+  std::memcpy(blob.data() + 4, &kStateVersion, 4);
+  std::memcpy(blob.data() + 8, &count, 4);
+  size_t offset = 12;
+  for (uint32_t i = 0; i < count; ++i) {
+    const double v = p->shared.get(i);
+    std::memcpy(blob.data() + offset, &v, sizeof(double));
+    offset += sizeof(double);
+  }
+  const uint32_t link[3] = {p->linkBus.load(std::memory_order_relaxed),
+                            p->linkChannel.load(std::memory_order_relaxed),
+                            p->linkSlot.load(std::memory_order_relaxed)};
+  std::memcpy(blob.data() + offset, link, sizeof(link));
+  return store(storeHandle, p->stateKey, blob.data(), blob.size(),
+               p->chunkType, LV2_STATE_IS_POD | LV2_STATE_IS_PORTABLE);
+}
+
+LV2_State_Status stateRestore(LV2_Handle handle,
+                              LV2_State_Retrieve_Function retrieve,
+                              LV2_State_Handle stateHandle, uint32_t,
+                              const LV2_Feature* const*) {
+  auto* p = static_cast<Plugin*>(handle);
+  size_t size = 0;
+  uint32_t type = 0;
+  uint32_t flags = 0;
+  const void* data = retrieve(stateHandle, p->stateKey, &size, &type, &flags);
+  if (!data) return LV2_STATE_ERR_NO_PROPERTY;
+  if (!p->chunkType || type != p->chunkType) return LV2_STATE_ERR_BAD_TYPE;
+
+  const uint32_t count = comp::P_COUNT;
+  const size_t expected = 12 + count * sizeof(double) + 3 * sizeof(uint32_t);
+  if (size != expected) return LV2_STATE_ERR_BAD_TYPE;
+  const auto* bytes = static_cast<const uint8_t*>(data);
+  uint32_t magic = 0, version = 0, stored = 0;
+  std::memcpy(&magic, bytes, 4);
+  std::memcpy(&version, bytes + 4, 4);
+  std::memcpy(&stored, bytes + 8, 4);
+  if (magic != kStateMagic || version != kStateVersion || stored != count) {
+    return LV2_STATE_ERR_UNKNOWN;
+  }
+  size_t offset = 12;
+  for (uint32_t i = 0; i < count; ++i) {
+    double v = 0.0;
+    std::memcpy(&v, bytes + offset, sizeof(double));
+    offset += sizeof(double);
+    p->shared.set(i, v);
+  }
+  uint32_t link[3] = {};
+  std::memcpy(link, bytes + offset, sizeof(link));
+  p->linkBus.store(link[0], std::memory_order_relaxed);
+  p->linkChannel.store(link[1], std::memory_order_relaxed);
+  p->linkSlot.store(link[2], std::memory_order_relaxed);
+  p->restored = true;
+  return LV2_STATE_SUCCESS;
+}
+
+const LV2_State_Interface kStateInterface = {stateSave, stateRestore};
 
 comp::InlineDisplaySurface* renderInlineDisplay(void* instance, uint32_t width,
                                                 uint32_t height) {
@@ -226,6 +385,9 @@ const comp::InlineDisplayInterface kInlineDisplay = {&renderInlineDisplay};
 const void* extensionData(const char* uri) {
   if (uri && !std::strcmp(uri, comp::kInlineDisplayInterfaceURI)) {
     return &kInlineDisplay;
+  }
+  if (uri && !std::strcmp(uri, LV2_STATE__interface)) {
+    return &kStateInterface;
   }
   return nullptr;
 }

@@ -166,6 +166,7 @@ std::string buildPluginTtl() {
   out << "@prefix foaf: <http://xmlns.com/foaf/0.1/> .\n";
   out << "@prefix idpy: <http://harrisonconsoles.com/lv2/inlinedisplay#> .\n";
   out << "@prefix pprops: <http://lv2plug.in/ns/ext/port-props#> .\n";
+  out << "@prefix state: <http://lv2plug.in/ns/ext/state#> .\n";
   out << "@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .\n";
   out << "\n";
   out << "<" << kUri << ">\n";
@@ -186,6 +187,7 @@ std::string buildPluginTtl() {
   out << "    rdfs:seeAlso <manifest.ttl> ;\n";
   out << "    ui:ui <" << kUri << "#ui> ;\n";
   out << "    lv2:optionalFeature lv2:hardRTCapable , idpy:queue_draw ;\n";
+  out << "    lv2:extensionData state:interface ;\n";
   out << "    lv2:extensionData idpy:interface ;\n";
   out << "    lv2:port\n";
 

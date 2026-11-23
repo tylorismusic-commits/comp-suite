@@ -29,6 +29,14 @@ set(LV2_DIR "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/lv2"
 
 find_package(PkgConfig REQUIRED)
 find_package(Threads REQUIRED)
+
+# Hosts load every plug-in with global scope; without hidden visibility the
+# dynamic linker can bind this plug-in's symbols to another Suite plug-in's.
+function(suite_hide_symbols target)
+  set_target_properties(${target} PROPERTIES
+    CXX_VISIBILITY_PRESET hidden
+    VISIBILITY_INLINES_HIDDEN YES)
+endfunction()
 pkg_check_modules(LV2 REQUIRED IMPORTED_TARGET lv2)
 pkg_check_modules(CAIRO REQUIRED IMPORTED_TARGET cairo)
 pkg_check_modules(FREETYPE REQUIRED IMPORTED_TARGET freetype2)
@@ -249,6 +257,16 @@ else()
   message(WARNING "libXtst not found: the UI drag test will be skipped")
 endif()
 add_dependencies(comp_clap_host_test comp_suite_bundle)
+
+# Insert peer (protocol v3): what Suite Control sees and can control.
+add_executable(comp_peer_insert_test test/peer_insert_test.cpp)
+target_include_directories(comp_peer_insert_test PRIVATE
+  "${CMAKE_SOURCE_DIR}/src" "${CMAKE_SOURCE_DIR}/third_party/clap/include")
+target_link_libraries(comp_peer_insert_test PRIVATE ${CMAKE_DL_LIBS})
+target_compile_features(comp_peer_insert_test PRIVATE cxx_std_17)
+add_dependencies(comp_peer_insert_test comp_suite_bundle)
+add_test(NAME comp_peer_insert
+  COMMAND comp_peer_insert_test "${CMAKE_BINARY_DIR}/clap/CompSuite.clap")
 if(XVFB_RUN)
   add_test(NAME comp_clap_host
     COMMAND "${XVFB_RUN}" -a -s "-screen 0 1600x1000x24"
@@ -374,3 +392,7 @@ else()
     COMMAND comp_lv2_ui_host_test "${LV2_BUNDLE_DIR}")
 endif()
 endif()  # SUITE_X11
+
+suite_hide_symbols(comp_suite)
+suite_hide_symbols(comp_suite_lv2)
+suite_hide_symbols(comp_suite_lv2_ui)
