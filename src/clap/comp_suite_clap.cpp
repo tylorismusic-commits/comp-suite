@@ -961,6 +961,7 @@ bool pluginActivate(const clap_plugin_t* p, double sampleRate, uint32_t,
     comp::fillParamMeta(meta, P_COUNT);
     s->peer.publishMeta(meta, P_COUNT);
     s->peer.setShortName("COMP");
+    s->peer.setHasGr(true);
     s->peer.publishLink(s->linkBus.load(std::memory_order_relaxed),
                         s->linkChannel.load(std::memory_order_relaxed),
                         s->linkSlot.load(std::memory_order_relaxed));
@@ -991,6 +992,11 @@ bool pluginActivate(const clap_plugin_t* p, double sampleRate, uint32_t,
                 comp::formatParamValue(s->shared, i, s->shared.get(i));
             s->peer.publishText(static_cast<int>(i), text.c_str());
           }
+          s->peer.publishMeters(s->meters.inPeakLDb,
+                              s->meters.inPeakRDb,
+                              s->meters.outPeakLDb,
+                              s->meters.outPeakRDb,
+                              s->meters.grDb);
           s->peer.beat();
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(40));

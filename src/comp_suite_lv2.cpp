@@ -166,6 +166,7 @@ void activate(LV2_Handle handle) {
     comp::fillParamMeta(meta, comp::P_COUNT);
     p->peer.publishMeta(meta, comp::P_COUNT);
     p->peer.setShortName("COMP");
+    p->peer.setHasGr(true);
     p->peer.publishLink(p->linkBus.load(std::memory_order_relaxed),
                         p->linkChannel.load(std::memory_order_relaxed),
                         p->linkSlot.load(std::memory_order_relaxed));
@@ -192,6 +193,11 @@ void activate(LV2_Handle handle) {
                 comp::formatParamValue(p->shared, i, p->shared.get(i));
             p->peer.publishText(static_cast<int>(i), text.c_str());
           }
+          p->peer.publishMeters(p->meters.inPeakLDb,
+                              p->meters.inPeakRDb,
+                              p->meters.outPeakLDb,
+                              p->meters.outPeakRDb,
+                              p->meters.grDb);
           p->peer.beat();
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(40));

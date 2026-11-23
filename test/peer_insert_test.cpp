@@ -50,6 +50,10 @@ const clap_host_t kHost = [] {
 
 clap_process_status process(const clap_plugin_t* plugin) {
   std::vector<float> l(256, 0.0f), r(256, 0.0f);
+  for (int i = 0; i < 256; ++i) {
+    l[static_cast<size_t>(i)] = r[static_cast<size_t>(i)] =
+        0.8f * std::sin(2.0f * 3.14159265f * 220.0f * i / 48000.0f);
+  }
   float* chans[2] = {l.data(), r.data()};
   clap_audio_buffer_t buf{};
   buf.data32 = chans;
@@ -186,6 +190,17 @@ int main(int argc, char** argv) {
     check(thresholdText[0] && (std::strchr(thresholdText, '%') ||
                                std::strstr(thresholdText, "dB")),
           "threshold readout carries its real unit");
+
+    // Drive the compressor hard and check the GR meter reaches the surface.
+    suite::peer::Client::writeRemote(s, comp::P_THRESHOLD, 0.1);
+    suite::peer::Client::writeRemote(s, comp::P_INPUT, 0.9);
+    suite::peer::Client::writeRemote(s, comp::P_RATIO, 5.0);
+    std::this_thread::sleep_for(std::chrono::milliseconds(150));
+    for (int i = 0; i < 8; ++i) process(plugin);
+    std::this_thread::sleep_for(std::chrono::milliseconds(150));
+    float inL = 0, inR = 0, outL = 0, outR = 0, gr = 0;
+    hub.meter(hubEntry, &inL, &inR, &outL, &outR, &gr);
+    check(gr > 0.1f, "gain reduction reaches the surface");
   }
 
   plugin->deactivate(plugin);
