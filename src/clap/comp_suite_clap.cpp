@@ -984,6 +984,11 @@ bool pluginActivate(const clap_plugin_t* p, double sampleRate, uint32_t,
           }
           for (uint32_t i = 0; i < P_COUNT; ++i) {
             s->peer.publish(static_cast<int>(i), s->shared.get(i));
+            // The generic insert page shows the plug-in's own readout; only
+            // this side knows how the model maps a step to dB/ms/ratio.
+            const std::string text =
+                comp::formatParamValue(s->shared, i, s->shared.get(i));
+            s->peer.publishText(static_cast<int>(i), text.c_str());
           }
           s->peer.beat();
         }

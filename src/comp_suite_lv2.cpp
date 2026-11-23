@@ -22,6 +22,7 @@
 #include "dsp/engine.hpp"
 #include "dsp/inline_display.hpp"
 #include "insert_peer.hpp"
+#include "value_text.hpp"
 #include "params.hpp"
 
 namespace {
@@ -186,6 +187,9 @@ void activate(LV2_Handle handle) {
           }
           for (uint32_t i = 0; i < comp::P_COUNT; ++i) {
             p->peer.publish(static_cast<int>(i), p->shared.get(i));
+            const std::string text =
+                comp::formatParamValue(p->shared, i, p->shared.get(i));
+            p->peer.publishText(static_cast<int>(i), text.c_str());
           }
           p->peer.beat();
         }

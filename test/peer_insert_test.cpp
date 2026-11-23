@@ -164,6 +164,30 @@ int main(int argc, char** argv) {
             std::fabs(value - 5.0) < 1e-9,
         "remote edit reaches the insert parameter");
 
+  // The generic page shows the plug-in's formatted readout.  Ratio is a step
+  // whose real value depends on the model; threshold is a percentage or dB.
+  suite::peer::Hub hub;
+  hub.refresh();
+  int hubEntry = -1;
+  for (int i = 0; i < hub.size(); ++i) {
+    if (hub.ownerPid(i) == pid &&
+        std::strcmp(hub.name(i), "Comp Suite") == 0) {
+      hubEntry = i;
+    }
+  }
+  if (check(hubEntry >= 0, "hub lists the insert for readouts")) {
+    char ratioText[32] = {};
+    hub.text(hubEntry, comp::P_RATIO, ratioText, sizeof(ratioText));
+    check(std::strstr(ratioText, ":1") != nullptr,
+          "ratio readout is formatted as x:1");
+    char thresholdText[32] = {};
+    hub.text(hubEntry, comp::P_THRESHOLD, thresholdText,
+             sizeof(thresholdText));
+    check(thresholdText[0] && (std::strchr(thresholdText, '%') ||
+                               std::strstr(thresholdText, "dB")),
+          "threshold readout carries its real unit");
+  }
+
   plugin->deactivate(plugin);
   std::this_thread::sleep_for(std::chrono::milliseconds(300));
   check(s.used.load(std::memory_order_acquire) == 0,
