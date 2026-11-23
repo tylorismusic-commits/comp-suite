@@ -960,6 +960,7 @@ bool pluginActivate(const clap_plugin_t* p, double sampleRate, uint32_t,
     suite::peer::ParamMeta meta[P_COUNT];
     comp::fillParamMeta(meta, P_COUNT);
     s->peer.publishMeta(meta, P_COUNT);
+    s->peer.setShortName("COMP");
     s->peer.publishLink(s->linkBus.load(std::memory_order_relaxed),
                         s->linkChannel.load(std::memory_order_relaxed),
                         s->linkSlot.load(std::memory_order_relaxed));

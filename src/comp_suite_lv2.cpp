@@ -165,6 +165,7 @@ void activate(LV2_Handle handle) {
     suite::peer::ParamMeta meta[comp::P_COUNT];
     comp::fillParamMeta(meta, comp::P_COUNT);
     p->peer.publishMeta(meta, comp::P_COUNT);
+    p->peer.setShortName("COMP");
     p->peer.publishLink(p->linkBus.load(std::memory_order_relaxed),
                         p->linkChannel.load(std::memory_order_relaxed),
                         p->linkSlot.load(std::memory_order_relaxed));

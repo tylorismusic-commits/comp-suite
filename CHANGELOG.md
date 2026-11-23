@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Publishes the insert short name (`COMP`) for Suite Control.
+
+## Unreleased
+
 - Peer protocol v5: per-label values (the generic insert page now writes the
   real value for each enum label) and up to 128 parameters.
 
