@@ -44,6 +44,7 @@ inline void fillParamMeta(suite::peer::ParamMeta* out, uint32_t count) {
       for (uint32_t l = 0; l < labels; ++l) {
         peerSetText(meta.label[l], sizeof(meta.label[l]),
                     spec.labels.names[l]);
+        meta.labelValue[l] = static_cast<float>(l);
       }
     }
   }
